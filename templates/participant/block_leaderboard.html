@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Рейтинг - {{ block.title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Блок "{{ block.title }}" завершен</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="alert {% if block_result.passed_threshold %}alert-success{% else %}alert-danger{% endif %}">
+                    <h4 class="alert-heading">
+                        {% if block_result.passed_threshold %}
+                            <i class="bi bi-check-circle"></i> Поздравляем!
+                        {% else %}
+                            <i class="bi bi-x-circle"></i> К сожалению...
+                        {% endif %}
+                    </h4>
+                    <p>
+                        {% if block_result.passed_threshold %}
+                            Вы успешно прошли блок "{{ block.title }}" и можете перейти к следующему блоку.
+                        {% else %}
+                            Вы не набрали достаточно баллов для перехода к следующему блоку.
+                        {% endif %}
+                    </p>
+                    <hr>
+                    <p class="mb-0">
+                        Ваш результат: <strong>{{ block_result.score }} баллов ({{ block_result.percentage|round(1) }}%)</strong><br>
+                        Пороговый процент: <strong>{{ block.threshold_percentage }}%</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>Ваш прогресс:</h4>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar
+                        {% if block_result.percentage < block.threshold_percentage %}bg-danger
+                        {% elif block_result.percentage == 100 %}bg-success
+                        {% else %}bg-primary{% endif %}"
+                        role="progressbar"
+                        style="width: {{ block_result.percentage }}%;"
+                        aria-valuenow="{{ block_result.percentage }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100">
+                        {{ block_result.percentage|round(1) }}%
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Текущий общий счет:</h5>
+                        <h2 class="text-center text-primary">{{ participation.total_score }} баллов</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header">
+        <h3 class="mb-0">Таблица лидеров - Блок "{{ block.title }}"</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Участник</th>
+                        <th>Баллы</th>
+                        <th>Процент</th>
+                        <th>Время прохождения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in leaderboard_data %}
+                        <tr {% if entry.is_current_user %}class="table-primary"{% endif %}>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                {{ entry.user_name }}
+                                {% if entry.is_current_user %}<strong> (Вы)</strong>{% endif %}
+                            </td>
+                            <td>{{ entry.score }}</td>
+                            <td>{{ entry.percentage|round(1) }}%</td>
+                            <td>{{ entry.completed_at.strftime('%H:%M:%S') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-grid">
+            {% if next_block and block_result.passed_threshold %}
+                <a href="{{ url_for('participant.solve_block', participation_id=participation.id, block_id=next_block.id) }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-arrow-right-circle"></i> Перейти к следующему блоку
+                </a>
+            {% elif not next_block and block_result.passed_threshold %}
+                <a href="{{ url_for('participant.olympiad_results', participation_id=participation.id) }}" class="btn btn-success btn-lg">
+                    <i class="bi bi-trophy"></i> Просмотреть итоговые результаты
+                </a>
+            {% else %}
+                <a href="{{ url_for('participant.olympiad_results', participation_id=participation.id) }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-trophy"></i> Просмотреть текущие результаты
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

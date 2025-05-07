@@ -1,0 +1,122 @@
+<!-- templates/participant/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Главная - Система олимпиад{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Доступные олимпиады</h2>
+
+{% if available_olympiads %}
+    <div class="row">
+        {% for olympiad in available_olympiads %}
+            <div class="col-md-4 mb-4">
+                <div class="card olympiad-card h-100 shadow">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">{{ olympiad.title }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{ olympiad.description|truncate(100) }}</p>
+                        <div class="mb-2">
+                            {% set status = olympiad|olympiad_status %}
+                            <span class="badge
+                                {% if status == 'scheduled' %}bg-warning
+                                {% elif status == 'finished' %}bg-secondary
+                                {% else %}bg-success{% endif %}">
+                                {% if status == 'scheduled' %}
+                                    Начнется {{ olympiad.start_time.strftime('%d.%m.%Y в %H:%M') }}
+                                {% elif status == 'finished' %}
+                                    Завершена
+                                {% else %}
+                                    Активна до {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-footer d-grid">
+                        {% if olympiad.id in participation_olympiad_ids %}
+                            {% set participation = participations|selectattr('olympiad_id', 'equalto', olympiad.id)|first %}
+
+                            {% if participation.is_completed %}
+                                <a href="{{ url_for('participant.olympiad_results', participation_id=participation.id) }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-trophy"></i> Просмотреть результаты
+                                </a>
+                            {% elif participation.is_disqualified %}
+                                <button class="btn btn-danger" disabled>
+                                    <i class="bi bi-x-circle"></i> Дисквалификация
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('participant.start_olympiad', olympiad_id=olympiad.id) }}" class="btn btn-primary">
+                                    <i class="bi bi-play-fill"></i> Продолжить участие
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            {% set status = olympiad|olympiad_status %}
+                            {% if status == 'scheduled' %}
+                                <button class="btn btn-outline-warning" disabled>
+                                    <i class="bi bi-clock"></i> Ожидание начала
+                                </button>
+                            {% elif status == 'finished' %}
+                                <button class="btn btn-outline-secondary" disabled>
+                                    <i class="bi bi-clock-history"></i> Завершена
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('participant.start_olympiad', olympiad_id=olympiad.id) }}" class="btn btn-success">
+                                    <i class="bi bi-play-fill"></i> Начать участие
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> В настоящий момент нет доступных олимпиад.
+    </div>
+{% endif %}
+
+<h2 class="mb-4 mt-5">История участия</h2>
+
+{% if completed_participations %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Олимпиада</th>
+                    <th>Дата</th>
+                    <th>Результат</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in completed_participations %}
+                    {% set olympiad = p.olympiad %}
+                    <tr>
+                        <td>{{ olympiad.title }}</td>
+                        <td>{{ p.end_time.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ p.total_score }} баллов</td>
+                        <td>
+                            {% if p.is_disqualified %}
+                                <span class="badge bg-danger">Дисквалификация</span>
+                            {% else %}
+                                <span class="badge bg-success">Завершено</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('participant.olympiad_results', participation_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Детали
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> У вас пока нет завершенных олимпиад.
+    </div>
+{% endif %}
+{% endblock %}

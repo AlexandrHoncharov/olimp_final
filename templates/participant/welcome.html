@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Начало олимпиады{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">{{ olympiad.title }}</h3>
+    </div>
+    <div class="card-body">
+        <h4 class="mb-3">Добро пожаловать на олимпиаду!</h4>
+
+        <div class="alert alert-info mb-4">
+            <h5><i class="bi bi-info-circle"></i> Важная информация:</h5>
+            <ul>
+                <li>Олимпиада проводится с {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }} по {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}</li>
+                <li>Задания разделены на блоки, после каждого блока вы можете видеть свой результат</li>
+                <li>Для перехода к следующему блоку необходимо преодолеть пороговое значение</li>
+                <li><strong>Важно!</strong> Олимпиада проходит в полноэкранном режиме. Выход из полноэкранного режима приведет к дисквалификации.</li>
+            </ul>
+        </div>
+
+        {% if olympiad.welcome_pdf %}
+            <div class="mb-4">
+                <h5>Приветственное письмо:</h5>
+                <div class="ratio ratio-16x9">
+                    <iframe src="{{ url_for('static', filename=olympiad.welcome_pdf) }}" width="100%" height="600"></iframe>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="alert alert-warning">
+            <h5><i class="bi bi-exclamation-triangle"></i> Предупреждение:</h5>
+            <p>Выход из полноэкранного режима во время решения заданий приведет к дисквалификации. Убедитесь, что у вас достаточно времени для прохождения олимпиады.</p>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-grid">
+            {% set first_block = olympiad.blocks|sort(attribute='order')|first %}
+            <a href="{{ url_for('participant.solve_block', participation_id=participation.id, block_id=first_block.id) }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-play-fill"></i> Начать решение заданий
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

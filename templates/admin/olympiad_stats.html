@@ -1,0 +1,151 @@
+<!-- templates/admin/olympiad_stats.html -->
+{% extends "base.html" %}
+
+{% block title %}Статистика олимпиады{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.manage_olympiad', olympiad_id=olympiad.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к олимпиаде
+    </a>
+</div>
+
+<h2 class="mb-4">Статистика олимпиады "{{ olympiad.title }}"</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary shadow">
+            <div class="card-body text-center">
+                <h5 class="card-title">Всего участников</h5>
+                <h2 class="display-4">{{ stats.total_participants }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body text-center">
+                <h5 class="card-title">Завершили</h5>
+                <h2 class="display-4">{{ stats.completed }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning shadow">
+            <div class="card-body text-center">
+                <h5 class="card-title">В процессе</h5>
+                <h2 class="display-4">{{ stats.in_progress }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger shadow">
+            <div class="card-body text-center">
+                <h5 class="card-title">Дисквалифицированы</h5>
+                <h2 class="display-4">{{ stats.disqualified }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow">
+    <div class="card-header">
+        <h3 class="mb-0">Статистика по блокам</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Блок</th>
+                        <th>Попыток</th>
+                        <th>Средний балл</th>
+                        <th>Прошли порог</th>
+                        <th>Не прошли порог</th>
+                        <th>% успешности</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for block_stat in stats.blocks_stats %}
+                        <tr>
+                            <td>{{ block_stat.block_title }}</td>
+                            <td>{{ block_stat.attempts }}</td>
+                            <td>{{ block_stat.avg_score|round(2) }}</td>
+                            <td>{{ block_stat.passed_threshold }}</td>
+                            <td>{{ block_stat.failed_threshold }}</td>
+                            <td>
+                                {% if block_stat.attempts > 0 %}
+                                    {{ (block_stat.passed_threshold / block_stat.attempts * 100)|round(1) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">Результаты участников</h3>
+        <a href="{{ url_for('admin.export_results', olympiad_id=olympiad.id) }}" class="btn btn-success">
+            <i class="bi bi-download"></i> Экспорт в CSV
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Email</th>
+                        <th>Группа</th>
+                        <th>Статус</th>
+                        <th>Баллы</th>
+                        <th>Время (мин)</th>
+                        <th>Начало</th>
+                        <th>Окончание</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in participations %}
+                        {% set user = p.user %}
+                        <tr>
+                            <td>{{ user.full_name or "Не указано" }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.group or "Не указано" }}</td>
+                            <td>
+                                {% if p.is_disqualified %}
+                                    <span class="badge bg-danger">Дисквалификация</span>
+                                {% elif p.is_completed %}
+                                    <span class="badge bg-success">Завершено</span>
+                                {% else %}
+                                    <span class="badge bg-warning">В процессе</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ p.total_score }}</td>
+                            <td>
+                                {% if p.completion_time %}
+                                    {{ (p.completion_time / 60)|round(1) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ p.start_time.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>
+                                {% if p.end_time %}
+                                    {{ p.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

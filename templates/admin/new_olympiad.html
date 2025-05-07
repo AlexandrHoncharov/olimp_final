@@ -1,0 +1,96 @@
+<!-- templates/admin/new_olympiad.html -->
+{% extends "base.html" %}
+
+{% block title %}Создание олимпиады{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку олимпиад
+    </a>
+</div>
+
+<h2 class="mb-4">Создание новой олимпиады</h2>
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {{ form.title(class="form-control") }}
+                {% if form.title.errors %}
+                    <div class="text-danger">
+                        {% for error in form.title.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-control", rows=4) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.welcome_pdf.label(class="form-label") }}
+                {{ form.welcome_pdf(class="form-control") }}
+                <small class="text-muted">Выберите PDF файл с приветственным письмом для участников.</small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.start_time.label(class="form-label") }}
+                    {{ form.start_time(class="form-control flatpickr-datetime") }}
+                    {% if form.start_time.errors %}
+                        <div class="text-danger">
+                            {% for error in form.start_time.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    {{ form.end_time.label(class="form-label") }}
+                    {{ form.end_time(class="form-control flatpickr-datetime") }}
+                    {% if form.end_time.errors %}
+                        <div class="text-danger">
+                            {% for error in form.end_time.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">Создать олимпиаду</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация выбора даты и времени
+        flatpickr(".flatpickr-datetime", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "ru",
+            minuteIncrement: 5
+        });
+    });
+</script>
+{% endblock %}

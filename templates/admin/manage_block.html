@@ -1,0 +1,117 @@
+<!-- templates/admin/manage_block.html -->
+{% extends "base.html" %}
+
+{% block title %}Управление блоком{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.manage_olympiad', olympiad_id=olympiad.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к олимпиаде
+    </a>
+</div>
+
+<div class="card mb-4 shadow">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Блок {{ block.order }}: {{ block.title }}</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <p>{{ block.description }}</p>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-2"><strong>Общее количество баллов:</strong> {{ block.total_points }}</div>
+                <div class="mb-2"><strong>Пороговый процент:</strong> {{ block.threshold_percentage }}%</div>
+                <div class="mb-2"><strong>Количество вопросов:</strong> {{ questions|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+        <a href="#" class="btn btn-outline-primary">
+            <i class="bi bi-pencil"></i> Редактировать блок
+        </a>
+        <a href="{{ url_for('admin.new_question', block_id=block.id) }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Добавить вопрос
+        </a>
+    </div>
+</div>
+
+<h3 class="mb-3">Вопросы в блоке</h3>
+
+{% if questions %}
+    {% for question in questions %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Вопрос {{ loop.index }}</h5>
+                <span class="badge bg-primary">{{ question.points }} баллов</span>
+            </div>
+            <div class="card-body">
+                <p><strong>{{ question.question_text }}</strong></p>
+
+                <div class="mb-2">
+                    <span class="badge bg-info">
+                        {% if question.question_type == 'test' %}
+                            Тестовый вопрос
+                        {% elif question.question_type == 'matching' %}
+                            Задание на соответствие
+                        {% endif %}
+                    </span>
+                </div>
+
+                {% if question.question_type == 'test' %}
+                    <div class="mb-3">
+                        <strong>Варианты ответов:</strong>
+                        <ul class="list-group mt-2">
+                            {% for option in question.options %}
+                                <li class="list-group-item {% if option.is_correct %}list-group-item-success{% endif %}">
+                                    {{ option.text }}
+                                    {% if option.is_correct %}
+                                        <span class="badge bg-success float-end">Правильный</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% elif question.question_type == 'matching' %}
+                    <div class="mb-3">
+                        <strong>Пары для соответствия:</strong>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Левая часть</th>
+                                        <th>Правая часть</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set match_ids = question.options|map(attribute='match_id')|unique|list %}
+                                    {% for match_id in match_ids %}
+                                        {% set left_option = question.options|selectattr('match_id', 'equalto', match_id)|first %}
+                                        {% set right_option = question.options|selectattr('match_id', 'equalto', match_id)|last %}
+                                        <tr>
+                                            <td>{{ left_option.text }}</td>
+                                            <td>{{ right_option.text }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer d-flex justify-content-end">
+                <a href="#" class="btn btn-sm btn-outline-primary me-2">
+                    <i class="bi bi-pencil"></i> Редактировать
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i> Удалить
+                </a>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> В этом блоке пока нет вопросов. Нажмите "Добавить вопрос", чтобы создать первый вопрос.
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,129 @@
+<!-- templates/participant/olympiad_results.html -->
+{% extends "base.html" %}
+
+{% block title %}Результаты олимпиады{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Результаты олимпиады "{{ olympiad.title }}"</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Ваш результат:</h4>
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h2 class="display-4 text-primary">{{ participation.total_score }} баллов</h2>
+                        {% if participation.is_disqualified %}
+                            <div class="alert alert-danger mt-3">
+                                <i class="bi bi-exclamation-triangle"></i> Вы были дисквалифицированы: {{ participation.disqualification_reason }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mt-3">
+                            <div><strong>Статус:</strong>
+                                {% if participation.is_disqualified %}
+                                    <span class="badge bg-danger">Дисквалификация</span>
+                                {% elif participation.is_completed %}
+                                    <span class="badge bg-success">Завершено</span>
+                                {% else %}
+                                    <span class="badge bg-warning">В процессе</span>
+                                {% endif %}
+                            </div>
+                            <div><strong>Начало:</strong> {{ participation.start_time.strftime('%d.%m.%Y %H:%M') }}</div>
+                            {% if participation.end_time %}
+                                <div><strong>Окончание:</strong> {{ participation.end_time.strftime('%d.%m.%Y %H:%M') }}</div>
+                                <div><strong>Затраченное время:</strong>
+                                    {% if participation.completion_time %}
+                                        {{ (participation.completion_time / 60)|round(1) }} минут
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>Результаты по блокам:</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Блок</th>
+                                <th>Баллы</th>
+                                <th>Процент</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for block_result in block_results %}
+                                {% set block = blocks[block_result.block_id] %}
+                                <tr>
+                                    <td>{{ block.title }}</td>
+                                    <td>{{ block_result.score }}</td>
+                                    <td>{{ block_result.percentage|round(1) }}%</td>
+                                    <td>
+                                        {% if block_result.passed_threshold %}
+                                            <span class="badge bg-success">Пройден</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Не пройден</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if leaderboard_data %}
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h3 class="mb-0">Итоговый рейтинг</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Место</th>
+                            <th>Участник</th>
+                            <th>Баллы</th>
+                            <th>Время (мин)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in leaderboard_data %}
+                            <tr {% if entry.is_current_user %}class="table-primary"{% endif %}>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    {{ entry.user_name }}
+                                    {% if entry.is_current_user %}<strong> (Вы)</strong>{% endif %}
+                                </td>
+                                <td>{{ entry.total_score }}</td>
+                                <td>{{ (entry.completion_time / 60)|round(1) if entry.completion_time else "-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Итоговый рейтинг будет доступен после завершения олимпиады.
+    </div>
+{% endif %}
+
+<div class="text-center mb-4">
+    <a href="{{ url_for('participant.dashboard') }}" class="btn btn-primary">
+        <i class="bi bi-house"></i> Вернуться на главную
+    </a>
+</div>
+{% endblock %}

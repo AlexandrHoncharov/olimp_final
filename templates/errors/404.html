@@ -1,0 +1,15 @@
+<!-- templates/errors/404.html -->
+{% extends "base.html" %}
+
+{% block title %}Страница не найдена{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <h1 class="display-1 fw-bold text-danger">404</h1>
+        <h2 class="mb-4">Страница не найдена</h2>
+        <p class="mb-4">Запрашиваемая вами страница не существует или была удалена.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Вернуться на главную</a>
+    </div>
+</div>
+{% endblock %}
