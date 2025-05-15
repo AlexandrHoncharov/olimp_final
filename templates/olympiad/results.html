@@ -1,0 +1,101 @@
+<!-- olympiad/results.html -->
+{% extends "base.html" %}
+
+{% block title %}Результаты - {{ olympiad.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('profile') }}" class="text-primary hover:underline">&larr; Вернуться к профилю</a>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h1 class="text-2xl font-bold mb-4">Результаты олимпиады: {{ olympiad.title }}</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-600 text-sm">Ваш результат</div>
+                <div class="text-3xl font-bold text-primary">{{ participation.total_points }} баллов</div>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-600 text-sm">Ваше место в рейтинге</div>
+                <div class="text-3xl font-bold">{{ user_rank }} из {{ total_participants }}</div>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-600 text-sm">Время завершения</div>
+                <div class="text-xl font-bold">{{ participation.finish_time.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-semibold mb-3">Детали по блокам</h2>
+
+        <div class="space-y-4">
+            {% for stat in block_stats %}
+                <div class="p-4 border rounded-lg">
+                    <h3 class="font-medium mb-2">Блок {{ loop.index }}: {{ stat.block.title }}</h3>
+
+                    {% if stat.attempted %}
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <div class="text-gray-600">Баллы</div>
+                                <div class="font-medium">{{ stat.user_points }} / {{ stat.total_possible }}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-600">Процент</div>
+                                <div class="font-medium">{{ "%.1f"|format(stat.percentage) }}%</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-600">Порог прохождения</div>
+                                <div class="font-medium">{{ stat.block.threshold_percentage }}%</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-600">Статус</div>
+                                <div class="font-medium {% if stat.percentage >= stat.block.threshold_percentage %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if stat.percentage >= stat.block.threshold_percentage %}
+                                        Пройден
+                                    {% else %}
+                                        Не пройден
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-600 italic">Вы не дошли до этого блока</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Топ участников</h2>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-4 py-2 text-left">Место</th>
+                        <th class="px-4 py-2 text-left">Участник</th>
+                        <th class="px-4
+                        <th class="px-4 py-2 text-left">Баллы</th>
+                        <th class="px-4 py-2 text-left">Время завершения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in rankings[:10] %}
+                        {% set user = p.user %}
+                        <tr class="{% if p.id == participation.id %}bg-yellow-50{% endif %} {% if loop.index % 2 == 0 %}bg-gray-50{% endif %}">
+                            <td class="px-4 py-3 border-b">{{ loop.index }}</td>
+                            <td class="px-4 py-3 border-b font-medium">{{ user.full_name }}</td>
+                            <td class="px-4 py-3 border-b">{{ p.total_points }}</td>
+                            <td class="px-4 py-3 border-b text-sm">{{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

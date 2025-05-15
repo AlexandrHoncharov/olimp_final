@@ -1,113 +1,126 @@
-<!-- templates/base.html -->
+
+<!-- base.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Система олимпиад{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#770002',
+                    }
+                },
+                fontFamily: {
+                    'mono': ['JetBrains Mono', 'monospace'],
+                }
+            }
+        }
+    </script>
+    <!-- JetBrains Mono шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js для модальных окон и интерактивности -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <!-- Axios для асинхронных запросов -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
-        .olympiad-card {
-            transition: transform 0.3s;
-        }
-        .olympiad-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .fullscreen-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            z-index: 9999;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .timer {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 10000;
+        body {
+            font-family: 'JetBrains Mono', monospace;
         }
     </style>
-    {% block styles %}{% endblock %}
+    {% block head %}{% endblock %}
 </head>
-<body>
-    {% if not session.get('fullscreen_required') %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('participant.dashboard') if current_user.is_authenticated else url_for('auth.login') }}">Система олимпиад</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('participant.dashboard') }}">Главная</a>
-                        </li>
-                        {% if current_user.is_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Панель администратора</a>
-                        </li>
-                        {% endif %}
+<body class="min-h-screen bg-gray-100 font-mono">
+    <!-- Навигационная панель -->
+    <nav class="bg-primary text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{{ url_for('index') }}" class="text-xl font-bold">Система олимпиад</a>
+            <div class="flex items-center space-x-4">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_olympiads') }}" class="hover:underline">Администрирование</a>
                     {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                {{ current_user.full_name or current_user.email }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#">Мой профиль</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Выйти</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.login') }}">Войти</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.register') }}">Регистрация</a>
-                        </li>
-                    {% endif %}
-                </ul>
+                    <a href="{{ url_for('profile') }}" class="hover:underline">Профиль</a>
+                    <a href="{{ url_for('logout') }}" class="px-3 py-1 bg-white text-primary rounded hover:bg-gray-200 transition">Выйти</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="hover:underline">Вход</a>
+                    <a href="{{ url_for('register') }}" class="px-3 py-1 bg-white text-primary rounded hover:bg-gray-200 transition">Регистрация</a>
+                {% endif %}
             </div>
         </div>
     </nav>
-    {% endif %}
 
-    <div class="container my-4{% if session.get('fullscreen_required') %} fullscreen-container{% endif %}">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    <!-- Сообщения-уведомления -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto px-4 mt-4">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}" role="alert">
+                    <div class="p-4 {% if category == 'error' %}bg-red-100 text-red-700 border-red-400{% else %}bg-green-100 text-green-700 border-green-400{% endif %} border rounded mb-2">
                         {{ message }}
                     </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
+    <!-- Основное содержимое -->
+    <main class="container mx-auto px-4 py-6">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Модальные окна -->
+    <div id="modal-container"></div>
+
+    <!-- Общие скрипты -->
     <script>
-        // Базовый JavaScript для всех страниц
-        document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация всплывающих подсказок
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-        });
+        // Функция для отображения модальных окон
+        function showModal(title, content, onConfirm = null) {
+            const modalContainer = document.getElementById('modal-container');
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center" x-data="{open: true}" x-show="open">
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4" @click.outside="open = false">
+                        <div class="border-b px-6 py-3 flex justify-between items-center">
+                            <h3 class="text-lg font-medium">${title}</h3>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-500">&times;</button>
+                        </div>
+                        <div class="p-6">
+                            ${content}
+                        </div>
+                        <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+                            <button @click="open = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
+                            ${onConfirm ? `<button id="modal-confirm" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Подтвердить</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modalContainer.innerHTML = modalHTML;
+
+            if (onConfirm) {
+                document.getElementById('modal-confirm').addEventListener('click', () => {
+                    onConfirm();
+                    modalContainer.innerHTML = '';
+                });
+            }
+        }
+
+        // Функция для отображения сообщений
+        function showMessage(message, type = 'success') {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = `fixed top-4 right-4 p-4 rounded shadow-md z-50 ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            messageContainer.textContent = message;
+            document.body.appendChild(messageContainer);
+
+            setTimeout(() => {
+                messageContainer.remove();
+            }, 3000);
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>

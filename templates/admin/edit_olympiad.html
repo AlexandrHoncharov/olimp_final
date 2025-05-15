@@ -1,102 +1,303 @@
-<!-- templates/admin/edit_olympiad.html -->
 {% extends "base.html" %}
 
-{% block title %}Редактирование олимпиады{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-{% endblock %}
+{% block title %}Редактирование олимпиады - {{ olympiad.title }}{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Назад к списку олимпиад
-    </a>
-</div>
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('admin_olympiads') }}" class="text-primary hover:underline">&larr; Вернуться к списку олимпиад</a>
+    </div>
 
-<h2 class="mb-4">Редактирование олимпиады "{{ olympiad.title }}"</h2>
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h1 class="text-2xl font-bold mb-6">Редактирование олимпиады: {{ olympiad.title }}</h1>
 
-<div class="card shadow">
-    <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
-            {{ form.hidden_tag() }}
-
-            <div class="mb-3">
-                {{ form.title.label(class="form-label") }}
-                {{ form.title(class="form-control") }}
-                {% if form.title.errors %}
-                    <div class="text-danger">
-                        {% for error in form.title.errors %}
-                            <small>{{ error }}</small>
-                        {% endfor %}
+        <form id="edit-olympiad-form" enctype="multipart/form-data">
+            <div class="space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Название олимпиады</label>
+                    <input type="text" id="title" name="title" value="{{ olympiad.title }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
+                    <textarea id="description" name="description" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">{{ olympiad.description }}</textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="start_time" class="block text-sm font-medium text-gray-700 mb-1">Время начала</label>
+                        <input type="datetime-local" id="start_time" name="start_time" value="{{ olympiad.start_time.strftime('%Y-%m-%dT%H:%M') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
                     </div>
-                {% endif %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.description.label(class="form-label") }}
-                {{ form.description(class="form-control", rows=4) }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.welcome_pdf.label(class="form-label") }}
-                {% if olympiad.welcome_pdf %}
-                    <div class="mb-2">
-                        <span class="badge bg-success">PDF загружен</span>
-                        <a href="{{ url_for('static', filename=olympiad.welcome_pdf) }}" target="_blank">Просмотреть текущий PDF</a>
+                    <div>
+                        <label for="end_time" class="block text-sm font-medium text-gray-700 mb-1">Время окончания</label>
+                        <input type="datetime-local" id="end_time" name="end_time" value="{{ olympiad.end_time.strftime('%Y-%m-%dT%H:%M') }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
                     </div>
-                {% endif %}
-                {{ form.welcome_pdf(class="form-control") }}
-                <small class="text-muted">Оставьте пустым, чтобы сохранить текущий файл.</small>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    {{ form.start_time.label(class="form-label") }}
-                    {{ form.start_time(class="form-control flatpickr-datetime") }}
-                    {% if form.start_time.errors %}
-                        <div class="text-danger">
-                            {% for error in form.start_time.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
+                </div>
+                <div>
+                    <label for="welcome_pdf" class="block text-sm font-medium text-gray-700 mb-1">Приветственный PDF</label>
+                    {% if olympiad.welcome_pdf %}
+                        <div class="mb-2 flex items-center">
+                            <span class="text-sm text-gray-600 mr-2">Текущий файл: {{ olympiad.welcome_pdf }}</span>
+                            <a href="{{ url_for('static', filename='pdf_files/' + olympiad.welcome_pdf) }}" target="_blank" class="text-primary hover:underline text-sm">Просмотреть</a>
                         </div>
                     {% endif %}
+                    <input type="file" id="welcome_pdf" name="welcome_pdf" accept=".pdf" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                    <p class="text-sm text-gray-500 mt-1">Оставьте пустым, чтобы сохранить текущий файл</p>
                 </div>
-
-                <div class="col-md-6 mb-3">
-                    {{ form.end_time.label(class="form-label") }}
-                    {{ form.end_time(class="form-control flatpickr-datetime") }}
-                    {% if form.end_time.errors %}
-                        <div class="text-danger">
-                            {% for error in form.end_time.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                <div class="flex justify-end">
+                    <button type="button" onclick="updateOlympiad()" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Сохранить изменения</button>
                 </div>
-            </div>
-
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-lg">Сохранить изменения</button>
             </div>
         </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Блоки олимпиады</h2>
+            <button
+                onclick="showAddBlockModal()"
+                class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+            >
+                Добавить блок
+            </button>
+        </div>
+
+        {% if blocks %}
+            <div class="space-y-4">
+                {% for block in blocks %}
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 p-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">{{ block.title }}</h3>
+                                <div class="text-sm text-gray-600">Максимум баллов: {{ block.max_points }}, Порог: {{ block.threshold_percentage }}%</div>
+                            </div>
+                            <div class="flex items-center">
+                                <a href="{{ url_for('edit_block', block_id=block.id) }}" class="px-3 py-1 bg-primary text-white rounded hover:bg-opacity-90 transition">Редактировать</a>
+                            </div>
+                        </div>
+
+                        {% set questions = block.questions %}
+                        {% if questions %}
+                            <div class="p-4">
+                                <div class="text-sm font-medium mb-2">Вопросы ({{ questions|length }})</div>
+
+                                <ul class="space-y-2">
+                                    {% for question in questions %}
+                                        <li class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                            <div>
+                                                <span class="font-medium">{{ loop.index }}. {{ question.text[:50] }}{% if question.text|length > 50 %}...{% endif %}</span>
+                                                <span class="text-sm text-gray-600 ml-2">({{ question.question_type }})</span>
+                                            </div>
+                                            <div class="text-sm">{{ question.points }} баллов</div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <div class="p-4 text-center text-gray-500 italic">
+                                В этом блоке пока нет вопросов
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center p-8 text-gray-500">
+                <p>У этой олимпиады пока нет блоков</p>
+                <button
+                    onclick="showAddBlockModal()"
+                    class="mt-3 px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                >
+                    Добавить блок
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if olympiad.participations %}
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Участники ({{ olympiad.participations|length }})</h2>
+
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-2 text-left">Участник</th>
+                            <th class="px-4 py-2 text-left">Статус</th>
+                            <th class="px-4 py-2 text-left">Начало</th>
+                            <th class="px-4 py-2 text-left">Завершение</th>
+                            <th class="px-4 py-2 text-left">Баллы</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in olympiad.participations %}
+                            {% set user = p.user %}
+                            <tr class="{% if loop.index % 2 == 0 %}bg-gray-50{% endif %}">
+                                <td class="px-4 py-3 border-b">{{ user.full_name }}</td>
+                                <td class="px-4 py-3 border-b">
+                                    {% if p.status == 'completed' %}
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Завершена</span>
+                                    {% elif p.status == 'in_progress' %}
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">В процессе</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">Зарегистрирован</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 border-b text-sm">
+                                    {% if p.start_time %}
+                                        {{ p.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 border-b text-sm">
+                                    {% if p.finish_time %}
+                                        {{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 border-b">{{ p.total_points }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if olympiad.participations|selectattr('status', 'equalto', 'completed')|list|length > 0 %}
+                <div class="mt-4 flex justify-end">
+                    <a
+                        href="{{ url_for('admin_rankings', olympiad_id=olympiad.id) }}"
+                        class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                    >
+                        Просмотреть результаты
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Модальное окно для добавления блока -->
+    <div id="add-block-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="border-b px-6 py-3 flex justify-between items-center">
+                <h3 class="text-lg font-medium">Добавление нового блока</h3>
+                <button onclick="closeAddBlockModal()" class="text-gray-400 hover:text-gray-500">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="add-block-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="block_title" class="block text-sm font-medium text-gray-700 mb-1">Название блока</label>
+                            <input type="text" id="block_title" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label for="block_description" class="block text-sm font-medium text-gray-700 mb-1">Описание (необязательно)</label>
+                            <textarea id="block_description" name="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                        </div>
+                        <div>
+                            <label for="max_points" class="block text-sm font-medium text-gray-700 mb-1">Максимальное количество баллов за блок</label>
+                            <input type="number" id="max_points" name="max_points" min="1" step="0.1" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label for="threshold_percentage" class="block text-sm font-medium text-gray-700 mb-1">Порог прохождения (% правильных ответов)</label>
+                            <input type="number" id="threshold_percentage" name="threshold_percentage" min="1" max="100" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                            <p class="text-sm text-gray-500 mt-1">Процент правильных ответов, необходимый для перехода к следующему блоку</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+                <button onclick="closeAddBlockModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
+                <button onclick="submitAddBlockForm()" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Добавить</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Инициализация выбора даты и времени
-        flatpickr(".flatpickr-datetime", {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-            time_24hr: true,
-            locale: "ru",
-            minuteIncrement: 5
-        });
+    function updateOlympiad() {
+        const form = document.getElementById('edit-olympiad-form');
+        const formData = new FormData(form);
+
+        axios.post('{{ url_for("update_olympiad", olympiad_id=olympiad.id) }}', formData)
+            .then(function(response) {
+                if (response.data.success) {
+                    showMessage('Олимпиада успешно обновлена!');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showMessage(response.data.message || 'Ошибка при обновлении олимпиады', 'error');
+                }
+            })
+            .catch(function(error) {
+                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+            });
+    }
+
+    function showAddBlockModal() {
+        const modal = document.getElementById('add-block-modal');
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeAddBlockModal() {
+        const modal = document.getElementById('add-block-modal');
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function submitAddBlockForm() {
+        const form = document.getElementById('add-block-form');
+        const formData = new FormData(form);
+
+        // Отображаем индикатор загрузки
+        const submitBtn = event.target;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Добавление...';
+        submitBtn.disabled = true;
+
+        axios.post('{{ url_for("add_block", olympiad_id=olympiad.id) }}', formData)
+            .then(function(response) {
+                if (response.data.success) {
+                    showMessage('Блок успешно добавлен!');
+                    setTimeout(() => {
+                        // Правильное формирование URL для редиректа
+                        window.location.href = '/admin/block/' + response.data.block_id + '/edit';
+                    }, 1000);
+                } else {
+                    showMessage(response.data.message || 'Ошибка при добавлении блока', 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(function(error) {
+                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+
+    // Закрытие модального окна по клику вне его области
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('add-block-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            const modalContent = modal.querySelector('.bg-white');
+            if (event.target === modal && !modalContent.contains(event.target)) {
+                closeAddBlockModal();
+            }
+        }
+    });
+
+    // Закрытие модального окна по нажатию Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('add-block-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeAddBlockModal();
+            }
+        }
     });
 </script>
 {% endblock %}

@@ -1,0 +1,91 @@
+<!-- profile.html -->
+{% extends "base.html" %}
+
+{% block title %}Профиль - Система олимпиад{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">Профиль участника</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 class="text-xl font-semibold mb-4">Информация о пользователе</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600">ФИО:</p>
+                <p class="font-medium">{{ current_user.full_name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Email:</p>
+                <p class="font-medium">{{ current_user.email }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Учебная группа:</p>
+                <p class="font-medium">{{ current_user.study_group }}</p>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-2xl font-semibold mb-4">Мои олимпиады</h2>
+
+    {% if participations %}
+        <div class="space-y-4">
+            {% for participation in participations %}
+                {% set olympiad = participation.olympiad %}
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">{{ olympiad.title }}</h3>
+                            <p class="text-gray-600 mb-3">{{ olympiad.description[:100] }}{% if olympiad.description|length > 100 %}...{% endif %}</p>
+
+                            <div class="flex flex-wrap gap-2 text-sm mb-3">
+                                <div class="text-gray-600">
+                                    <span class="font-medium">Начало:</span> {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                </div>
+                                <div class="text-gray-600">
+                                    <span class="font-medium">Окончание:</span> {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center">
+                            {% if participation.status == 'completed' %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Завершена</span>
+                            {% elif participation.status == 'in_progress' %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">В процессе</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">Зарегистрирован</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if participation.status == 'completed' %}
+                        <div class="mt-3 p-3 bg-gray-50 rounded">
+                            <p class="text-gray-800"><span class="font-medium">Итоговый балл:</span> {{ participation.total_points }}</p>
+                            {% if participation.finish_time %}
+                                <p class="text-gray-600 text-sm">Завершена {{ participation.finish_time.strftime('%d.%m.%Y %H:%M') }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="{{ url_for('olympiad_results', olympiad_id=olympiad.id) }}" class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Просмотреть результаты</a>
+                        </div>
+                    {% elif participation.status == 'in_progress' %}
+                        <div class="mt-3">
+                            <a href="{{ url_for('take_olympiad', olympiad_id=olympiad.id) }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-opacity-90 transition">Продолжить</a>
+                        </div>
+                    {% else %}
+                        <div class="mt-3">
+                            <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Подробнее</a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white p-8 rounded-lg shadow-md text-center">
+            <p class="text-xl text-gray-600">Вы еще не участвовали в олимпиадах</p>
+            <a href="{{ url_for('index') }}" class="inline-block mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Найти олимпиады</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+
+{% block title %}Прохождение олимпиады - {{ olympiad.title }}{% endblock %}
+
+{% block head %}
+<style>
+    .draggable {
+        cursor: grab;
+        user-select: none;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background-color: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+    }
+
+    .draggable:hover {
+        background-color: #e5e7eb;
+    }
+
+    .draggable.dragging {
+        opacity: 0.5;
+        background-color: #dbeafe;
+        cursor: grabbing;
+    }
+
+    .matched-pair {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .matched-pair .left-item {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 12px;
+        background-color: #f3f4f6;
+        border-radius: 0.375rem 0 0 0.375rem;
+        border: 1px solid #e5e7eb;
+        border-right: none;
+    }
+
+    .matched-pair .right-item {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        border-radius: 0 0.375rem 0.375rem 0;
+        background-color: #f8fafc;
+        border: 1px solid #e5e7eb;
+    }
+
+    .matched-pair .connector {
+        padding: 0 8px;
+        color: #64748b;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .rank-container {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .rank-value {
+        font-size: 48px;
+        font-weight: bold;
+        color: #770002;
+    }
+
+    .rank-label {
+        margin-top: 8px;
+        font-size: 16px;
+        color: #64748b;
+    }
+
+    .rank-progress {
+        margin-top: 16px;
+        height: 8px;
+        background-color: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .rank-progress-bar {
+        height: 100%;
+        background-color: #770002;
+        transition: width 0.5s ease;
+    }
+
+    /* Стили для перестановки ответов */
+    .reorder-container {
+        margin-top: 12px;
+    }
+
+    .reorder-item {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h1 class="text-2xl font-bold mb-4">{{ olympiad.title }}</h1>
+        <h2 class="text-xl font-semibold mb-2">Блок: {{ block.title }}</h2>
+
+        {% if block.description %}
+            <p class="mb-4 text-gray-700">{{ block.description }}</p>
+        {% endif %}
+
+        <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-600">
+                Начало: {{ participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else 'Н/Д' }}
+            </div>
+            <div>
+                <span class="font-medium">Прогресс:</span>
+                <span id="answer-count">{{ user_answers|length }}</span> / <span>{{ questions|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-6 mb-8">
+        {% for question in questions %}
+            <div
+                id="question-{{ question.id }}"
+                class="bg-white p-6 rounded-lg shadow-md transition"
+                data-question-id="{{ question.id }}"
+                data-question-type="{{ question.question_type }}"
+            >
+                <h3 class="text-lg font-semibold mb-3">Вопрос {{ loop.index }}: {{ question.text }}</h3>
+
+                <form id="question-form-{{ question.id }}" class="mb-4">
+                    {% if question.question_type == 'test' %}
+                        <div class="space-y-2 mb-4">
+                            {% if question.options_list %}
+                                {% for option in question.options_list %}
+                                    <label class="flex items-start space-x-3 p-2 rounded hover:bg-gray-50">
+                                        <input
+                                            type="{{ 'checkbox' if question.correct_answers_list|length > 1 else 'radio' }}"
+                                            name="question-{{ question.id }}"
+                                            value="{{ option }}"
+                                            class="mt-1 answer-input"
+                                            {% if question.id in user_answers and option in user_answers[question.id] %}checked{% endif %}
+                                        >
+                                        <span>{{ option }}</span>
+                                    </label>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-red-500">Ошибка: не удалось загрузить варианты ответов</p>
+                            {% endif %}
+                        </div>
+                    {% elif question.question_type == 'matching' %}
+                        <div class="matching-container" id="matching-container-{{ question.id }}">
+                            {% if question.matches_list %}
+                                <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+
+                                <div class="reorder-container" id="matches-list-{{ question.id }}">
+                                    {% for match in question.matches_list %}
+                                        <div class="matched-pair" id="pair-{{ loop.index }}-{{ question.id }}">
+                                            <div class="left-item" data-left="{{ match.left }}">{{ match.left }}</div>
+                                            <div class="connector">➡️</div>
+                                            <div class="right-item" id="right-container-{{ loop.index }}-{{ question.id }}">
+                                                <!-- Сюда будут помещены перемешанные ответы -->
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-red-500">Ошибка: не удалось загрузить пары соответствия</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Кнопка для отправки ответа -->
+                    <button
+                        type="button"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition answer-button mt-4"
+                        data-question-id="{{ question.id }}"
+                    >
+                        Ответить
+                    </button>
+                </form>
+
+                <div class="flex justify-between items-center">
+                    <div class="text-sm">
+                        <span class="font-medium">Баллы:</span> {{ question.points }}
+                    </div>
+                    <div id="answer-status-{{ question.id }}" class="answer-status" style="display: none;">
+                        <span class="text-green-600 text-sm">✓ Ответ сохранен</span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="font-medium">Ответов:</span>
+                <span id="answers-count">{{ user_answers|length }}</span> / <span>{{ questions|length }}</span>
+            </div>
+            <button
+                id="submit-block-button"
+                class="px-6 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                {% if user_answers|length < questions|length %}disabled{% endif %}
+                {% if user_answers|length < questions|length %}style="opacity: 0.5; cursor: not-allowed;"{% endif %}
+            >
+                Завершить блок
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно с рейтингом -->
+    <div id="ranking-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 animate-fadeIn">
+            <div class="border-b px-6 py-3 flex justify-between items-center bg-primary text-white rounded-t-lg">
+                <h3 class="text-lg font-medium">Ваш текущий рейтинг</h3>
+                <button onclick="closeRankingModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="rank-container">
+                    <div class="rank-value" id="rank-position">0</div>
+                    <div class="rank-label">Ваше место</div>
+
+                    <div class="flex justify-between text-sm text-gray-600 mt-4">
+                        <span>0%</span>
+                        <span id="rank-percentage">0%</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="rank-progress">
+                        <div class="rank-progress-bar" id="rank-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="font-medium mb-2">Баллы за текущий блок:</h4>
+                    <div class="flex justify-between text-lg">
+                        <span>Набрано:</span>
+                        <span id="block-points">0</span>
+                    </div>
+                    <div class="flex justify-between text-lg">
+                        <span>Максимально возможно:</span>
+                        <span id="block-max-points">0</span>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="font-medium mb-2">Общий прогресс:</h4>
+                    <div class="flex justify-between text-lg">
+                        <span>Всего баллов:</span>
+                        <span id="total-points">0</span>
+                    </div>
+                    <div class="flex justify-between text-lg">
+                        <span>Участников:</span>
+                        <span id="total-participants">0</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <button
+                        id="continue-button"
+                        class="px-6 py-3 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                        onclick="continueAfterRanking()"
+                    >
+                        Продолжить олимпиаду
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация
+        initMatchingQuestions();
+        updateAnswerStatusDisplay();
+
+        // Обработчики для радио и чекбоксов
+        document.querySelectorAll('.answer-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionId = this.name.split('-')[1];
+                highlightAnswerButton(questionId);
+            });
+        });
+
+        // Обработчики для кнопок ответа
+        document.querySelectorAll('.answer-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const questionId = this.dataset.questionId;
+                submitAnswer(questionId);
+            });
+        });
+
+        // Обработчик для кнопки завершения блока
+        document.getElementById('submit-block-button').addEventListener('click', function() {
+            submitBlock();
+        });
+
+        // Функция инициализации заданий на сопоставление
+        function initMatchingQuestions() {
+            document.querySelectorAll('.matching-container').forEach(container => {
+                const questionId = container.closest('[data-question-id]').dataset.questionId;
+                const matchesDataElement = document.getElementById(`matching-data-${questionId}`);
+
+                if (matchesDataElement) {
+                    try {
+                        // Получаем данные о парах и перемешиваем правые элементы
+                        let matchesData = JSON.parse(matchesDataElement.value);
+                        let rightItems = matchesData.map(match => match.right);
+
+                        // Перемешиваем правые элементы
+                        shuffleArray(rightItems);
+
+                        // Заполняем правые контейнеры перемешанными элементами
+                        matchesData.forEach((match, index) => {
+                            const rightContainer = document.getElementById(`right-container-${index+1}-${questionId}`);
+                            if (rightContainer) {
+                                const dragItem = document.createElement('div');
+                                dragItem.className = 'draggable reorder-item';
+                                dragItem.draggable = true;
+                                dragItem.dataset.value = rightItems[index];
+                                dragItem.dataset.position = index + 1;
+                                dragItem.dataset.questionId = questionId;
+                                dragItem.innerText = rightItems[index];
+                                rightContainer.appendChild(dragItem);
+
+                                // Добавляем события для перетаскивания
+                                dragItem.addEventListener('dragstart', handleDragStart);
+                                dragItem.addEventListener('dragend', handleDragEnd);
+                            }
+                        });
+
+                        // Добавляем события для области сброса
+                        const rightContainers = document.querySelectorAll(`[id^="right-container-"][id$="-${questionId}"]`);
+                        rightContainers.forEach(container => {
+                            container.addEventListener('dragover', handleDragOver);
+                            container.addEventListener('dragleave', handleDragLeave);
+                            container.addEventListener('drop', handleDrop);
+                        });
+
+                    } catch (error) {
+                        console.error('Error initializing matching question:', error);
+                    }
+                }
+            });
+        }
+
+        // Функции для обработки drag and drop
+        function handleDragStart(e) {
+            this.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+
+            // Отмечаем кнопку ответа как требующую нажатия
+            const questionId = this.dataset.questionId;
+            highlightAnswerButton(questionId);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            const draggable = document.querySelector('.dragging');
+            if (!draggable) return;
+
+            // Получаем текущий элемент в этом контейнере
+            const currentItem = this.querySelector('.draggable');
+            if (currentItem) {
+                // Получаем контейнер перетаскиваемого элемента
+                const sourceContainer = draggable.parentElement;
+
+                // Обмениваем элементы местами
+                sourceContainer.appendChild(currentItem);
+                this.appendChild(draggable);
+            }
+        }
+
+        // Функция для отправки ответа
+        function submitAnswer(questionId) {
+            const questionContainer = document.getElementById(`question-${questionId}`);
+            const questionType = questionContainer.dataset.questionType;
+            let answerData;
+
+            if (questionType === 'matching') {
+                // Собираем данные для вопроса на сопоставление
+                answerData = [];
+                const pairs = questionContainer.querySelectorAll('.matched-pair');
+
+                pairs.forEach(pair => {
+                    const leftItem = pair.querySelector('.left-item').dataset.left;
+                    const rightItem = pair.querySelector('.draggable');
+
+                    if (rightItem) {
+                        answerData.push({
+                            left: leftItem,
+                            right: rightItem.dataset.value
+                        });
+                    }
+                });
+
+                // Проверяем, что все пары есть
+                if (answerData.length < pairs.length) {
+                    showMessage('Пожалуйста, завершите все сопоставления', 'error');
+                    return;
+                }
+            } else {
+                // Собираем данные для тестового вопроса
+                const inputs = questionContainer.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
+
+                if (inputs.length === 0) {
+                    showMessage('Пожалуйста, выберите вариант ответа', 'error');
+                    return;
+                }
+
+                answerData = Array.from(inputs).map(input => input.value);
+            }
+
+            // Отправляем ответ
+            const button = questionContainer.querySelector('.answer-button');
+            const originalText = button.textContent;
+            button.textContent = 'Сохранение...';
+            button.disabled = true;
+
+            axios.post(`{{ url_for("submit_answer", olympiad_id=olympiad.id) }}`, {
+                question_id: questionId,
+                answer_data: answerData
+            })
+            .then(response => {
+                if (response.data.success) {
+                    // Показываем статус сохранения
+                    const statusElement = document.getElementById(`answer-status-${questionId}`);
+                    statusElement.style.display = 'block';
+
+                    // Подсвечиваем вопрос
+                    questionContainer.classList.add('border-2', 'border-green-500');
+
+                    // Обновляем счетчик ответов
+                    updateAnswerCount();
+
+                    // Сбрасываем кнопку
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-primary');
+                    button.classList.add('bg-green-600');
+
+                    // Показываем сообщение
+                    showMessage('Ответ успешно сохранен!');
+                } else {
+                    showMessage(response.data.message || 'Ошибка при сохранении ответа', 'error');
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Выделение кнопки ответа при изменении выбора
+        function highlightAnswerButton(questionId) {
+            const button = document.querySelector(`.answer-button[data-question-id="${questionId}"]`);
+            if (button) {
+                button.classList.remove('bg-green-600');
+                button.classList.add('bg-primary');
+                button.classList.add('animate-pulse');
+                setTimeout(() => {
+                    button.classList.remove('animate-pulse');
+                }, 1000);
+            }
+        }
+
+        // Обновление отображения статуса ответов
+        function updateAnswerStatusDisplay() {
+            {% for q_id in user_answers.keys() %}
+                const statusElement{{ q_id }} = document.getElementById('answer-status-{{ q_id }}');
+                if (statusElement{{ q_id }}) {
+                    statusElement{{ q_id }}.style.display = 'block';
+                }
+
+                const questionElement{{ q_id }} = document.getElementById('question-{{ q_id }}');
+                if (questionElement{{ q_id }}) {
+                    questionElement{{ q_id }}.classList.add('border-2', 'border-green-500');
+                }
+
+                const answerButton{{ q_id }} = document.querySelector(`.answer-button[data-question-id="{{ q_id }}"]`);
+                if (answerButton{{ q_id }}) {
+                    answerButton{{ q_id }}.classList.remove('bg-primary');
+                    answerButton{{ q_id }}.classList.add('bg-green-600');
+                }
+            {% endfor %}
+        }
+
+        // Обновление счетчика ответов
+        function updateAnswerCount() {
+            const answeredQuestions = document.querySelectorAll('.answer-status[style="display: block;"]').length;
+            const countElement = document.getElementById('answers-count');
+
+            if (countElement) {
+                countElement.textContent = answeredQuestions;
+            }
+
+            // Обновляем состояние кнопки завершения блока
+            const submitButton = document.getElementById('submit-block-button');
+            if (answeredQuestions >= {{ questions|length }}) {
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+                submitButton.style.cursor = 'pointer';
+            } else {
+                submitButton.disabled = true;
+                submitButton.style.opacity = '0.5';
+                submitButton.style.cursor = 'not-allowed';
+            }
+        }
+
+        // Функция перемешивания массива
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    });
+
+    // Функция для завершения блока
+    function submitBlock() {
+        const totalQuestions = {{ questions|length }};
+        const answeredQuestions = document.querySelectorAll('.answer-status[style="display: block;"]').length;
+
+        if (answeredQuestions < totalQuestions) {
+            showMessage(`Пожалуйста, ответьте на все вопросы перед отправкой (${answeredQuestions}/${totalQuestions})`, 'error');
+            return;
+        }
+
+        const button = document.getElementById('submit-block-button');
+        const originalText = button.textContent;
+        button.textContent = 'Отправка...';
+        button.disabled = true;
+
+        // Обязательно задаем тип данных как JSON
+        axios.post('{{ url_for("submit_block", olympiad_id=olympiad.id) }}', {}, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log("Response from submit_block:", response.data);
+            if (response.data.success) {
+                // Получаем рейтинг и показываем модальное окно
+                fetchRanking(response.data.redirect);
+            } else {
+                showMessage(response.data.message || 'Ошибка при отправке блока', 'error');
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error("Error in submit_block:", error);
+            showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+            button.textContent = originalText;
+            button.disabled = false;
+        });
+    }
+
+// Замените эту функцию в блоке scripts файла take.html
+
+// Функция для отладки значений рейтинга
+function debugRanking(data) {
+    console.log("=== ОТЛАДКА РЕЙТИНГА ===");
+    console.log("Место в рейтинге:", data.rank_position);
+    console.log("Баллы за текущий блок:", data.block_points);
+    console.log("Максимум баллов за блок:", data.block_max_points);
+    console.log("Всего баллов:", data.total_points);
+    console.log("Всего участников:", data.total_participants);
+    console.log("Процент рейтинга:", data.rank_percentage);
+    console.log("========================");
+}
+
+// Функция для получения рейтинга
+function fetchRanking(redirectUrl) {
+    console.log("Fetching ranking, redirect URL:", redirectUrl);
+
+    // Добавляем временную метку для предотвращения кэширования
+    const timestamp = new Date().getTime();
+    axios.get(`{{ url_for("get_ranking", olympiad_id=olympiad.id) }}?t=${timestamp}`)
+        .then(response => {
+            console.log("Ranking response:", response.data);
+            if (response.data.success) {
+                // Отладка полученных значений
+                debugRanking(response.data);
+
+                // Заполняем данные в модальном окне
+                document.getElementById('rank-position').textContent = response.data.rank_position;
+
+                // Проверяем процент рейтинга для корректного отображения
+                let rankPercentage = response.data.rank_percentage;
+                if (isNaN(rankPercentage) || rankPercentage < 0) rankPercentage = 0;
+                if (rankPercentage > 100) rankPercentage = 100;
+
+                document.getElementById('rank-percentage').textContent = rankPercentage + '%';
+                document.getElementById('rank-progress-bar').style.width = rankPercentage + '%';
+
+                // Устанавливаем баллы за блок
+                document.getElementById('block-points').textContent = response.data.block_points;
+                document.getElementById('block-max-points').textContent = response.data.block_max_points;
+
+                // Устанавливаем общие баллы и участников
+                document.getElementById('total-points').textContent = response.data.total_points;
+                document.getElementById('total-participants').textContent = response.data.total_participants;
+
+                // Устанавливаем URL для редиректа
+                const continueButton = document.getElementById('continue-button');
+                continueButton.dataset.redirect = redirectUrl;
+
+                // Показываем модальное окно
+                showRankingModal();
+            } else {
+                console.error("Error in ranking response:", response.data.message);
+                // Если не удалось получить рейтинг, просто переходим дальше
+                window.location.href = redirectUrl;
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching ranking:", error);
+            // В случае ошибки просто переходим дальше
+            window.location.href = redirectUrl;
+        });
+}
+
+    // Показать модальное окно с рейтингом
+    function showRankingModal() {
+        console.log("Showing ranking modal");
+        const modal = document.getElementById('ranking-modal');
+        if (!modal) {
+            console.error("Modal element not found!");
+            return;
+        }
+        modal.style.display = 'flex';
+        document.body.classList.add('overflow-hidden');
+    }
+
+    // Закрыть модальное окно с рейтингом
+    function closeRankingModal() {
+        const modal = document.getElementById('ranking-modal');
+        if (!modal) return;
+        modal.style.display = 'none';
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Функция для продолжения после просмотра рейтинга
+    function continueAfterRanking() {
+        const redirectUrl = document.getElementById('continue-button').dataset.redirect;
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            closeRankingModal();
+        }
+    }
+
+    // Глобальные функции
+    window.closeRankingModal = closeRankingModal;
+    window.continueAfterRanking = continueAfterRanking;
+</script>
+{% endblock %}

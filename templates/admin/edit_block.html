@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование блока - {{ block.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('edit_olympiad', olympiad_id=block.olympiad_id) }}" class="text-primary hover:underline">&larr; Вернуться к редактированию олимпиады</a>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h1 class="text-2xl font-bold mb-4">Редактирование блока: {{ block.title }}</h1>
+
+        <div class="flex flex-wrap gap-4 mb-6 text-sm">
+            <div class="px-3 py-1 bg-gray-100 rounded-full">
+                <span class="font-medium">Максимум баллов:</span> {{ block.max_points }}
+            </div>
+            <div class="px-3 py-1 bg-gray-100 rounded-full">
+                <span class="font-medium">Порог прохождения:</span> {{ block.threshold_percentage }}%
+            </div>
+            <div class="px-3 py-1 bg-gray-100 rounded-full">
+                <span class="font-medium">Вопросов:</span> {{ questions|length }}
+            </div>
+        </div>
+
+        {% if block.description %}
+            <div class="mb-6">
+                <h2 class="text-lg font-medium mb-2">Описание блока:</h2>
+                <p class="text-gray-700">{{ block.description }}</p>
+            </div>
+        {% endif %}
+
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Список вопросов</h2>
+            <div>
+                <button
+                    id="add-test-button"
+                    onclick="showAddQuestionModal('test')"
+                    class="px-3 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition mr-2"
+                >
+                    Добавить тестовый вопрос
+                </button>
+                <button
+                    id="add-matching-button"
+                    onclick="showAddQuestionModal('matching')"
+                    class="px-3 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                >
+                    Добавить вопрос на сопоставление
+                </button>
+            </div>
+        </div>
+
+        {% if questions %}
+            <div class="space-y-4">
+                {% for question in questions %}
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 p-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">Вопрос {{ loop.index }}: {{ question.text }}</h3>
+                                <div class="text-sm text-gray-600">
+                                    Тип: {{ 'Тестовый' if question.question_type == 'test' else 'Сопоставление' }},
+                                    Баллы: {{ question.points }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            {% if question.question_type == 'test' %}
+                                <!-- Используем Python для обработки JSON в бэкенде -->
+                                {% if question.options_list %}
+                                    <div class="mb-2">
+                                        <div class="text-sm font-medium">Варианты ответов:</div>
+                                        <ul class="list-disc list-inside space-y-1 mt-1">
+                                            {% for option in question.options_list %}
+                                                <li class="{% if question.correct_answers_list and option in question.correct_answers_list %}font-medium text-green-700{% endif %}">
+                                                    {{ option }} {% if question.correct_answers_list and option in question.correct_answers_list %}✓{% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+
+                                    <div class="text-sm text-gray-600">
+                                        {% if question.correct_answers_list and question.correct_answers_list|length > 1 %}
+                                            Вопрос с несколькими правильными ответами
+                                        {% else %}
+                                            Вопрос с одним правильным ответом
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-red-500">Ошибка: не удалось загрузить варианты ответов</p>
+                                {% endif %}
+                            {% elif question.question_type == 'matching' %}
+                                {% if question.matches_list %}
+                                    <div class="mb-2">
+                                        <div class="text-sm font-medium">Пары для сопоставления:</div>
+                                        <div class="grid grid-cols-2 gap-2 mt-2">
+                                            <div class="font-medium">Левая колонка</div>
+                                            <div class="font-medium">Правая колонка</div>
+
+                                            {% for match in question.matches_list %}
+                                                <div class="p-2 bg-gray-50 rounded">{{ match.left }}</div>
+                                                <div class="p-2 bg-gray-50 rounded">{{ match.right }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <p class="text-red-500">Ошибка: не удалось загрузить пары соответствия</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center p-8 text-gray-500">
+                <p>В этом блоке пока нет вопросов</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Модальное окно для добавления тестового вопроса -->
+    <div id="test-question-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="border-b px-6 py-3 flex justify-between items-center">
+                <h3 class="text-lg font-medium">Добавление тестового вопроса</h3>
+                <button onclick="closeQuestionModal('test')" class="text-gray-400 hover:text-gray-500">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="add-test-question-form">
+                    <input type="hidden" name="question_type" value="test">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="test_text" class="block text-sm font-medium text-gray-700 mb-1">Текст вопроса</label>
+                            <textarea id="test_text" name="text" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                        </div>
+
+                        <div id="test-options-container">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Варианты ответов</label>
+
+                            <div id="options-list">
+                                <div class="option-item flex mb-2">
+                                    <input
+                                        type="text"
+                                        name="options[]"
+                                        placeholder="Вариант ответа"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                    >
+                                    <label class="flex items-center px-3 bg-gray-100 rounded-md">
+                                        <input
+                                            type="checkbox"
+                                            name="correct_answers[]"
+                                            class="mr-1 correct-checkbox"
+                                        >
+                                        Правильный
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onclick="removeOption(this)"
+                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+                                        disabled
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <div class="option-item flex mb-2">
+                                    <input
+                                        type="text"
+                                        name="options[]"
+                                        placeholder="Вариант ответа"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                    >
+                                    <label class="flex items-center px-3 bg-gray-100 rounded-md">
+                                        <input
+                                            type="checkbox"
+                                            name="correct_answers[]"
+                                            class="mr-1 correct-checkbox"
+                                        >
+                                        Правильный
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onclick="removeOption(this)"
+                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+                                        disabled
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="error-message" class="text-red-600 text-sm mb-2 hidden">
+                                Пожалуйста, выберите хотя бы один правильный ответ
+                            </div>
+
+                            <button
+                                type="button"
+                                onclick="addOption()"
+                                class="mt-1 px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                            >
+                                + Добавить вариант
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+                <button onclick="closeQuestionModal('test')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
+                <button onclick="submitQuestionForm('test')" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления вопроса на сопоставление -->
+    <div id="matching-question-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="border-b px-6 py-3 flex justify-between items-center">
+                <h3 class="text-lg font-medium">Добавление вопроса на сопоставление</h3>
+                <button onclick="closeQuestionModal('matching')" class="text-gray-400 hover:text-gray-500">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="add-matching-question-form">
+                    <input type="hidden" name="question_type" value="matching">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="matching_text" class="block text-sm font-medium text-gray-700 mb-1">Текст вопроса</label>
+                            <textarea id="matching_text" name="text" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                        </div>
+
+                        <div id="matching-pairs-container">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Пары для сопоставления</label>
+
+                            <div class="flex mb-2">
+                                <div class="flex-1 font-medium text-sm text-center">Левая колонка</div>
+                                <div class="flex-1 font-medium text-sm text-center">Правая колонка</div>
+                                <div class="w-10"></div>
+                            </div>
+
+                            <div id="pairs-list">
+                                <div class="pair-item flex mb-2">
+                                    <input
+                                        type="text"
+                                        name="left_items[]"
+                                        placeholder="Левый элемент"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                    >
+                                    <input
+                                        type="text"
+                                        name="right_items[]"
+                                        placeholder="Правый элемент"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                    >
+                                    <button
+                                        type="button"
+                                        onclick="removePair(this)"
+                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+                                        disabled
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <div class="pair-item flex mb-2">
+                                    <input
+                                        type="text"
+                                        name="left_items[]"
+                                        placeholder="Левый элемент"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                    >
+                                    <input
+                                        type="text"
+                                        name="right_items[]"
+                                        placeholder="Правый элемент"
+                                        required
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                    >
+                                    <button
+                                        type="button"
+                                        onclick="removePair(this)"
+                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+                                        disabled
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onclick="addPair()"
+                                class="mt-1 px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                            >
+                                + Добавить пару
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+                <button onclick="closeQuestionModal('matching')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
+                <button onclick="submitQuestionForm('matching')" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Функции для работы с модальными окнами
+    function showAddQuestionModal(type) {
+        const modalId = type === 'test' ? 'test-question-modal' : 'matching-question-modal';
+        const modal = document.getElementById(modalId);
+
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    function closeQuestionModal(type) {
+        const modalId = type === 'test' ? 'test-question-modal' : 'matching-question-modal';
+        const modal = document.getElementById(modalId);
+
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    // Функции для работы с тестовыми вопросами
+    function addOption() {
+        const optionsList = document.getElementById('options-list');
+        const newOption = document.createElement('div');
+        newOption.className = 'option-item flex mb-2';
+        newOption.innerHTML = `
+            <input
+                type="text"
+                name="options[]"
+                placeholder="Вариант ответа"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+            >
+            <label class="flex items-center px-3 bg-gray-100 rounded-md">
+                <input
+                    type="checkbox"
+                    name="correct_answers[]"
+                    class="mr-1 correct-checkbox"
+                >
+                Правильный
+            </label>
+            <button
+                type="button"
+                onclick="removeOption(this)"
+                class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+            >
+                ✕
+            </button>
+        `;
+
+        optionsList.appendChild(newOption);
+        updateRemoveButtons('options-list');
+
+        // Синхронизируем значения для правильных ответов
+        syncCorrectAnswers();
+    }
+
+    function removeOption(button) {
+        const optionItem = button.closest('.option-item');
+        optionItem.remove();
+        updateRemoveButtons('options-list');
+
+        // Синхронизируем значения для правильных ответов
+        syncCorrectAnswers();
+    }
+
+    function syncCorrectAnswers() {
+        // Обновляем значения для чекбоксов правильных ответов
+        const options = document.querySelectorAll('#options-list .option-item input[name="options[]"]');
+        const checkboxes = document.querySelectorAll('#options-list .option-item .correct-checkbox');
+
+        checkboxes.forEach((checkbox, index) => {
+            checkbox.value = options[index].value;
+
+            // Обновляем значение при изменении текста
+            options[index].addEventListener('input', function() {
+                checkbox.value = this.value;
+            });
+        });
+    }
+
+    // Функции для работы с вопросами на сопоставление
+    function addPair() {
+        const pairsList = document.getElementById('pairs-list');
+        const newPair = document.createElement('div');
+        newPair.className = 'pair-item flex mb-2';
+        newPair.innerHTML = `
+            <input
+                type="text"
+                name="left_items[]"
+                placeholder="Левый элемент"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+            >
+            <input
+                type="text"
+                name="right_items[]"
+                placeholder="Правый элемент"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+            <button
+                type="button"
+                onclick="removePair(this)"
+                class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+            >
+                ✕
+            </button>
+        `;
+
+        pairsList.appendChild(newPair);
+        updateRemoveButtons('pairs-list');
+    }
+
+    function removePair(button) {
+        const pairItem = button.closest('.pair-item');
+        pairItem.remove();
+        updateRemoveButtons('pairs-list');
+    }
+
+    // Общие функции
+    function updateRemoveButtons(listId) {
+        const items = document.querySelectorAll(`#${listId} > div`);
+        const removeButtons = document.querySelectorAll(`#${listId} .remove-button`);
+
+        // Если элементов меньше 3, отключаем кнопки удаления
+        if (items.length <= 2) {
+            removeButtons.forEach(button => {
+                button.disabled = true;
+            });
+        } else {
+            removeButtons.forEach(button => {
+                button.disabled = false;
+            });
+        }
+    }
+
+    function submitQuestionForm(type) {
+        const formId = type === 'test' ? 'add-test-question-form' : 'add-matching-question-form';
+        const form = document.getElementById(formId);
+
+        if (!form) return;
+
+        const formData = new FormData(form);
+
+        // Дополнительная проверка для тестового вопроса
+        if (type === 'test') {
+            const correctAnswers = formData.getAll('correct_answers[]');
+            if (correctAnswers.length === 0) {
+                document.getElementById('error-message').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('error-message').classList.add('hidden');
+            }
+        }
+
+        // Отображаем индикатор загрузки
+        const submitBtn = event.target;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Добавление...';
+        submitBtn.disabled = true;
+
+        axios.post('{{ url_for("add_question", block_id=block.id) }}', formData)
+            .then(function(response) {
+                if (response.data.success) {
+                    showMessage('Вопрос успешно добавлен!');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showMessage(response.data.message || 'Ошибка при добавлении вопроса', 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(function(error) {
+                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+        // Синхронизируем значения для правильных ответов при загрузке
+        syncCorrectAnswers();
+
+        // Настраиваем кнопки удаления при загрузке
+        updateRemoveButtons('options-list');
+        updateRemoveButtons('pairs-list');
+
+        // Закрытие модальных окон по клику вне
+        document.addEventListener('click', function(event) {
+            const testModal = document.getElementById('test-question-modal');
+            const matchingModal = document.getElementById('matching-question-modal');
+
+            if (testModal && !testModal.classList.contains('hidden')) {
+                const modalContent = testModal.querySelector('.bg-white');
+                if (event.target === testModal && !modalContent.contains(event.target)) {
+                    closeQuestionModal('test');
+                }
+            }
+
+            if (matchingModal && !matchingModal.classList.contains('hidden')) {
+                const modalContent = matchingModal.querySelector('.bg-white');
+                if (event.target === matchingModal && !modalContent.contains(event.target)) {
+                    closeQuestionModal('matching');
+                }
+            }
+        });
+
+        // Закрытие модальных окон по Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const testModal = document.getElementById('test-question-modal');
+                const matchingModal = document.getElementById('matching-question-modal');
+
+                if (testModal && !testModal.classList.contains('hidden')) {
+                    closeQuestionModal('test');
+                }
+
+                if (matchingModal && !matchingModal.classList.contains('hidden')) {
+                    closeQuestionModal('matching');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
