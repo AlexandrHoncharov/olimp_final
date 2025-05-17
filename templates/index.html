@@ -1,23 +1,47 @@
+<!-- index.html - главная страница в дизайне МелГУ -->
 {% extends "base.html" %}
 
 {% block title %}Главная - Система олимпиад{% endblock %}
 
 {% block head %}
 <style>
+    /* Стилизация героической секции в стиле брендбука МелГУ */
     .hero-section {
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
+        background: linear-gradient(135deg, #820000 0%, #990002 100%);
         border-radius: 1rem;
+        position: relative;
+        overflow: hidden;
     }
+
+    /* Декоративный элемент сот в героической секции */
+    .hero-section::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 250px;
+        height: 100%;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="white" opacity="0.1" /></svg>');
+        background-repeat: repeat;
+        pointer-events: none;
+    }
+
+    /* Стилизация карточек олимпиад */
     .olympiad-card {
-        transition: all 0.2s ease;
+        position: relative;
+        transition: all 0.3s ease;
         border-radius: 0.75rem;
         overflow: hidden;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #820000;
     }
+
     .olympiad-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
     }
+
+    /* Стилизация значков статуса */
     .card-badge {
         display: inline-block;
         padding: 0.25rem 0.75rem;
@@ -25,18 +49,23 @@
         font-size: 0.75rem;
         font-weight: 500;
     }
+
     .status-active {
         background-color: #dcfce7;
         color: #166534;
     }
+
     .status-upcoming {
         background-color: #fef9c3;
         color: #854d0e;
     }
+
     .status-completed {
         background-color: #f3f4f6;
         color: #4b5563;
     }
+
+    /* Стилизация информационных "таблеток" */
     .info-pill {
         display: inline-flex;
         align-items: center;
@@ -45,57 +74,178 @@
         border-radius: 9999px;
         margin-right: 0.75rem;
         margin-bottom: 0.75rem;
+        backdrop-filter: blur(4px);
     }
+
     .info-pill svg {
         margin-right: 0.5rem;
+    }
+
+    /* Стилизация информационных блоков */
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #820000;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 60px;
+        height: 60px;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="%23820000" opacity="0.1" /></svg>');
+        background-repeat: no-repeat;
+        pointer-events: none;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Стилизация для вишенки (символа МелГУ) */
+    .cherry-icon {
+        position: relative;
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+    }
+
+    .cherry-circle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background-color: #820000;
+        border-radius: 50%;
+    }
+
+    .cherry-circle:first-child {
+        top: 0;
+        left: 0;
+    }
+
+    .cherry-circle:last-child {
+        top: 0;
+        right: 0;
+    }
+
+    .cherry-stem {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 1px;
+        height: 10px;
+        background-color: #820000;
+        transform: translateX(-50%);
+    }
+
+    /* Админ-панель в стиле МелГУ */
+    .admin-panel {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-left: 4px solid #820000;
+        border-radius: 0.5rem;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 {% if not current_user.is_authenticated %}
-<!-- Hero section for guests -->
+<!-- Hero section для гостей в стиле МелГУ -->
 <section class="hero-section text-white p-10 md:p-16 mb-12">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl md:text-5xl font-bold mb-6">Добро пожаловать в систему олимпиад</h1>
+    <div class="max-w-4xl mx-auto relative z-10">
+        <div class="flex items-center mb-4">
+            <!-- Символ пчелы с крыльями-бесконечностью из брендбука -->
+            <svg class="h-14 w-14 mr-4" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
+                <g transform="translate(50 50)">
+                    <!-- Символ бесконечности (крылья) -->
+                    <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                    <!-- Шапка магистра (символ из брендбука) -->
+                    <rect x="-15" y="-25" width="30" height="5" rx="2" fill="white" />
+                    <rect x="-5" y="-25" width="10" height="8" fill="white" />
+                    <line x1="0" y1="-17" x2="0" y2="-12" />
+                    <!-- Тело пчелы (стилизованное) -->
+                    <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="white" />
+                </g>
+            </svg>
+            <h1 class="text-4xl md:text-5xl font-bold">Добро пожаловать в систему олимпиад</h1>
+        </div>
         <p class="text-xl mb-8 text-white text-opacity-90">Платформа для проведения онлайн-олимпиад с возможностью создания разнообразных заданий и автоматической оценкой результатов.</p>
+
+        <!-- Слоган из брендбука МелГУ -->
+        <div class="mb-8 font-medium text-xl italic">"Наш Вуз - твоё будущее!"</div>
+
         <div class="flex flex-wrap gap-4">
-            <a href="{{ url_for('login') }}" class="btn px-8 py-3 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition shadow-lg">Войти</a>
-            <a href="{{ url_for('register') }}" class="btn px-8 py-3 bg-transparent text-white border-2 border-white font-medium rounded-md hover:bg-white hover:bg-opacity-10 transition">Зарегистрироваться</a>
+            <a href="{{ url_for('login') }}" class="btn-ripple px-8 py-3 bg-white text-[#820000] font-medium rounded-md hover:bg-gray-100 transition shadow-lg">Войти</a>
+            <a href="{{ url_for('register') }}" class="btn-ripple px-8 py-3 bg-transparent text-white border-2 border-white font-medium rounded-md hover:bg-white hover:bg-opacity-10 transition">Зарегистрироваться</a>
         </div>
 
         <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
-                <div class="text-2xl font-bold mb-2">Удобно</div>
+                <div class="text-2xl font-bold mb-2 flex items-center">
+                    <!-- Символ открытой книги из брендбука -->
+                    <svg class="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 3H8C9.06087 3 10.0783 3.42143 10.8284 4.17157C11.5786 4.92172 12 5.93913 12 7V21C12 20.2044 11.6839 19.4413 11.1213 18.8787C10.5587 18.3161 9.79565 18 9 18H2V3Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 3H16C14.9391 3 13.9217 3.42143 13.1716 4.17157C12.4214 4.92172 12 5.93913 12 7V21C12 20.2044 12.3161 19.4413 12.8787 18.8787C13.4413 18.3161 14.2044 18 15 18H22V3Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Удобно
+                </div>
                 <p>Интуитивно понятный интерфейс, доступный с любого устройства</p>
             </div>
             <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
-                <div class="text-2xl font-bold mb-2">Быстро</div>
+                <div class="text-2xl font-bold mb-2 flex items-center">
+                    <!-- Символ шапки магистра из брендбука -->
+                    <svg class="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Быстро
+                </div>
                 <p>Мгновенная проверка ответов и автоматизированный подсчет результатов</p>
             </div>
             <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
-                <div class="text-2xl font-bold mb-2">Надежно</div>
+                <div class="text-2xl font-bold mb-2 flex items-center">
+                    <!-- Символ пчелиных сот из брендбука -->
+                    <svg class="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L4 6V18L12 22L20 18V6L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Надежно
+                </div>
                 <p>Защита данных и честная система оценки результатов</p>
             </div>
         </div>
     </div>
 </section>
 {% else %}
-<div class="flex flex-col items-center mb-12">
-    <h1 class="text-4xl font-bold mb-4 text-center">Добро пожаловать, {{ current_user.full_name }}!</h1>
+<div class="flex flex-col items-center mb-12 relative">
+    <!-- Декоративный элемент "вишенка" (символ Мелитополя) сверху -->
+    <div class="absolute top-0 right-1/4 transform -translate-y-1/2">
+        <div class="cherry-icon">
+            <div class="cherry-circle"></div>
+            <div class="cherry-circle"></div>
+            <div class="cherry-stem"></div>
+        </div>
+    </div>
+
+    <h1 class="text-4xl font-bold mb-4 text-center text-[#820000]">Добро пожаловать, {{ current_user.full_name }}!</h1>
     <p class="text-xl text-gray-600 max-w-3xl text-center mb-8">Участвуйте в олимпиадах, проверяйте свои знания и занимайте высокие места в рейтинге.</p>
 
     {% if current_user.is_admin %}
-    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-10 max-w-4xl w-full">
+    <div class="admin-panel p-6 mb-10 max-w-4xl w-full">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="text-xl font-semibold text-indigo-800 mb-2">Панель администратора</h2>
-                <p class="text-indigo-600">Управляйте олимпиадами, просматривайте статистику и результаты участников</p>
+                <h2 class="text-xl font-semibold text-[#820000] mb-2">Панель администратора</h2>
+                <p class="text-gray-600">Управляйте олимпиадами, просматривайте статистику и результаты участников</p>
             </div>
             <button
                 id="create-olympiad-button"
                 onclick="showCreateOlympiadModal()"
-                class="btn px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition shadow-md"
+                class="btn-ripple px-5 py-2 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition shadow-md"
             >
                 Создать олимпиаду
             </button>
@@ -110,21 +260,26 @@
         <div class="w-full">
             {% if current_user.is_admin %}
                 <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-3xl font-bold">Олимпиады</h2>
+                    <h2 class="text-3xl font-bold text-[#820000]">Олимпиады</h2>
                     <button
                         id="create-olympiad-button"
                         onclick="showCreateOlympiadModal()"
-                        class="btn px-5 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition shadow-md"
+                        class="btn-ripple px-5 py-2 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition shadow-md"
                     >
-                        Создать олимпиаду
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Создать олимпиаду
+                        </span>
                     </button>
                 </div>
             {% else %}
-                <h2 class="text-3xl font-bold mb-8">Доступные олимпиады</h2>
+                <h2 class="text-3xl font-bold mb-8 text-[#820000]">Доступные олимпиады</h2>
             {% endif %}
 
             {% if olympiads %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
                     {% for olympiad in olympiads %}
                         {% set current_time = now() %}
                         {% set status = 'upcoming' if olympiad.start_time > current_time else ('active' if olympiad.end_time > current_time else 'completed') %}
@@ -133,31 +288,48 @@
                             <div class="h-3 {% if status == 'active' %}bg-green-500{% elif status == 'upcoming' %}bg-yellow-500{% else %}bg-gray-400{% endif %}"></div>
                             <div class="p-6">
                                 <div class="flex justify-between items-start mb-4">
-                                    <h3 class="text-xl font-semibold">{{ olympiad.title }}</h3>
-                                    <span class="card-badge {% if status == 'active' %}status-active{% elif status == 'upcoming' %}status-upcoming{% else %}status-completed{% endif %}">
-                                        {% if status == 'active' %}Активна{% elif status == 'upcoming' %}Скоро{% else %}Завершена{% endif %}
-                                    </span>
+                                    <h3 class="text-xl font-semibold text-[#820000]">{{ olympiad.title }}</h3>
+                                    <div class="md:hidden">
+                                        {% if status == 'active' %}
+                                            <span class="card-badge status-active">Активна</span>
+                                        {% elif status == 'upcoming' %}
+                                            <span class="card-badge status-upcoming">Скоро</span>
+                                        {% else %}
+                                            <span class="card-badge status-completed">Завершена</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
+
                                 <p class="text-gray-600 mb-4 line-clamp-3">{{ olympiad.description }}</p>
 
-                                <div class="text-sm text-gray-500 mb-4">
-                                    <div class="mb-1.5 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                <div class="flex flex-wrap gap-4 text-sm mb-3">
+                                    <div class="flex items-center text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
                                         </svg>
-                                        Начало: {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                        {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
                                     </div>
-                                    <div class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <div class="flex items-center text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                                         </svg>
-                                        Окончание: {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                        {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
                                     </div>
+                                </div>
+
+                                <div class="hidden md:block mb-4">
+                                    {% if status == 'active' %}
+                                        <span class="card-badge status-active">Активна</span>
+                                    {% elif status == 'upcoming' %}
+                                        <span class="card-badge status-upcoming">Скоро</span>
+                                    {% else %}
+                                        <span class="card-badge status-completed">Завершена</span>
+                                    {% endif %}
                                 </div>
 
                                 <a
                                     href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}"
-                                    class="btn inline-block w-full text-center px-4 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition"
+                                    class="btn-ripple inline-block w-full text-center px-4 py-3 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition"
                                 >
                                     Подробнее
                                 </a>
@@ -167,14 +339,25 @@
                 </div>
             {% else %}
                 <div class="bg-white p-10 rounded-lg shadow-md text-center">
-                    <img src="https://cdn.jsdelivr.net/npm/heroicons/outline/clipboard-list.svg" class="w-16 h-16 mx-auto mb-4 text-gray-400">
+                    <!-- Пчела из брендбука вместо стандартной иконки -->
+                    <svg class="w-20 h-20 mx-auto mb-4 text-[#820000]" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2">
+                        <g transform="translate(50 50)">
+                            <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                            <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="currentColor" />
+                        </g>
+                    </svg>
                     <p class="text-xl text-gray-600 mb-6">Нет доступных олимпиад</p>
                     {% if current_user.is_admin %}
                         <button
                             onclick="showCreateOlympiadModal()"
-                            class="btn mt-4 px-6 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition"
+                            class="btn-ripple mt-4 px-6 py-3 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition"
                         >
-                            Создать олимпиаду
+                            <span class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Создать олимпиаду
+                            </span>
                         </button>
                     {% endif %}
                 </div>
@@ -184,44 +367,66 @@
 </div>
 
 {% if current_user.is_authenticated and current_user.is_admin %}
-    <!-- Модальное окно для создания олимпиады -->
+    <!-- Модальное окно для создания олимпиады в стиле брендбука МелГУ -->
     <div id="create-olympiad-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 animate-fade-in">
-            <div class="border-b px-6 py-4 flex justify-between items-center bg-primary text-white">
-                <h3 class="text-lg font-medium">Создание новой олимпиады</h3>
+            <!-- Заголовок в фирменном черешневом цвете МелГУ -->
+            <div class="border-b px-6 py-4 flex justify-between items-center bg-[#820000] text-white">
+                <h3 class="text-lg font-medium flex items-center">
+                    <!-- Символика МелГУ (пчела) -->
+                    <svg class="h-5 w-5 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
+                        <g transform="translate(50 50)">
+                            <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                        </g>
+                    </svg>
+                    Создание новой олимпиады
+                </h3>
                 <button onclick="closeCreateOlympiadModal()" class="text-white hover:text-gray-200 text-xl">&times;</button>
             </div>
-            <div class="p-6">
-                <form id="create-olympiad-form" enctype="multipart/form-data">
+
+            <!-- Содержимое формы с декоративными элементами из брендбука -->
+            <div class="p-6 relative">
+                <!-- Декоративные соты (символ из брендбука) -->
+                <div class="absolute top-0 right-0 opacity-5 z-0 pointer-events-none overflow-hidden h-full">
+                    <svg width="100" height="100%" preserveAspectRatio="none" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#820000" />
+                        <polygon points="50,100 100,125 100,175 50,200 0,175 0,125" fill="#820000" />
+                    </svg>
+                </div>
+
+                <!-- Форма в стиле МелГУ -->
+                <form id="create-olympiad-form" enctype="multipart/form-data" class="relative z-10">
                     <div class="space-y-4">
                         <div>
                             <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Название олимпиады</label>
-                            <input type="text" id="title" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <input type="text" id="title" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#820000]">
                         </div>
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
-                            <textarea id="description" name="description" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                            <textarea id="description" name="description" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#820000]"></textarea>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="start_time" class="block text-sm font-medium text-gray-700 mb-1">Время начала</label>
-                                <input type="datetime-local" id="start_time" name="start_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                <input type="datetime-local" id="start_time" name="start_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#820000]">
                             </div>
                             <div>
                                 <label for="end_time" class="block text-sm font-medium text-gray-700 mb-1">Время окончания</label>
-                                <input type="datetime-local" id="end_time" name="end_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                <input type="datetime-local" id="end_time" name="end_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#820000]">
                             </div>
                         </div>
                         <div>
                             <label for="welcome_pdf" class="block text-sm font-medium text-gray-700 mb-1">Приветственный PDF (необязательно)</label>
-                            <input type="file" id="welcome_pdf" name="welcome_pdf" accept=".pdf" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <input type="file" id="welcome_pdf" name="welcome_pdf" accept=".pdf" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#820000]">
                         </div>
                     </div>
                 </form>
             </div>
+
+            <!-- Футер модального окна с кнопками действий -->
             <div class="bg-gray-50 px-6 py-4 flex justify-end rounded-b-lg">
-                <button onclick="closeCreateOlympiadModal()" class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition mr-3">Отмена</button>
-                <button onclick="submitCreateOlympiadForm()" class="btn px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition">Создать</button>
+                <button onclick="closeCreateOlympiadModal()" class="btn-ripple px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition mr-3">Отмена</button>
+                <button onclick="submitCreateOlympiadForm()" class="btn-ripple px-4 py-2 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition">Создать</button>
             </div>
         </div>
     </div>
@@ -250,7 +455,7 @@
         // Отображаем индикатор загрузки
         const submitBtn = event.target;
         const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Создание...';
+        submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Создание...';
         submitBtn.disabled = true;
 
         axios.post('{{ url_for("create_olympiad") }}', formData)

@@ -1,116 +1,223 @@
-<!-- base.html -->
+<!-- base.html - обновленный шаблон с дизайном, соответствующим брендбуку МелГУ -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Система олимпиад{% endblock %}</title>
-    <!-- Tailwind CSS -->
+    <title>{% block title %}Система олимпиад{% endblock %} - Мелитопольский государственный университет</title>
+
+    <!-- Загрузка основных стилевых файлов -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+    <!-- Tailwind CSS интеграция (оставляем для совместимости) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#770002',
+                        primary: '#820000', // Черешневый цвет из брендбука
                         'primary-dark': '#5a0002',
                         'primary-light': '#990002',
                     },
                     maxWidth: {
-                        '8xl': '88rem', // Wider but not extreme
+                        '8xl': '88rem'
                     }
                 },
                 fontFamily: {
-                    'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    'sans': ['Templegarten Regular', 'Inter', 'system-ui', 'sans-serif'],
+                    'serif': ['Templegarten Regular', 'serif']
                 }
             }
         }
     </script>
-    <!-- Inter font -->
+
+    <!-- Inter font (запасной шрифт) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Alpine.js для модальных окон и интерактивности -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
     <!-- Axios для асинхронных запросов -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- Дополнительные стили для анимаций и эффектов -->
     <style>
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: #f5f7fa;
+        /* Стилизация шестиугольных элементов (пчелиные соты) */
+        .hexagon-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -30px 0;
         }
-        .nav-link {
+
+        .hexagon {
             position: relative;
-            padding: 0.5rem 0;
+            width: 100px;
+            height: 110px;
+            margin: 30px 10px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background-color: #820000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.3s;
         }
-        .nav-link::after {
+
+        .hexagon:hover {
+            transform: scale(1.05);
+        }
+
+        /* Логотип с пчелой и символом бесконечности */
+        .mgutiny-logo {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Карточки с правым бордером в виде сот */
+        .honeycomb-card {
+            border-right: 4px solid #820000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .honeycomb-card::after {
             content: '';
             position: absolute;
-            width: 0;
-            height: 2px;
+            right: 0;
+            top: 0;
             bottom: 0;
-            left: 0;
-            background-color: white;
-            transition: width 0.3s ease;
+            width: 4px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="20" viewBox="0 0 4 20"><path d="M0,0 L4,2 L4,18 L0,20 Z" fill="%23820000" /></svg>');
+            background-repeat: repeat-y;
         }
-        .nav-link:hover::after {
-            width: 100%;
-        }
-        .page-transition {
-            transition: all 0.3s ease;
-        }
-        .content-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .content-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        /* Animations */
+
+        /* Анимации появления элементов */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out;
         }
-        /* Button styles */
-        .btn {
-            transition: all 0.2s ease;
+
+        /* Эффект пульсации для привлечения внимания */
+        .pulse {
+            animation: pulse 2s infinite;
         }
-        .btn:hover {
-            transform: translateY(-1px);
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(130, 0, 0, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(130, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(130, 0, 0, 0);
+            }
         }
-        .btn:active {
-            transform: translateY(1px);
+
+        /* Эффект для кнопок */
+        .btn-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ripple:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn-ripple:hover:after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(30, 30);
+                opacity: 0;
+            }
+        }
+
+        /* Футер с логотипом и символикой университета */
+        .university-footer {
+            background-color: #f8f9fa;
+            border-top: 4px solid #820000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .university-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 200px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="%23820000" opacity="0.1" /></svg>');
+            background-repeat: repeat;
+            opacity: 0.1;
         }
     </style>
+
     {% block head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-gray-50 font-sans text-gray-800">
-    <!-- Навигационная панель -->
-    <nav class="bg-primary text-white shadow-lg">
+    <!-- Навигационная панель в стиле брендбука МелГУ -->
+    <nav class="bg-[#820000] text-white shadow-lg">
         <div class="max-w-8xl mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="{{ url_for('index') }}" class="text-2xl font-bold">Система олимпиад</a>
+            <a href="{{ url_for('index') }}" class="text-2xl font-bold flex items-center">
+                <!-- SVG-логотип пчелы с крыльями-бесконечностью из брендбука -->
+                <svg class="h-10 w-10 mr-3" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
+                    <g transform="translate(50 50)">
+                        <!-- Символ бесконечности (крылья) -->
+                        <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                        <!-- Шапка магистра (символ из брендбука) -->
+                        <rect x="-15" y="-25" width="30" height="5" rx="2" fill="white" />
+                        <rect x="-5" y="-25" width="10" height="8" fill="white" />
+                        <line x1="0" y1="-17" x2="0" y2="-12" />
+                        <!-- Тело пчелы (стилизованное) -->
+                        <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="white" />
+                    </g>
+                </svg>
+                Система олимпиад МелГУ
+            </a>
             <div class="flex items-center space-x-6">
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin_olympiads') }}" class="nav-link hover:text-white">Администрирование</a>
                     {% endif %}
                     <a href="{{ url_for('profile') }}" class="nav-link hover:text-white">Профиль</a>
-                    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition duration-200 btn">Выйти</a>
+                    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-white text-[#820000] font-medium rounded-md hover:bg-gray-100 transition duration-200 btn-ripple">Выйти</a>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="nav-link hover:text-white">Вход</a>
-                    <a href="{{ url_for('register') }}" class="px-4 py-2 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition duration-200 btn">Регистрация</a>
+                    <a href="{{ url_for('register') }}" class="px-4 py-2 bg-white text-[#820000] font-medium rounded-md hover:bg-gray-100 transition duration-200 btn-ripple">Регистрация</a>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Сообщения-уведомления -->
+    <!-- Сообщения-уведомления в стиле МелГУ -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="max-w-8xl mx-auto px-6 mt-6">
                 {% for category, message in messages %}
-                    <div class="p-4 {% if category == 'error' %}bg-red-100 text-red-700 border-red-400{% else %}bg-green-100 text-green-700 border-green-400{% endif %} border rounded-lg mb-2 shadow-sm">
+                    <div class="p-4 {% if category == 'error' %}bg-red-100 text-red-700 border-red-400{% else %}bg-green-100 text-green-700 border-green-400{% endif %} border rounded-lg mb-2 shadow-sm animate-fade-in">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -119,49 +226,104 @@
     {% endwith %}
 
     <!-- Основное содержимое -->
-    <main class="max-w-8xl mx-auto px-6 py-8 page-transition">
-        {% block content %}{% endblock %}
+    <main class="max-w-8xl mx-auto px-6 py-8 relative">
+        <!-- Декоративные соты в углу страницы (символика МелГУ) -->
+        <div class="absolute top-0 right-0 opacity-5 z-0 pointer-events-none overflow-hidden">
+            <svg width="300" height="500" viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+                {% for i in range(20) %}
+                    <polygon
+                        points="
+                            {{ 30 + (i % 3) * 60 }}, {{ 30 + (i // 3) * 100 }}
+                            {{ 60 + (i % 3) * 60 }}, {{ 30 + (i // 3) * 100 }}
+                            {{ 75 + (i % 3) * 60 }}, {{ 55 + (i // 3) * 100 }}
+                            {{ 60 + (i % 3) * 60 }}, {{ 80 + (i // 3) * 100 }}
+                            {{ 30 + (i % 3) * 60 }}, {{ 80 + (i // 3) * 100 }}
+                            {{ 15 + (i % 3) * 60 }}, {{ 55 + (i // 3) * 100 }}"
+                        fill="#820000"
+                    />
+                {% endfor %}
+            </svg>
+        </div>
+
+        <!-- Контент страницы -->
+        <div class="relative z-10">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-gray-300 py-8 mt-12">
+    <!-- Футер в стиле МелГУ -->
+    <footer class="university-footer text-gray-800 py-8 mt-12">
         <div class="max-w-8xl mx-auto px-6">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <p class="text-lg font-semibold">Система олимпиад</p>
-                    <p class="text-sm text-gray-400">© 2025 Все права защищены</p>
+                <div class="mb-4 md:mb-0 flex items-center">
+                    <!-- SVG-логотип МелГУ в футере -->
+                    <svg class="h-10 w-10 mr-3" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#820000" stroke-width="2">
+                        <g transform="translate(50 50)">
+                            <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                            <rect x="-15" y="-25" width="30" height="5" rx="2" fill="#820000" />
+                            <rect x="-5" y="-25" width="10" height="8" fill="#820000" />
+                            <line x1="0" y1="-17" x2="0" y2="-12" stroke="#820000" />
+                            <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="#820000" />
+                        </g>
+                    </svg>
+                    <div>
+                        <p class="text-lg font-semibold">Мелитопольский государственный университет</p>
+                        <p class="text-sm text-gray-500">© 2025 Все права защищены</p>
+                    </div>
                 </div>
-                <div class="flex space-x-6">
-                    <a href="#" class="text-gray-300 hover:text-white transition">Контакты</a>
-                    <a href="#" class="text-gray-300 hover:text-white transition">Помощь</a>
-                    <a href="#" class="text-gray-300 hover:text-white transition">О системе</a>
+                <div class="flex items-center">
+                    <!-- Слоган из брендбука МелГУ -->
+                    <p class="text-[#820000] italic font-medium mr-6">"Наш Вуз - твоё будущее!"</p>
+
+                    <div class="flex space-x-6">
+                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">Контакты</a>
+                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">Помощь</a>
+                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">О системе</a>
+                    </div>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Модальные окна -->
+    <!-- Модальные окна в стиле МелГУ -->
     <div id="modal-container"></div>
 
     <!-- Общие скрипты -->
     <script>
-        // Функция для отображения модальных окон
+        // Функция для отображения модальных окон в стиле МелГУ
         function showModal(title, content, onConfirm = null) {
             const modalContainer = document.getElementById('modal-container');
 
             const modalHTML = `
                 <div class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center" x-data="{open: true}" x-show="open">
                     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 animate-fade-in" @click.outside="open = false">
-                        <div class="border-b px-6 py-4 flex justify-between items-center">
-                            <h3 class="text-lg font-medium">${title}</h3>
-                            <button @click="open = false" class="text-gray-400 hover:text-gray-500 text-xl">&times;</button>
+                        <div class="border-b px-6 py-4 flex justify-between items-center bg-[#820000] text-white">
+                            <h3 class="text-lg font-medium flex items-center">
+                                <!-- Логотип МелГУ в модальном окне -->
+                                <svg class="h-5 w-5 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white">
+                                    <g transform="translate(50 50)">
+                                        <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                                    </g>
+                                </svg>
+                                ${title}
+                            </h3>
+                            <button @click="open = false" class="text-white hover:text-gray-200 text-xl">&times;</button>
                         </div>
-                        <div class="p-6">
-                            ${content}
+                        <div class="p-6 relative">
+                            <!-- Декоративные соты в модальном окне -->
+                            <div class="absolute top-0 right-0 opacity-5 pointer-events-none overflow-hidden h-full">
+                                <svg width="100" height="100%" preserveAspectRatio="none" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+                                    <polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#820000" />
+                                    <polygon points="50,100 100,125 100,175 50,200 0,175 0,125" fill="#820000" />
+                                </svg>
+                            </div>
+                            <div class="relative z-10">
+                                ${content}
+                            </div>
                         </div>
                         <div class="bg-gray-50 px-6 py-4 flex justify-end rounded-b-lg">
-                            <button @click="open = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200 mr-3 btn">Отмена</button>
-                            ${onConfirm ? `<button id="modal-confirm" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition duration-200 btn">Подтвердить</button>` : ''}
+                            <button @click="open = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200 mr-3 btn-ripple">Отмена</button>
+                            ${onConfirm ? `<button id="modal-confirm" class="px-4 py-2 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition duration-200 btn-ripple">Подтвердить</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -177,18 +339,32 @@
             }
         }
 
-        // Функция для отображения сообщений
+        // Функция для отображения сообщений в стиле МелГУ
         function showMessage(message, type = 'success') {
             const messageContainer = document.createElement('div');
-            messageContainer.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} animate-fade-in`;
-            messageContainer.textContent = message;
+
+            // Применяем стили в соответствии с брендбуком МелГУ
+            messageContainer.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-white text-[#820000] border-l-4 border-[#820000]'} animate-fade-in`;
+
+            // Добавляем иконку и текст
+            messageContainer.innerHTML = `
+                <div class="flex items-center">
+                    ${type === 'error' ?
+                        '<svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>' :
+                        '<svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>'
+                    }
+                    <span>${message}</span>
+                </div>
+            `;
+
             document.body.appendChild(messageContainer);
 
-            // Add animation
-            messageContainer.style.transition = 'opacity 0.3s ease-out';
+            // Анимация исчезновения
+            messageContainer.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
 
             setTimeout(() => {
                 messageContainer.style.opacity = '0';
+                messageContainer.style.transform = 'translateY(-10px)';
                 setTimeout(() => {
                     messageContainer.remove();
                 }, 300);

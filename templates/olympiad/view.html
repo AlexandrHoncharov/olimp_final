@@ -1,14 +1,32 @@
-<!-- olympiad/view.html -->
+<!-- olympiad/view.html - страница просмотра олимпиады в стиле брендбука МелГУ -->
 {% extends "base.html" %}
 
 {% block title %}{{ olympiad.title }} - Система олимпиад{% endblock %}
 
 {% block head %}
 <style>
+    /* Стилизация заголовка в фирменном стиле МелГУ */
     .olympiad-header {
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
+        background: linear-gradient(135deg, #820000 0%, #990002 100%);
         border-radius: 1rem 1rem 0 0;
+        position: relative;
+        overflow: hidden;
     }
+
+    /* Декоративный элемент сот в заголовке (символ из брендбука) */
+    .olympiad-header::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 100%;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="white" opacity="0.1" /></svg>');
+        background-repeat: repeat;
+        pointer-events: none;
+    }
+
+    /* Стилизация информационных "таблеток" */
     .info-pill {
         display: inline-flex;
         align-items: center;
@@ -19,14 +37,20 @@
         margin-bottom: 0.75rem;
         backdrop-filter: blur(4px);
     }
+
     .info-pill svg {
         margin-right: 0.5rem;
     }
+
+    /* Кнопки с эффектом волны в стиле брендбука */
     .action-button {
         position: relative;
         overflow: hidden;
         transition: all 0.3s ease;
+        background-color: #820000;
+        color: white;
     }
+
     .action-button::after {
         content: '';
         position: absolute;
@@ -40,9 +64,11 @@
         transform: scale(1, 1) translate(-50%);
         transform-origin: 50% 50%;
     }
+
     .action-button:hover::after {
         animation: ripple 1s ease-out;
     }
+
     @keyframes ripple {
         0% {
             transform: scale(0, 0);
@@ -53,25 +79,228 @@
             opacity: 0;
         }
     }
+
+    /* Карточки особенностей с элементами МелГУ */
     .feature-card {
-        border-left: 4px solid #770002;
+        border-left: 4px solid #820000;
         transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
     }
+
+    .feature-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 60px;
+        height: 60px;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="%23820000" opacity="0.05" /></svg>');
+        background-repeat: no-repeat;
+        pointer-events: none;
+    }
+
     .feature-card:hover {
         transform: translateX(4px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
-    .pdf-container {
+
+    /* Стили для PDF модального окна в соответствии с брендбуком МелГУ */
+    .pdf-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.75);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+    }
+
+    .pdf-modal-content {
+        background-color: white;
         border-radius: 0.5rem;
+        width: 90%;
+        max-width: 900px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: modal-appear 0.3s ease-out;
+    }
+
+    .pdf-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background-color: #820000; /* Черешневый цвет из брендбука */
+        color: white;
+    }
+
+    .pdf-modal-title {
+        font-family: 'Templegarten Regular', sans-serif; /* Шрифт из брендбука */
+        display: flex;
+        align-items: center;
+    }
+
+    .pdf-modal-logo {
+        width: 32px;
+        height: 32px;
+        margin-right: 12px;
+    }
+
+    .pdf-modal-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+    }
+
+    .pdf-modal-close:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pdf-modal-body {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+    }
+
+    /* Стили для PDF просмотрщика внутри модального окна */
+    .custom-pdf-container {
+        background-color: white;
+    }
+
+    #pdf-canvas {
+        display: block;
+        margin: 0 auto;
+        background-color: white;
+    }
+
+    .pdf-controls {
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #f3f4f6;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .pdf-controls button {
+        transition: all 0.2s ease;
+    }
+
+    .pdf-controls button:hover {
+        transform: translateY(-1px);
+    }
+
+    .pdf-controls button:active {
+        transform: translateY(1px);
+    }
+
+    /* Стиль для навигационных кнопок */
+    #prev-page, #next-page {
+        height: 34px;
+        width: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #820000; /* Черешневый цвет из брендбука */
+    }
+
+    /* Добавление элемента сот (из брендбука) */
+    .honeycomb-bg {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 180px;
+        opacity: 0.1;
+        pointer-events: none;
+        z-index: 1;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="140" viewBox="0 0 120 140"><polygon points="30,0 90,0 120,60 90,120 30,120 0,60" fill="%23820000" /></svg>');
+        background-repeat: repeat;
+    }
+
+    /* Слоган из брендбука на нижней панели */
+    .university-slogan {
+        text-align: center;
+        font-style: italic;
+        padding: 8px 0;
+        background-color: #f9f9f9;
+        border-top: 1px solid #e5e7eb;
+        color: #820000;
+    }
+
+    /* Анимация появления модального окна */
+    @keyframes modal-appear {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Анимация загрузки */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 20px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    #pdf-canvas {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* Стили для мобильной версии */
+    @media (max-width: 640px) {
+        .pdf-controls {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pdf-controls > div {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        #pdf-canvas {
+            max-width: 100%;
+        }
+
+        .pdf-modal-content {
+            width: 95%;
+            max-height: 95vh;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="mb-6">
-    <a href="{{ url_for('index') }}" class="inline-flex items-center text-primary hover:text-primary-dark transition">
+    <a href="{{ url_for('index') }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
         </svg>
@@ -122,11 +351,23 @@
         </div>
 
         <div class="flex flex-wrap mt-8 gap-3">
+            {% if olympiad.welcome_pdf %}
+            <button
+                id="open-pdf-button"
+                class="action-button px-6 py-3 bg-[#820000] text-white font-medium rounded-md hover:bg-opacity-90 transition shadow-md inline-flex items-center"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                </svg>
+                Приветственное письмо
+            </button>
+            {% endif %}
+
             {% if participation %}
                 {% if participation.status == 'registered' %}
                     <button
                         onclick="startOlympiad()"
-                        class="action-button px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition shadow-md"
+                        class="action-button px-6 py-3 bg-[#820000] text-white font-medium rounded-md hover:bg-opacity-90 transition shadow-md"
                     >
                         <span class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -159,7 +400,7 @@
             {% else %}
                 <button
                     onclick="registerForOlympiad()"
-                    class="action-button px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition shadow-md"
+                    class="action-button px-6 py-3 bg-[#820000] text-white font-medium rounded-md hover:bg-opacity-90 transition shadow-md"
                 >
                     <span class="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -185,39 +426,111 @@
     </div>
 </div>
 
-{% if olympiad.welcome_pdf %}
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
-        <h2 class="text-2xl font-semibold mb-4">Приветственное письмо</h2>
-        <div class="pdf-container">
-            <embed src="{{ url_for('static', filename='pdf_files/' + olympiad.welcome_pdf) }}" type="application/pdf" width="100%" height="600px" />
-        </div>
-    </div>
-{% endif %}
-
 <div class="bg-white p-8 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-semibold mb-6">Информация об олимпиаде</h2>
+    <h2 class="text-2xl font-semibold mb-6 text-[#820000]">Информация об олимпиаде</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="feature-card bg-gray-50 p-6 rounded-lg">
-            <div class="text-xl font-medium mb-2 text-primary">Разнообразные задания</div>
+            <div class="text-xl font-medium mb-2 text-[#820000]">Разнообразные задания</div>
             <p class="text-gray-700">Олимпиада включает тестовые вопросы с одним или несколькими правильными ответами и задания на сопоставление элементов.</p>
         </div>
 
         <div class="feature-card bg-gray-50 p-6 rounded-lg">
-            <div class="text-xl font-medium mb-2 text-primary">Поэтапное прохождение</div>
+            <div class="text-xl font-medium mb-2 text-[#820000]">Поэтапное прохождение</div>
             <p class="text-gray-700">После каждого блока вы увидите свой рейтинг. Для перехода к следующему блоку необходимо набрать установленный процент правильных ответов.</p>
         </div>
 
         <div class="feature-card bg-gray-50 p-6 rounded-lg">
-            <div class="text-xl font-medium mb-2 text-primary">Мгновенные результаты</div>
+            <div class="text-xl font-medium mb-2 text-[#820000]">Мгновенные результаты</div>
             <p class="text-gray-700">Система автоматически проверяет ваши ответы и предоставляет детальную статистику вашего выступления.</p>
         </div>
     </div>
 
-    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-primary">
+    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#820000]">
         <p class="font-medium text-lg">Начните олимпиаду, когда будете готовы. Удачи!</p>
     </div>
 </div>
+
+<!-- Модальное окно с PDF просмотрщиком (в стиле брендбука МелГУ) -->
+{% if olympiad.welcome_pdf %}
+<div id="pdf-modal" class="pdf-modal">
+    <div class="pdf-modal-content">
+        <div class="pdf-modal-header">
+            <div class="pdf-modal-title">
+                <!-- SVG-логотип пчелы с крыльями-бесконечностью из брендбука -->
+                <svg class="pdf-modal-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
+                    <g transform="translate(50 50)">
+                        <!-- Символ бесконечности (крылья) -->
+                        <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                        <!-- Шапка магистра (символ из брендбука) -->
+                        <rect x="-15" y="-25" width="30" height="5" rx="2" fill="white" />
+                        <rect x="-5" y="-25" width="10" height="8" fill="white" />
+                        <line x1="0" y1="-17" x2="0" y2="-12" />
+                        <!-- Тело пчелы (стилизованное) -->
+                        <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="white" />
+                    </g>
+                </svg>
+                <h3 class="text-lg font-medium">Приветственное письмо</h3>
+            </div>
+            <button id="close-pdf-modal" class="pdf-modal-close">&times;</button>
+        </div>
+        <div class="pdf-modal-body">
+            <!-- Декоративный элемент из брендбука - соты -->
+            <div class="honeycomb-bg"></div>
+
+            <div class="custom-pdf-container">
+                <!-- Toolbar для управления PDF -->
+                <div class="pdf-controls">
+                    <div class="flex items-center">
+                        <button id="prev-page" class="px-3 py-1 bg-[#820000] text-white rounded hover:bg-opacity-90 transition mr-2 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button id="next-page" class="px-3 py-1 bg-[#820000] text-white rounded hover:bg-opacity-90 transition mr-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <span>Страница: <span id="page-num" class="font-medium">1</span> / <span id="page-count" class="font-medium">-</span></span>
+                    </div>
+                    <div>
+                        <button id="zoom-in" class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition mr-2 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button id="zoom-out" class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Контейнер для страниц PDF -->
+                <div class="flex justify-center p-4 bg-gray-100">
+                    <canvas id="pdf-canvas" class="shadow-sm"></canvas>
+                </div>
+
+                <!-- Индикатор загрузки -->
+                <div id="pdf-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
+                    <div class="text-center">
+                        <svg class="animate-spin h-10 w-10 text-[#820000] mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Загрузка PDF...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Слоган из брендбука -->
+            <div class="university-slogan">Наш Вуз - твоё будущее!</div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -259,5 +572,176 @@
                 showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
             });
     }
+
+    {% if olympiad.welcome_pdf %}
+    // PDF.js код для просмотра PDF
+    document.addEventListener('DOMContentLoaded', function() {
+        // Подключаем библиотеку PDF.js
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js';
+        script.onload = initPdfViewer;
+        document.head.appendChild(script);
+
+        // Обработчики для модального окна
+        const modal = document.getElementById('pdf-modal');
+        const closeButton = document.getElementById('close-pdf-modal');
+        const openButton = document.getElementById('open-pdf-button');
+
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        }
+
+        if (openButton) {
+            openButton.addEventListener('click', function() {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        }
+
+        // Закрытие модального окна при клике за его пределами
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+
+        // Закрытие модального окна при нажатии ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+
+        function initPdfViewer() {
+            // Инициализация переменных
+            let pdfDoc = null,
+                pageNum = 1,
+                pageRendering = false,
+                pageNumPending = null,
+                scale = 1.5;
+
+            const canvas = document.getElementById('pdf-canvas'),
+                ctx = canvas.getContext('2d'),
+                loader = document.getElementById('pdf-loader');
+
+            // Указание пути к worker для PDF.js
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+
+            // Функция для рендеринга страницы
+            function renderPage(num) {
+                pageRendering = true;
+
+                // Показываем loader при переключении страниц
+                loader.style.display = 'flex';
+
+                // Получение страницы
+                pdfDoc.getPage(num).then(function(page) {
+                    // Определяем размеры страницы для корректного отображения
+                    const viewport = page.getViewport({ scale: scale });
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    // Рендеринг PDF страницы в Canvas
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+
+                    const renderTask = page.render(renderContext);
+
+                    // Ждем окончания рендеринга
+                    renderTask.promise.then(function() {
+                        pageRendering = false;
+                        loader.style.display = 'none';
+
+                        // Обрабатываем запрос на переключение страницы, если он ожидает
+                        if (pageNumPending !== null) {
+                            renderPage(pageNumPending);
+                            pageNumPending = null;
+                        }
+                    });
+                });
+
+                // Обновляем текущую страницу
+                document.getElementById('page-num').textContent = num;
+            }
+
+            // Функция для переключения страниц
+            function queueRenderPage(num) {
+                if (pageRendering) {
+                    pageNumPending = num;
+                } else {
+                    renderPage(num);
+                }
+            }
+
+            // Обработчики для перехода на предыдущую/следующую страницу
+            document.getElementById('prev-page').addEventListener('click', function() {
+                if (pageNum <= 1) return;
+                pageNum--;
+                queueRenderPage(pageNum);
+            });
+
+            document.getElementById('next-page').addEventListener('click', function() {
+                if (pageNum >= pdfDoc.numPages) return;
+                pageNum++;
+                queueRenderPage(pageNum);
+            });
+
+            // Обработчики увеличения/уменьшения масштаба
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                scale += 0.25;
+                queueRenderPage(pageNum);
+            });
+
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                if (scale <= 0.5) return;
+                scale -= 0.25;
+                queueRenderPage(pageNum);
+            });
+
+            // Загрузка PDF документа
+            const pdfUrl = "{{ url_for('static', filename='pdf_files/' + olympiad.welcome_pdf) }}";
+
+            pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
+                pdfDoc = pdfDoc_;
+                document.getElementById('page-count').textContent = pdfDoc.numPages;
+
+                // Рендеринг первой страницы
+                renderPage(pageNum);
+            }).catch(function(error) {
+                // Обработка ошибок
+                loader.innerHTML = '<div class="text-center"><p class="text-red-600">Ошибка загрузки PDF: ' + error.message + '</p></div>';
+            });
+
+            // Обработка навигации с клавиатуры
+            document.addEventListener('keydown', function(e) {
+                if (modal.style.display === 'none') return; // Обрабатываем только если модальное окно открыто
+
+                if (e.key === 'ArrowRight' || e.key === ' ') {
+                    // Следующая страница при нажатии стрелки вправо или пробела
+                    if (pageNum < pdfDoc.numPages) {
+                        e.preventDefault(); // Предотвращаем прокрутку страницы при нажатии пробела
+                        pageNum++;
+                        queueRenderPage(pageNum);
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    // Предыдущая страница при нажатии стрелки влево
+                    if (pageNum > 1) {
+                        pageNum--;
+                        queueRenderPage(pageNum);
+                    }
+                }
+            });
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}
