@@ -2,28 +2,98 @@
 
 {% block title %}Вход - Система олимпиад{% endblock %}
 
-{% block content %}
-<div class="flex justify-center">
-    <div class="w-full max-w-md">
-        <div class="bg-white p-8 rounded-lg shadow-md">
-            <h1 class="text-2xl font-bold mb-6 text-center">Вход в систему</h1>
+{% block head %}
+<style>
+    .auth-card {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .auth-header {
+        background: linear-gradient(135deg, #770002 0%, #990002 100%);
+    }
+    .form-input {
+        transition: all 0.2s ease;
+    }
+    .form-input:focus {
+        border-color: #770002;
+        box-shadow: 0 0 0 3px rgba(119, 0, 2, 0.1);
+    }
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(119, 0, 2, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(119, 0, 2, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(119, 0, 2, 0);
+        }
+    }
+</style>
+{% endblock %}
 
-            <form method="POST" action="{{ url_for('login') }}">
-                <div class="space-y-4">
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" id="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+{% block content %}
+<div class="flex justify-center items-center min-h-[70vh]">
+    <div class="w-full max-w-md auth-card bg-white">
+        <div class="auth-header p-6 text-white">
+            <h1 class="text-2xl font-bold mb-2 text-center">Вход в систему</h1>
+            <p class="text-center text-white text-opacity-90">Войдите в ваш аккаунт для доступа к олимпиадам</p>
+        </div>
+
+        <div class="p-8">
+            <form method="POST" action="{{ url_for('login') }}" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Введите ваш email">
                     </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-                        <input type="password" id="password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
-                    </div>
-                    <button type="submit" class="w-full py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Войти</button>
                 </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Введите ваш пароль">
+                    </div>
+                </div>
+                <button
+                    type="submit"
+                    class="w-full py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition duration-200 flex items-center justify-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Войти
+                </button>
             </form>
 
-            <div class="mt-6 text-center">
-                <p class="text-gray-600">Нет аккаунта? <a href="{{ url_for('register') }}" class="text-primary hover:underline">Зарегистрироваться</a></p>
+            <div class="mt-8 text-center">
+                <p class="text-gray-600">Нет аккаунта? <a href="{{ url_for('register') }}" class="text-primary hover:underline font-medium">Зарегистрироваться</a></p>
             </div>
         </div>
     </div>

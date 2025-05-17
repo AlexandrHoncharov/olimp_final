@@ -1,38 +1,127 @@
-<!-- register.html -->
 {% extends "base.html" %}
 
 {% block title %}Регистрация - Система олимпиад{% endblock %}
 
-{% block content %}
-<div class="flex justify-center">
-    <div class="w-full max-w-md">
-        <div class="bg-white p-8 rounded-lg shadow-md">
-            <h1 class="text-2xl font-bold mb-6 text-center">Регистрация</h1>
+{% block head %}
+<style>
+    .auth-card {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .auth-header {
+        background: linear-gradient(135deg, #770002 0%, #990002 100%);
+    }
+    .form-input {
+        transition: all 0.2s ease;
+    }
+    .form-input:focus {
+        border-color: #770002;
+        box-shadow: 0 0 0 3px rgba(119, 0, 2, 0.1);
+    }
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+</style>
+{% endblock %}
 
-            <form method="POST" action="{{ url_for('register') }}">
-                <div class="space-y-4">
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" id="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+{% block content %}
+<div class="flex justify-center items-center py-10">
+    <div class="w-full max-w-lg auth-card bg-white">
+        <div class="auth-header p-6 text-white">
+            <h1 class="text-2xl font-bold mb-2 text-center">Регистрация</h1>
+            <p class="text-center text-white text-opacity-90">Создайте аккаунт для участия в олимпиадах</p>
+        </div>
+
+        <div class="p-8">
+            <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
+                <div class="form-group">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Введите ваш email">
                     </div>
-                    <div>
-                        <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">ФИО</label>
-                        <input type="text" id="full_name" name="full_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
-                    </div>
-                    <div>
-                        <label for="study_group" class="block text-sm font-medium text-gray-700 mb-1">Учебная группа</label>
-                        <input type="text" id="study_group" name="study_group" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
-                    </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-                        <input type="password" id="password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
-                    </div>
-                    <button type="submit" class="w-full py-2 bg-primary text-white rounded hover:bg-opacity-90 transition">Зарегистрироваться</button>
                 </div>
+
+                <div class="form-group">
+                    <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">ФИО</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="full_name"
+                            name="full_name"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Иванов Иван Иванович">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="study_group" class="block text-sm font-medium text-gray-700 mb-1">Учебная группа</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="study_group"
+                            name="study_group"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Например, ИВТ-301">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            required
+                            class="form-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            placeholder="Придумайте пароль">
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Минимум 6 символов, используйте буквы и цифры</p>
+                </div>
+
+                <button
+                    type="submit"
+                    class="w-full py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition duration-200 flex items-center justify-center mt-6"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                    </svg>
+                    Зарегистрироваться
+                </button>
             </form>
 
-            <div class="mt-6 text-center">
-                <p class="text-gray-600">Уже есть аккаунт? <a href="{{ url_for('login') }}" class="text-primary hover:underline">Войти</a></p>
+            <div class="mt-8 text-center">
+                <p class="text-gray-600">Уже есть аккаунт? <a href="{{ url_for('login') }}" class="text-primary hover:underline font-medium">Войти</a></p>
             </div>
         </div>
     </div>

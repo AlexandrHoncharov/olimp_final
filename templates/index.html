@@ -2,53 +2,177 @@
 
 {% block title %}Главная - Система олимпиад{% endblock %}
 
-{% block content %}
-<div class="flex flex-col items-center">
-    <h1 class="text-3xl font-bold mb-8 text-center">Добро пожаловать в систему олимпиад</h1>
+{% block head %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #770002 0%, #990002 100%);
+        border-radius: 1rem;
+    }
+    .olympiad-card {
+        transition: all 0.2s ease;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .olympiad-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+    }
+    .card-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-active {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    .status-upcoming {
+        background-color: #fef9c3;
+        color: #854d0e;
+    }
+    .status-completed {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+    .info-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
+        margin-right: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .info-pill svg {
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
 
+{% block content %}
+{% if not current_user.is_authenticated %}
+<!-- Hero section for guests -->
+<section class="hero-section text-white p-10 md:p-16 mb-12">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">Добро пожаловать в систему олимпиад</h1>
+        <p class="text-xl mb-8 text-white text-opacity-90">Платформа для проведения онлайн-олимпиад с возможностью создания разнообразных заданий и автоматической оценкой результатов.</p>
+        <div class="flex flex-wrap gap-4">
+            <a href="{{ url_for('login') }}" class="btn px-8 py-3 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition shadow-lg">Войти</a>
+            <a href="{{ url_for('register') }}" class="btn px-8 py-3 bg-transparent text-white border-2 border-white font-medium rounded-md hover:bg-white hover:bg-opacity-10 transition">Зарегистрироваться</a>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
+                <div class="text-2xl font-bold mb-2">Удобно</div>
+                <p>Интуитивно понятный интерфейс, доступный с любого устройства</p>
+            </div>
+            <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
+                <div class="text-2xl font-bold mb-2">Быстро</div>
+                <p>Мгновенная проверка ответов и автоматизированный подсчет результатов</p>
+            </div>
+            <div class="bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm">
+                <div class="text-2xl font-bold mb-2">Надежно</div>
+                <p>Защита данных и честная система оценки результатов</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<div class="flex flex-col items-center mb-12">
+    <h1 class="text-4xl font-bold mb-4 text-center">Добро пожаловать, {{ current_user.full_name }}!</h1>
+    <p class="text-xl text-gray-600 max-w-3xl text-center mb-8">Участвуйте в олимпиадах, проверяйте свои знания и занимайте высокие места в рейтинге.</p>
+
+    {% if current_user.is_admin %}
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-10 max-w-4xl w-full">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-semibold text-indigo-800 mb-2">Панель администратора</h2>
+                <p class="text-indigo-600">Управляйте олимпиадами, просматривайте статистику и результаты участников</p>
+            </div>
+            <button
+                id="create-olympiad-button"
+                onclick="showCreateOlympiadModal()"
+                class="btn px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition shadow-md"
+            >
+                Создать олимпиаду
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="w-full">
     {% if current_user.is_authenticated %}
-        <div class="w-full max-w-4xl">
+        <div class="w-full">
             {% if current_user.is_admin %}
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold">Олимпиады</h2>
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold">Олимпиады</h2>
                     <button
                         id="create-olympiad-button"
                         onclick="showCreateOlympiadModal()"
-                        class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                        class="btn px-5 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition shadow-md"
                     >
                         Создать олимпиаду
                     </button>
                 </div>
             {% else %}
-                <h2 class="text-2xl font-semibold mb-6">Доступные олимпиады</h2>
+                <h2 class="text-3xl font-bold mb-8">Доступные олимпиады</h2>
             {% endif %}
 
             {% if olympiads %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {% for olympiad in olympiads %}
-                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-                            <h3 class="text-xl font-semibold mb-2">{{ olympiad.title }}</h3>
-                            <p class="text-gray-600 mb-4 line-clamp-3">{{ olympiad.description }}</p>
-                            <div class="text-sm text-gray-500 mb-4">
-                                <div>Начало: {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}</div>
-                                <div>Окончание: {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}</div>
+                        {% set current_time = now() %}
+                        {% set status = 'upcoming' if olympiad.start_time > current_time else ('active' if olympiad.end_time > current_time else 'completed') %}
+
+                        <div class="olympiad-card bg-white overflow-hidden">
+                            <div class="h-3 {% if status == 'active' %}bg-green-500{% elif status == 'upcoming' %}bg-yellow-500{% else %}bg-gray-400{% endif %}"></div>
+                            <div class="p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h3 class="text-xl font-semibold">{{ olympiad.title }}</h3>
+                                    <span class="card-badge {% if status == 'active' %}status-active{% elif status == 'upcoming' %}status-upcoming{% else %}status-completed{% endif %}">
+                                        {% if status == 'active' %}Активна{% elif status == 'upcoming' %}Скоро{% else %}Завершена{% endif %}
+                                    </span>
+                                </div>
+                                <p class="text-gray-600 mb-4 line-clamp-3">{{ olympiad.description }}</p>
+
+                                <div class="text-sm text-gray-500 mb-4">
+                                    <div class="mb-1.5 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        Начало: {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                    </div>
+                                    <div class="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Окончание: {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                    </div>
+                                </div>
+
+                                <a
+                                    href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}"
+                                    class="btn inline-block w-full text-center px-4 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition"
+                                >
+                                    Подробнее
+                                </a>
                             </div>
-                            <a
-                                href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}"
-                                class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
-                            >
-                                Подробнее
-                            </a>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="bg-white p-8 rounded-lg shadow-md text-center">
-                    <p class="text-xl text-gray-600">Нет доступных олимпиад</p>
+                <div class="bg-white p-10 rounded-lg shadow-md text-center">
+                    <img src="https://cdn.jsdelivr.net/npm/heroicons/outline/clipboard-list.svg" class="w-16 h-16 mx-auto mb-4 text-gray-400">
+                    <p class="text-xl text-gray-600 mb-6">Нет доступных олимпиад</p>
                     {% if current_user.is_admin %}
                         <button
                             onclick="showCreateOlympiadModal()"
-                            class="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
+                            class="btn mt-4 px-6 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition"
                         >
                             Создать олимпиаду
                         </button>
@@ -56,56 +180,48 @@
                 </div>
             {% endif %}
         </div>
-    {% else %}
-        <div class="max-w-2xl text-center">
-            <p class="text-lg mb-6">Платформа для проведения онлайн-олимпиад с возможностью создания разнообразных заданий и автоматической оценкой результатов.</p>
-            <div class="flex justify-center space-x-4">
-                <a href="{{ url_for('login') }}" class="px-6 py-3 bg-primary text-white rounded hover:bg-opacity-90 transition">Войти</a>
-                <a href="{{ url_for('register') }}" class="px-6 py-3 bg-white border border-primary text-primary rounded hover:bg-gray-50 transition">Зарегистрироваться</a>
-            </div>
-        </div>
     {% endif %}
 </div>
 
 {% if current_user.is_authenticated and current_user.is_admin %}
     <!-- Модальное окно для создания олимпиады -->
     <div id="create-olympiad-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
-            <div class="border-b px-6 py-3 flex justify-between items-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 animate-fade-in">
+            <div class="border-b px-6 py-4 flex justify-between items-center bg-primary text-white">
                 <h3 class="text-lg font-medium">Создание новой олимпиады</h3>
-                <button onclick="closeCreateOlympiadModal()" class="text-gray-400 hover:text-gray-500">&times;</button>
+                <button onclick="closeCreateOlympiadModal()" class="text-white hover:text-gray-200 text-xl">&times;</button>
             </div>
             <div class="p-6">
                 <form id="create-olympiad-form" enctype="multipart/form-data">
                     <div class="space-y-4">
                         <div>
                             <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Название олимпиады</label>
-                            <input type="text" id="title" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                            <input type="text" id="title" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
-                            <textarea id="description" name="description" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                            <textarea id="description" name="description" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="start_time" class="block text-sm font-medium text-gray-700 mb-1">Время начала</label>
-                                <input type="datetime-local" id="start_time" name="start_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                                <input type="datetime-local" id="start_time" name="start_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                             </div>
                             <div>
                                 <label for="end_time" class="block text-sm font-medium text-gray-700 mb-1">Время окончания</label>
-                                <input type="datetime-local" id="end_time" name="end_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                                <input type="datetime-local" id="end_time" name="end_time" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                             </div>
                         </div>
                         <div>
                             <label for="welcome_pdf" class="block text-sm font-medium text-gray-700 mb-1">Приветственный PDF (необязательно)</label>
-                            <input type="file" id="welcome_pdf" name="welcome_pdf" accept=".pdf" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                            <input type="file" id="welcome_pdf" name="welcome_pdf" accept=".pdf" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
-                <button onclick="closeCreateOlympiadModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
-                <button onclick="submitCreateOlympiadForm()" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Создать</button>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end rounded-b-lg">
+                <button onclick="closeCreateOlympiadModal()" class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition mr-3">Отмена</button>
+                <button onclick="submitCreateOlympiadForm()" class="btn px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition">Создать</button>
             </div>
         </div>
     </div>

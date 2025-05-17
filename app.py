@@ -143,6 +143,10 @@ class Answer(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+@app.context_processor          # runs for every template render
+def inject_now():
+    # expose a callable, not a value, so you can still call now()
+    return {'now': datetime.utcnow}   # or datetime.now for local time
 
 # Routes
 @app.route('/')
