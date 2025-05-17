@@ -1,4 +1,3 @@
-<!-- base.html - обновленный шаблон с дизайном, соответствующим брендбуку МелГУ -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -9,181 +8,773 @@
     <!-- Загрузка основных стилевых файлов -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 
-    <!-- Tailwind CSS интеграция (оставляем для совместимости) -->
+    <!-- Tailwind CSS интеграция -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#820000', // Черешневый цвет из брендбука
+                        primary: '#820000',
                         'primary-dark': '#5a0002',
                         'primary-light': '#990002',
                     },
                     maxWidth: {
                         '8xl': '88rem'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-down': 'slideDown 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'scale-in': 'scaleIn 0.3s ease-out',
+                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'shimmer': 'shimmer 2s infinite',
                     }
                 },
                 fontFamily: {
-                    'sans': ['Templegarten Regular', 'Inter', 'system-ui', 'sans-serif'],
-                    'serif': ['Templegarten Regular', 'serif']
+                    'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    'serif': ['serif']
                 }
             }
         }
     </script>
 
-    <!-- Inter font (запасной шрифт) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Alpine.js для модальных окон и интерактивности -->
+    <!-- Alpine.js для интерактивности -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    <!-- Axios для асинхронных запросов -->
+    <!-- Axios для AJAX запросов -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-    <!-- Дополнительные стили для анимаций и эффектов -->
+    <!-- Дополнительные стили -->
     <style>
-        /* Стилизация шестиугольных элементов (пчелиные соты) */
-        .hexagon-container {
-            display: flex;
-            flex-wrap: wrap;
-            margin: -30px 0;
+        /* Глобальные стили */
+        :root {
+            --primary: #820000;
+            --primary-light: #a91b2b;
+            --primary-dark: #5a0002;
+            --shadow-primary: rgba(130, 0, 0, 0.3);
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .hexagon {
-            position: relative;
-            width: 100px;
-            height: 110px;
-            margin: 30px 10px;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            background-color: #820000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            transition: all 0.3s;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .hexagon:hover {
-            transform: scale(1.05);
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            overflow-x: hidden;
         }
 
-        /* Логотип с пчелой и символом бесконечности */
-        .mgutiny-logo {
-            width: 40px;
-            height: 40px;
-        }
-
-        /* Карточки с правым бордером в виде сот */
-        .honeycomb-card {
-            border-right: 4px solid #820000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .honeycomb-card::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="20" viewBox="0 0 4 20"><path d="M0,0 L4,2 L4,18 L0,20 Z" fill="%23820000" /></svg>');
-            background-repeat: repeat-y;
-        }
-
-        /* Анимации появления элементов */
+        /* Анимации */
         @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Эффект пульсации для привлечения внимания */
-        .pulse {
-            animation: pulse 2s infinite;
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(130, 0, 0, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(130, 0, 0, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(130, 0, 0, 0);
-            }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Эффект для кнопок */
-        .btn-ripple {
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px var(--shadow-primary); }
+            50% { box-shadow: 0 0 30px var(--shadow-primary), 0 0 40px var(--shadow-primary); }
+        }
+
+        /* Навигационная панель */
+        .main-nav {
+            background: linear-gradient(135deg, #820000 0%, #a91b2b 50%, #820000 100%);
+            box-shadow: 0 4px 20px rgba(130, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
         }
 
-        .btn-ripple:after {
+        .main-nav::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
         }
 
-        .btn-ripple:hover:after {
-            animation: ripple 1s ease-out;
+        .nav-container {
+            max-width: 88rem;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+            position: relative;
+            z-index: 1;
         }
 
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 0.5;
-            }
-            100% {
-                transform: scale(30, 30);
-                opacity: 0;
-            }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            font-size: 1.75rem;
+            font-weight: 800;
+            transition: var(--transition);
         }
 
-        /* Футер с логотипом и символикой университета */
-        .university-footer {
-            background-color: #f8f9fa;
-            border-top: 4px solid #820000;
+        .nav-logo:hover {
+            transform: scale(1.05);
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-logo svg {
+            margin-right: 12px;
+            transition: var(--transition);
+        }
+
+        .nav-logo:hover svg {
+            transform: rotate(360deg);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 12px;
+            transition: var(--transition);
             position: relative;
             overflow: hidden;
         }
 
-        .university-footer::before {
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+        }
+
+        .nav-link:hover::before {
+            left: 0;
+        }
+
+        .nav-link:hover {
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-button {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            color: var(--primary);
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.1), transparent);
+            transition: var(--transition);
+        }
+
+        .nav-button:hover::before {
+            left: 100%;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(130, 0, 0, 0.3);
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Мобильное меню */
+        .mobile-menu-button {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .mobile-menu-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mobile-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+            padding: 20px;
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            box-shadow: 0 8px 32px rgba(130, 0, 0, 0.3);
+        }
+
+        .mobile-menu.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Уведомления/сообщения */
+        .message-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .message {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid;
+            transition: var(--transition);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .message:hover::before {
+            left: 100%;
+        }
+
+        .message.success {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+        }
+
+        .message.error {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+        }
+
+        .message.info {
+            border-left-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+        }
+
+        .message.warning {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+        }
+
+        .message-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .message-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .message-text {
+            flex: 1;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .message-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .message-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #374151;
+        }
+
+        /* Футер */
+        .main-footer {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border-top: 1px solid #e5e7eb;
+            margin-top: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-footer::before {
             content: '';
             position: absolute;
             top: 0;
             right: 0;
-            bottom: 0;
-            width: 200px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="100" viewBox="0 0 56 100"><polygon points="28,0 56,14 56,42 28,56 0,42 0,14" fill="%23820000" opacity="0.1" /></svg>');
+            width: 400px;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="120" viewBox="0 0 60 120"><polygon points="30,5 55,20 55,50 30,65 5,50 5,20" fill="%23820000" opacity="0.03" /></svg>');
             background-repeat: repeat;
-            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .footer-container {
+            max-width: 88rem;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .footer-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 8px 25px var(--shadow-primary);
+            transition: var(--transition);
+        }
+
+        .footer-logo:hover {
+            transform: rotate(360deg) scale(1.1);
+        }
+
+        .footer-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .footer-slogan {
+            color: var(--primary);
+            font-style: italic;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .footer-copyright {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .footer-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 12px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.1), transparent);
+            transition: var(--transition);
+        }
+
+        .footer-link:hover::before {
+            left: 100%;
+        }
+
+        .footer-link:hover {
+            color: var(--primary);
+            text-decoration: none;
+            background: rgba(130, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: scaleIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="80" viewBox="0 0 40 80"><polygon points="20,5 35,15 35,35 20,45 5,35 5,15" fill="white" opacity="0.1" /></svg>');
+            background-repeat: repeat;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 32px;
+            position: relative;
+        }
+
+        .modal-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="120" viewBox="0 0 60 120"><polygon points="30,5 55,20 55,50 30,65 5,50 5,20" fill="%23820000" opacity="0.02" /></svg>');
+            background-repeat: repeat;
+            pointer-events: none;
+        }
+
+        .modal-footer {
+            background: #f8fafc;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .modal-button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: var(--transition);
+        }
+
+        .modal-button:hover::before {
+            left: 100%;
+        }
+
+        .modal-button.primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: 0 4px 15px var(--shadow-primary);
+        }
+
+        .modal-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-primary);
+        }
+
+        .modal-button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .modal-button.secondary:hover {
+            background: #d1d5db;
+            transform: translateY(-2px);
+        }
+
+        /* Загрузчик */
+        .loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loader-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: loader-bounce 1.4s ease-in-out both infinite;
+        }
+
+        .loader-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loader-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loader-bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-button {
+                display: block;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .modal-content {
+                max-width: 95vw;
+                margin: 20px;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 20px;
+            }
+        }
+
+        /* Общие утилиты */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        /* Фон страницы с паттерном */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="200" viewBox="0 0 100 200"><polygon points="50,10 90,35 90,85 50,110 10,85 10,35" fill="%23820000" opacity="0.01" /></svg>');
+            background-repeat: repeat;
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
         }
     </style>
 
     {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-gray-50 font-sans text-gray-800">
-    <!-- Навигационная панель в стиле брендбука МелГУ -->
-    <nav class="bg-[#820000] text-white shadow-lg">
-        <div class="max-w-8xl mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="{{ url_for('index') }}" class="text-2xl font-bold flex items-center">
+<body class="min-h-screen flex flex-col">
+    <!-- Навигационная панель -->
+    <nav class="main-nav" x-data="{ mobileOpen: false }">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="nav-logo">
                 <!-- SVG-логотип пчелы с крыльями-бесконечностью из брендбука -->
-                <svg class="h-10 w-10 mr-3" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
+                <svg class="h-12 w-12" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="2">
                     <g transform="translate(50 50)">
                         <!-- Символ бесконечности (крылья) -->
                         <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
@@ -195,135 +786,194 @@
                         <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="white" />
                     </g>
                 </svg>
-                Система олимпиад МелГУ
+                <span>Система олимпиад МелГУ</span>
             </a>
-            <div class="flex items-center space-x-6">
+
+            <div class="nav-links">
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_olympiads') }}" class="nav-link hover:text-white">Администрирование</a>
+                        <a href="{{ url_for('admin_olympiads') }}" class="nav-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            Администрирование
+                        </a>
                     {% endif %}
-                    <a href="{{ url_for('profile') }}" class="nav-link hover:text-white">Профиль</a>
-                    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-white text-[#820000] font-medium rounded-md hover:bg-gray-100 transition duration-200 btn-ripple">Выйти</a>
+                    <a href="{{ url_for('profile') }}" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        Профиль
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="nav-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Выйти
+                    </a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="nav-link hover:text-white">Вход</a>
-                    <a href="{{ url_for('register') }}" class="px-4 py-2 bg-white text-[#820000] font-medium rounded-md hover:bg-gray-100 transition duration-200 btn-ripple">Регистрация</a>
+                    <a href="{{ url_for('login') }}" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Вход
+                    </a>
+                    <a href="{{ url_for('register') }}" class="nav-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                        </svg>
+                        Регистрация
+                    </a>
                 {% endif %}
+            </div>
+
+            <!-- Кнопка мобильного меню -->
+            <button class="mobile-menu-button" @click="mobileOpen = !mobileOpen">
+                <svg x-show="!mobileOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <svg x-show="mobileOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <!-- Мобильное меню -->
+            <div class="mobile-menu" :class="{ 'active': mobileOpen }">
+                <div class="mobile-menu-links">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_olympiads') }}" class="nav-link">Администрирование</a>
+                        {% endif %}
+                        <a href="{{ url_for('profile') }}" class="nav-link">Профиль</a>
+                        <a href="{{ url_for('logout') }}" class="nav-button">Выйти</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="nav-link">Вход</a>
+                        <a href="{{ url_for('register') }}" class="nav-button">Регистрация</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Сообщения-уведомления в стиле МелГУ -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="max-w-8xl mx-auto px-6 mt-6">
+    <!-- Уведомления-сообщения -->
+    <div class="message-container" id="message-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
                 {% for category, message in messages %}
-                    <div class="p-4 {% if category == 'error' %}bg-red-100 text-red-700 border-red-400{% else %}bg-green-100 text-green-700 border-green-400{% endif %} border rounded-lg mb-2 shadow-sm animate-fade-in">
-                        {{ message }}
+                    <div class="message {{ category if category in ['error', 'success', 'info', 'warning'] else 'info' }}">
+                        <div class="message-content">
+                            <div class="message-icon">
+                                {% if category == 'error' %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-red-500">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                {% elif category == 'success' %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-green-500">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                {% elif category == 'warning' %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-yellow-500">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-blue-500">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <div class="message-text">{{ message }}</div>
+                            <button class="message-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                        </div>
                     </div>
                 {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
     <!-- Основное содержимое -->
-    <main class="max-w-8xl mx-auto px-6 py-8 relative">
-        <!-- Декоративные соты в углу страницы (символика МелГУ) -->
-        <div class="absolute top-0 right-0 opacity-5 z-0 pointer-events-none overflow-hidden">
-            <svg width="300" height="500" viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
-                {% for i in range(20) %}
-                    <polygon
-                        points="
-                            {{ 30 + (i % 3) * 60 }}, {{ 30 + (i // 3) * 100 }}
-                            {{ 60 + (i % 3) * 60 }}, {{ 30 + (i // 3) * 100 }}
-                            {{ 75 + (i % 3) * 60 }}, {{ 55 + (i // 3) * 100 }}
-                            {{ 60 + (i % 3) * 60 }}, {{ 80 + (i // 3) * 100 }}
-                            {{ 30 + (i % 3) * 60 }}, {{ 80 + (i // 3) * 100 }}
-                            {{ 15 + (i % 3) * 60 }}, {{ 55 + (i // 3) * 100 }}"
-                        fill="#820000"
-                    />
-                {% endfor %}
-            </svg>
-        </div>
-
-        <!-- Контент страницы -->
-        <div class="relative z-10">
+    <main class="flex-1 py-8">
+        <div class="max-w-8xl mx-auto px-6 relative z-10">
             {% block content %}{% endblock %}
         </div>
     </main>
 
-    <!-- Футер в стиле МелГУ -->
-    <footer class="university-footer text-gray-800 py-8 mt-12">
-        <div class="max-w-8xl mx-auto px-6">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0 flex items-center">
-                    <!-- SVG-логотип МелГУ в футере -->
-                    <svg class="h-10 w-10 mr-3" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#820000" stroke-width="2">
-                        <g transform="translate(50 50)">
-                            <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
-                            <rect x="-15" y="-25" width="30" height="5" rx="2" fill="#820000" />
-                            <rect x="-5" y="-25" width="10" height="8" fill="#820000" />
-                            <line x1="0" y1="-17" x2="0" y2="-12" stroke="#820000" />
-                            <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="#820000" />
-                        </g>
-                    </svg>
-                    <div>
-                        <p class="text-lg font-semibold">Мелитопольский государственный университет</p>
-                        <p class="text-sm text-gray-500">© 2025 Все права защищены</p>
+    <!-- Футер -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <svg class="h-8 w-8" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2">
+                            <g transform="translate(50 50)">
+                                <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
+                                <rect x="-15" y="-25" width="30" height="5" rx="2" fill="currentColor" />
+                                <rect x="-5" y="-25" width="10" height="8" fill="currentColor" />
+                                <line x1="0" y1="-17" x2="0" y2="-12" stroke="currentColor" />
+                                <path d="M-5,0 Q-5,15 0,20 Q5,15 5,0 Q5,-5 0,-5 Q-5,-5 -5,0 Z" fill="currentColor" />
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="footer-info">
+                        <h3>Мелитопольский государственный университет</h3>
+                        <div class="footer-slogan">"Наш Вуз - твоё будущее!"</div>
+                        <div class="footer-copyright">© 2025 Все права защищены</div>
                     </div>
                 </div>
-                <div class="flex items-center">
-                    <!-- Слоган из брендбука МелГУ -->
-                    <p class="text-[#820000] italic font-medium mr-6">"Наш Вуз - твоё будущее!"</p>
 
-                    <div class="flex space-x-6">
-                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">Контакты</a>
-                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">Помощь</a>
-                        <a href="#" class="text-gray-600 hover:text-[#820000] transition">О системе</a>
-                    </div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                        </svg>
+                        Контакты
+                    </a>
+                    <a href="#" class="footer-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        Помощь
+                    </a>
+                    <a href="#" class="footer-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                        </svg>
+                        О системе
+                    </a>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Модальные окна в стиле МелГУ -->
+    <!-- Модальный контейнер -->
     <div id="modal-container"></div>
 
     <!-- Общие скрипты -->
     <script>
-        // Функция для отображения модальных окон в стиле МелГУ
-        function showModal(title, content, onConfirm = null) {
+        // Функция для отображения модальных окон
+        function showModal(title, content, onConfirm = null, confirmText = 'Подтвердить') {
             const modalContainer = document.getElementById('modal-container');
 
             const modalHTML = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center" x-data="{open: true}" x-show="open">
-                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 animate-fade-in" @click.outside="open = false">
-                        <div class="border-b px-6 py-4 flex justify-between items-center bg-[#820000] text-white">
-                            <h3 class="text-lg font-medium flex items-center">
-                                <!-- Логотип МелГУ в модальном окне -->
-                                <svg class="h-5 w-5 mr-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white">
+                <div class="modal-overlay" onclick="closeModal(event)">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h3 class="modal-title">
+                                <svg class="h-6 w-6" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
                                     <g transform="translate(50 50)">
                                         <path d="M-20,0 C-30,-15 -15,-15 -10,-5 C-5,5 5,5 10,-5 C15,-15 30,-15 20,0 C30,15 15,15 10,5 C5,-5 -5,-5 -10,5 C-15,15 -30,15 -20,0 Z" fill="none" />
                                     </g>
                                 </svg>
                                 ${title}
                             </h3>
-                            <button @click="open = false" class="text-white hover:text-gray-200 text-xl">&times;</button>
+                            <button class="modal-close" onclick="closeModal()">&times;</button>
                         </div>
-                        <div class="p-6 relative">
-                            <!-- Декоративные соты в модальном окне -->
-                            <div class="absolute top-0 right-0 opacity-5 pointer-events-none overflow-hidden h-full">
-                                <svg width="100" height="100%" preserveAspectRatio="none" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-                                    <polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="#820000" />
-                                    <polygon points="50,100 100,125 100,175 50,200 0,175 0,125" fill="#820000" />
-                                </svg>
-                            </div>
-                            <div class="relative z-10">
-                                ${content}
-                            </div>
+                        <div class="modal-body">
+                            ${content}
                         </div>
-                        <div class="bg-gray-50 px-6 py-4 flex justify-end rounded-b-lg">
-                            <button @click="open = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200 mr-3 btn-ripple">Отмена</button>
-                            ${onConfirm ? `<button id="modal-confirm" class="px-4 py-2 bg-[#820000] text-white rounded-md hover:bg-opacity-90 transition duration-200 btn-ripple">Подтвердить</button>` : ''}
+                        <div class="modal-footer">
+                            <button class="modal-button secondary" onclick="closeModal()">Отмена</button>
+                            ${onConfirm ? `<button id="modal-confirm" class="modal-button primary">${confirmText}</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -334,43 +984,152 @@
             if (onConfirm) {
                 document.getElementById('modal-confirm').addEventListener('click', () => {
                     onConfirm();
-                    modalContainer.innerHTML = '';
+                    closeModal();
                 });
+            }
+
+            // Добавляем обработчик ESC
+            document.addEventListener('keydown', modalKeyHandler);
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+
+            const modalContainer = document.getElementById('modal-container');
+            const modalOverlay = modalContainer.querySelector('.modal-overlay');
+
+            if (modalOverlay) {
+                modalOverlay.style.animation = 'fadeOut 0.3s ease-out';
+                modalOverlay.querySelector('.modal-content').style.animation = 'scaleOut 0.3s ease-out';
+
+                setTimeout(() => {
+                    modalContainer.innerHTML = '';
+                    document.removeEventListener('keydown', modalKeyHandler);
+                }, 300);
             }
         }
 
-        // Функция для отображения сообщений в стиле МелГУ
+        function modalKeyHandler(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        }
+
+        // Функция для отображения сообщений
         function showMessage(message, type = 'success') {
-            const messageContainer = document.createElement('div');
+            const messageContainer = document.getElementById('message-container');
+            const messageId = 'message-' + Date.now();
 
-            // Применяем стили в соответствии с брендбуком МелГУ
-            messageContainer.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-white text-[#820000] border-l-4 border-[#820000]'} animate-fade-in`;
-
-            // Добавляем иконку и текст
-            messageContainer.innerHTML = `
-                <div class="flex items-center">
-                    ${type === 'error' ?
-                        '<svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>' :
-                        '<svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>'
-                    }
-                    <span>${message}</span>
+            const messageHTML = `
+                <div id="${messageId}" class="message ${type}">
+                    <div class="message-content">
+                        <div class="message-icon">
+                            ${getMessageIcon(type)}
+                        </div>
+                        <div class="message-text">${message}</div>
+                        <button class="message-close" onclick="removeMessage('${messageId}')">&times;</button>
+                    </div>
                 </div>
             `;
 
-            document.body.appendChild(messageContainer);
+            messageContainer.insertAdjacentHTML('beforeend', messageHTML);
 
-            // Анимация исчезновения
-            messageContainer.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-
+            // Автоудаление через 5 секунд
             setTimeout(() => {
-                messageContainer.style.opacity = '0';
-                messageContainer.style.transform = 'translateY(-10px)';
-                setTimeout(() => {
-                    messageContainer.remove();
-                }, 300);
-            }, 3000);
+                removeMessage(messageId);
+            }, 5000);
         }
+
+        function getMessageIcon(type) {
+            const icons = {
+                success: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-green-500"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>',
+                error: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-red-500"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>',
+                warning: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-yellow-500"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>',
+                info: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="text-blue-500"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>'
+            };
+            return icons[type] || icons.info;
+        }
+
+        function removeMessage(messageId) {
+            const message = document.getElementById(messageId);
+            if (message) {
+                message.style.animation = 'slideUp 0.3s ease-out reverse';
+                setTimeout(() => {
+                    message.remove();
+                }, 300);
+            }
+        }
+
+        // Автоматическое закрытие флеш-сообщений
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach((message, index) => {
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.style.animation = 'slideUp 0.3s ease-out reverse';
+                        setTimeout(() => {
+                            message.remove();
+                        }, 300);
+                    }
+                }, 5000 + index * 500);
+            });
+        });
+
+        // Анимации появления элементов при прокрутке
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in');
+                }
+            });
+        }, observerOptions);
+
+        // Наблюдение за элементами при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('main > div > *').forEach(el => {
+                observer.observe(el);
+            });
+        });
+
+        // Плавная прокрутка для якорных ссылок
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Добавление CSS для анимации fadeOut и scaleOut
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            @keyframes scaleOut {
+                from { opacity: 1; transform: scale(1); }
+                to { opacity: 0; transform: scale(0.9); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Глобальные функции
+        window.showModal = showModal;
+        window.closeModal = closeModal;
+        window.showMessage = showMessage;
     </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

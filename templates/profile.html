@@ -1,219 +1,1094 @@
-<!-- profile.html -->
 {% extends "base.html" %}
 
-{% block title %}Профиль - Система олимпиад{% endblock %}
+{% block title %}Профиль - {{ current_user.full_name }}{% endblock %}
 
 {% block head %}
 <style>
-    .profile-header {
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
-        border-radius: 1rem;
+    /* Основные стили профиля */
+    .profile-hero {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 25%, #dc2626 50%, #a91b2b 75%, #820000 100%);
+        border-radius: 32px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
     }
+
+    .profile-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        animation: hero-shimmer 6s infinite;
+    }
+
+    @keyframes hero-shimmer {
+        0% { left: -100%; opacity: 0; }
+        50% { opacity: 1; }
+        100% { left: 100%; opacity: 0; }
+    }
+
+    /* Аватар пользователя */
+    .user-avatar {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        color: #820000;
+        border: 6px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .user-avatar::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(130, 0, 0, 0.1), transparent);
+        transform: rotate(45deg);
+        transition: transform 0.6s ease;
+    }
+
+    .user-avatar:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 12px 40px rgba(130, 0, 0, 0.2);
+    }
+
+    .user-avatar:hover::before {
+        transform: rotate(45deg) translate(50%, 50%);
+    }
+
+    /* Статистические карточки */
     .stat-card {
-        transition: all 0.2s ease;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        padding: 32px;
+        border: 1px solid rgba(130, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
     .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(130, 0, 0, 0.15),
+                    0 0 0 1px rgba(130, 0, 0, 0.1);
     }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-value.primary {
+        background: linear-gradient(135deg, #820000 0%, #dc2626 50%, #ef4444 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-value.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-value.info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-icon {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-icon.primary {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        color: #dc2626;
+    }
+
+    .stat-icon.success {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        color: #059669;
+    }
+
+    .stat-icon.info {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        color: #2563eb;
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: rotate(360deg) scale(1.15);
+    }
+
+    .stat-card:hover .stat-icon.primary {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+    }
+
+    .stat-card:hover .stat-icon.success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+    }
+
+    .stat-card:hover .stat-icon.info {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        color: white;
+    }
+
+    /* Карточки олимпиад */
     .olympiad-card {
-        border-left: 4px solid transparent;
-        transition: all 0.2s ease;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 20px;
+        padding: 28px;
+        border: 2px solid transparent;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
+
+    .olympiad-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.05), transparent);
+        transition: left 0.6s ease;
+    }
+
     .olympiad-card:hover {
-        transform: translateX(2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transform: translateX(8px) translateY(-4px);
+        box-shadow: 0 12px 32px rgba(130, 0, 0, 0.12);
     }
+
+    .olympiad-card:hover::before {
+        left: 100%;
+    }
+
+    .olympiad-card.completed {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .olympiad-card.in-progress {
+        background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .olympiad-card.registered {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .olympiad-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 12px;
+        transition: color 0.3s ease;
+    }
+
+    .olympiad-card:hover .olympiad-title {
+        color: #820000;
+    }
+
+    /* Статусные значки */
     .status-badge {
         display: inline-flex;
         align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .status-badge:hover::before {
+        left: 100%;
+    }
+
+    .status-badge.completed {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.in-progress {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .status-badge.registered {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+    }
+
+    /* Результаты олимпиады */
+    .olympiad-results {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .olympiad-results::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .olympiad-card.completed .olympiad-results::before {
+        opacity: 1;
+    }
+
+    .score-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .score-value {
+        font-size: 2rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .score-label {
+        color: #6b7280;
         font-weight: 500;
     }
-    .status-completed {
-        background-color: #dcfce7;
-        color: #166534;
+
+    /* Кнопки действий */
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
     }
-    .status-in-progress {
-        background-color: #dbeafe;
-        color: #1e40af;
+
+    .action-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
     }
-    .status-registered {
-        background-color: #f3f4f6;
-        color: #4b5563;
+
+    .action-button:hover::before {
+        left: 100%;
     }
-    .olympiad-in-progress {
-        border-left-color: #60a5fa;
+
+    .action-button.primary {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(130, 0, 0, 0.3);
     }
-    .olympiad-completed {
-        border-left-color: #34d399;
+
+    .action-button.primary:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(130, 0, 0, 0.4);
+        color: white;
+        text-decoration: none;
     }
-    .olympiad-registered {
-        border-left-color: #9ca3af;
+
+    .action-button.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .action-button.success:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-button.info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .action-button.info:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Декоративные элементы */
+    .decorative-circles {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        opacity: 0.1;
+        pointer-events: none;
+        background-image: radial-gradient(circle, white 2px, transparent 2px);
+        background-size: 40px 40px;
+        animation: float 8s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+            transform: translateY(-20px) rotate(5deg);
+        }
+    }
+
+    /* Пустая страница профиля */
+    .empty-state {
+        text-align: center;
+        padding: 80px 40px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        border: 2px dashed rgba(130, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .empty-state::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.05) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .empty-state:hover::before {
+        opacity: 1;
+    }
+
+    .empty-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        transition: all 0.4s ease;
+    }
+
+    .empty-state:hover .empty-icon {
+        transform: scale(1.1) rotate(10deg);
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    }
+
+    /* Анимации появления */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 60px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            opacity: 0;
+            transform: translate3d(-60px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes slideInFromRight {
+        from {
+            opacity: 0;
+            transform: translate3d(60px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    .animate-slideInFromLeft {
+        animation: slideInFromLeft 0.8s ease-out;
+    }
+
+    .animate-slideInFromRight {
+        animation: slideInFromRight 0.8s ease-out;
+    }
+
+    .animate-scaleIn {
+        animation: scaleIn 0.6s ease-out;
+    }
+
+    /* Дополнительные детали */
+    .info-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #64748b;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .info-pill:hover {
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        transform: translateY(-2px);
+    }
+
+    .info-pill svg {
+        margin-right: 4px;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .user-avatar {
+            width: 100px;
+            height: 100px;
+            font-size: 2.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+        }
+
+        .stat-card {
+            padding: 24px;
+        }
+
+        .olympiad-card {
+            padding: 20px;
+        }
+
+        .olympiad-card:hover {
+            transform: translateY(-4px);
+        }
+    }
+
+    /* Специальные эффекты для админов */
+    .admin-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+        animation: admin-pulse 2s infinite;
+    }
+
+    @keyframes admin-pulse {
+        0%, 100% {
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+        }
+        50% {
+            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.6);
+            transform: scale(1.1);
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="profile-header text-white p-8 mb-8">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold mb-2">{{ current_user.full_name }}</h1>
-            <p class="text-white text-opacity-90">{{ current_user.email }}</p>
-            {% if current_user.study_group %}
-                <p class="text-white text-opacity-80 mt-1">Группа: {{ current_user.study_group }}</p>
-            {% endif %}
-        </div>
-
-        {% if current_user.is_admin %}
-            <div class="mt-4 md:mt-0">
-                <span class="bg-white bg-opacity-20 px-4 py-2 rounded-full backdrop-blur-sm">
-                    Администратор системы
-                </span>
+<!-- Героическая секция профиля -->
+<div class="profile-hero text-white p-8 md:p-12 mb-8 animate-fadeInUp">
+    <div class="decorative-circles"></div>
+    <div class="relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-col md:flex-row md:items-center mb-6 md:mb-0">
+                <div class="relative mb-6 md:mb-0 md:mr-8 self-center md:self-auto">
+                    <div class="user-avatar">
+                        {{ current_user.full_name[0].upper() }}
+                    </div>
+                    {% if current_user.is_admin %}
+                        <div class="admin-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ current_user.full_name }}</h1>
+                    <p class="text-white text-opacity-90 text-lg mb-2">{{ current_user.email }}</p>
+                    {% if current_user.study_group %}
+                        <p class="text-white text-opacity-80 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
+                            </svg>
+                            Группа: {{ current_user.study_group }}
+                        </p>
+                    {% endif %}
+                    {% if current_user.is_admin %}
+                        <div class="inline-flex items-center px-6 py-2 bg-white bg-opacity-20 rounded-full backdrop-blur-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Администратор системы
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 
+<!-- Статистика -->
 {% if participations %}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         {% set completed = participations|selectattr('status', 'equalto', 'completed')|list|length %}
         {% set in_progress = participations|selectattr('status', 'equalto', 'in_progress')|list|length %}
         {% set registered = participations|selectattr('status', 'equalto', 'registered')|list|length %}
 
-        <div class="stat-card bg-white p-6 rounded-lg shadow-md text-center">
-            <div class="text-4xl font-bold text-primary mb-2">{{ participations|length }}</div>
-            <div class="text-gray-600">Всего олимпиад</div>
+        <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.1s">
+            <div class="stat-icon primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="stat-value primary counter" id="total-counter">{{ participations|length }}</div>
+            <div class="stat-label">Всего олимпиад</div>
         </div>
 
-        <div class="stat-card bg-white p-6 rounded-lg shadow-md text-center">
-            <div class="text-4xl font-bold text-green-600 mb-2">{{ completed }}</div>
-            <div class="text-gray-600">Завершенных</div>
+        <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.2s">
+            <div class="stat-icon success">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="stat-value success counter" id="completed-counter">{{ completed }}</div>
+            <div class="stat-label">Завершено</div>
         </div>
 
-        <div class="stat-card bg-white p-6 rounded-lg shadow-md text-center">
-            <div class="text-4xl font-bold text-blue-600 mb-2">{{ in_progress }}</div>
-            <div class="text-gray-600">В процессе</div>
+        <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.3s">
+            <div class="stat-icon info">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="stat-value info counter" id="progress-counter">{{ in_progress }}</div>
+            <div class="stat-label">В процессе</div>
         </div>
     </div>
 
-    <h2 class="text-2xl font-bold mb-6">Мои олимпиады</h2>
+    <!-- Список олимпиад -->
+    <div class="mb-8 animate-slideInFromRight">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">🏆 Мои олимпиады</h2>
 
-    <div class="space-y-4">
-        {% for participation in participations %}
-            {% set olympiad = participation.olympiad %}
-            <div class="olympiad-card bg-white p-6 rounded-lg shadow-md
-                  {% if participation.status == 'completed' %}olympiad-completed
-                  {% elif participation.status == 'in_progress' %}olympiad-in-progress
-                  {% else %}olympiad-registered{% endif %}">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-start">
-                    <div class="mb-4 md:mb-0 md:mr-4 flex-grow">
-                        <div class="flex items-start justify-between">
-                            <h3 class="text-xl font-semibold mb-2">{{ olympiad.title }}</h3>
-                            <div class="md:hidden">
-                                {% if participation.status == 'completed' %}
-                                    <span class="status-badge status-completed">Завершена</span>
-                                {% elif participation.status == 'in_progress' %}
-                                    <span class="status-badge status-in-progress">В процессе</span>
-                                {% else %}
-                                    <span class="status-badge status-registered">Зарегистрирован</span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <p class="text-gray-600 mb-3">{{ olympiad.description[:150] }}{% if olympiad.description|length > 150 %}...{% endif %}</p>
-
-                        <div class="flex flex-wrap gap-4 text-sm mb-3">
-                            <div class="flex items-center text-gray-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
-                                </svg>
-                                Начало: {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
-                            </div>
-                            <div class="flex items-center text-gray-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                                </svg>
-                                Окончание: {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
-                            </div>
-                        </div>
-
-                        {% if participation.status == 'completed' %}
-                            <div class="p-3 bg-gray-50 rounded-lg">
-                                <div class="flex justify-between items-center">
-                                    <div class="text-gray-800">
-                                        <span class="font-medium">Итоговый балл:</span>
-                                        <span class="font-bold text-lg text-primary">{{ participation.total_points }}</span>
-                                    </div>
-                                    {% if participation.finish_time %}
-                                        <div class="text-gray-600 text-sm flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <div class="space-y-6">
+            {% for participation in participations %}
+                {% set olympiad = participation.olympiad %}
+                <div class="olympiad-card {% if participation.status == 'completed' %}completed{% elif participation.status == 'in_progress' %}in-progress{% else %}registered{% endif %}" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start">
+                        <div class="flex-1 mb-6 lg:mb-0 lg:mr-6">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+                                <h3 class="olympiad-title">{{ olympiad.title }}</h3>
+                                <div class="mt-2 sm:mt-0">
+                                    {% if participation.status == 'completed' %}
+                                        <span class="status-badge completed">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            </svg>
+                                            Завершена
+                                        </span>
+                                    {% elif participation.status == 'in_progress' %}
+                                        <span class="status-badge in-progress">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                                             </svg>
-                                            Завершена {{ participation.finish_time.strftime('%d.%m.%Y %H:%M') }}
-                                        </div>
+                                            В процессе
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge registered">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z" />
+                                            </svg>
+                                            Зарегистрирован
+                                        </span>
                                     {% endif %}
                                 </div>
                             </div>
-                        {% endif %}
-                    </div>
 
-                    <div class="flex flex-col md:items-end">
-                        <div class="hidden md:block mb-4">
+                            <p class="text-gray-600 mb-4 leading-relaxed">{{ olympiad.description[:180] }}{% if olympiad.description|length > 180 %}...{% endif %}</p>
+
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <div class="info-pill">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Начало: {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                </div>
+                                <div class="info-pill">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Окончание: {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+                                </div>
+                            </div>
+
                             {% if participation.status == 'completed' %}
-                                <span class="status-badge status-completed">Завершена</span>
-                            {% elif participation.status == 'in_progress' %}
-                                <span class="status-badge status-in-progress">В процессе</span>
-                            {% else %}
-                                <span class="status-badge status-registered">Зарегистрирован</span>
+                                <div class="olympiad-results">
+                                    <div class="score-display">
+                                        <div>
+                                            <div class="score-value">{{ participation.total_points }}</div>
+                                            <div class="score-label">Итоговый балл</div>
+                                        </div>
+                                        {% if participation.finish_time %}
+                                            <div class="text-right">
+                                                <div class="text-sm text-gray-600">Завершено</div>
+                                                <div class="text-sm font-medium">{{ participation.finish_time.strftime('%d.%m.%Y %H:%M') }}</div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             {% endif %}
                         </div>
 
-                        {% if participation.status == 'completed' %}
-                            <a href="{{ url_for('olympiad_results', olympiad_id=olympiad.id) }}"
-                               class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                </svg>
-                                Результаты
-                            </a>
-                        {% elif participation.status == 'in_progress' %}
-                            <a href="{{ url_for('take_olympiad', olympiad_id=olympiad.id) }}"
-                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                                Продолжить
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}"
-                               class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                                </svg>
-                                Подробнее
-                            </a>
-                        {% endif %}
+                        <div class="flex flex-col sm:flex-row lg:flex-col gap-3">
+                            {% if participation.status == 'completed' %}
+                                <a href="{{ url_for('olympiad_results', olympiad_id=olympiad.id) }}" class="action-button success">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                                    </svg>
+                                    Результаты
+                                </a>
+                            {% elif participation.status == 'in_progress' %}
+                                <a href="{{ url_for('take_olympiad', olympiad_id=olympiad.id) }}" class="action-button info">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                    </svg>
+                                    Продолжить
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="action-button primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                    </svg>
+                                    Подробнее
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
 {% else %}
-    <div class="bg-white p-8 rounded-lg shadow-md text-center">
-        <img src="https://cdn.jsdelivr.net/npm/heroicons/outline/clipboard-list.svg" class="w-20 h-20 mx-auto mb-6 text-gray-400">
-        <p class="text-xl text-gray-600 mb-6">Вы еще не участвовали в олимпиадах</p>
-        <a href="{{ url_for('index') }}" class="inline-block px-5 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition shadow-md">
-            <span class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-                Найти олимпиады
-            </span>
+    <!-- Пустое состояние -->
+    <div class="empty-state animate-scaleIn">
+        <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Пока нет участий в олимпиадах</h3>
+        <p class="text-gray-600 text-lg mb-8">Начните свой путь к знаниям, приняв участие в первой олимпиаде!</p>
+        <a href="{{ url_for('index') }}" class="action-button primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+            </svg>
+            Найти олимпиады
         </a>
     </div>
 {% endif %}
+
+<!-- Быстрые действия для администраторов -->
+{% if current_user.is_admin %}
+    <div class="mt-12 animate-fadeInUp">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800">⚙️ Панель администратора</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Управление олимпиадами</h3>
+                <p class="text-gray-600 mb-6">Создавайте, редактируйте и управляйте олимпиадами</p>
+                <a href="{{ url_for('admin_olympiads') }}" class="action-button primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    Управлять
+                </a>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Аналитика и отчеты</h3>
+                <p class="text-gray-600 mb-6">Просматривайте статистику и результаты участников</p>
+                <a href="{{ url_for('admin_olympiads') }}" class="action-button success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    Статистика
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Анимация счетчиков
+        animateCounters();
+
+        // Настройка Intersection Observer для анимаций
+        setupIntersectionObserver();
+
+        // Инициализация интерактивных эффектов
+        setupInteractiveEffects();
+    });
+
+    function animateCounters() {
+        const counters = document.querySelectorAll('.counter');
+
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            const duration = 2000; // 2 секунды
+            const startTime = performance.now();
+
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Используем easing функцию для плавности
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(easeOutQuart * target);
+
+                counter.textContent = currentValue;
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                    // Добавляем пульсацию в конце
+                    counter.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        counter.style.transform = 'scale(1)';
+                    }, 200);
+                }
+            }
+
+            // Запускаем анимацию с небольшой задержкой
+            setTimeout(() => {
+                requestAnimationFrame(updateCounter);
+            }, 500);
+        });
+    }
+
+    function setupIntersectionObserver() {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -10% 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                    entry.target.style.opacity = '1';
+                }
+            });
+        }, observerOptions);
+
+        // Наблюдаем за всеми элементами с анимацией
+        document.querySelectorAll('[class*="animate-"]').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            el.style.opacity = '0';
+            observer.observe(el);
+        });
+    }
+
+    function setupInteractiveEffects() {
+        // Эффекты при наведении на карточки
+        document.querySelectorAll('.stat-card, .olympiad-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                // Добавляем класс для CSS hover эффектов
+                this.classList.add('hovered');
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.classList.remove('hovered');
+            });
+        });
+
+        // Интерактивный аватар
+        const avatar = document.querySelector('.user-avatar');
+        if (avatar) {
+            avatar.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95) rotate(-5deg)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1.05) rotate(5deg)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1) rotate(0deg)';
+                    }, 150);
+                }, 150);
+            });
+        }
+
+        // Эффект частиц при наведении на админский значок
+        const adminBadge = document.querySelector('.admin-badge');
+        if (adminBadge) {
+            adminBadge.addEventListener('mouseenter', function() {
+                createParticles(this);
+            });
+        }
+    }
+
+    function createParticles(element) {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        for (let i = 0; i < 6; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                particle.style.backgroundColor = '#fbbf24';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '9999';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+
+                const angle = (i / 6) * Math.PI * 2;
+                const distance = 30 + Math.random() * 20;
+                const targetX = centerX + Math.cos(angle) * distance;
+                const targetY = centerY + Math.sin(angle) * distance;
+
+                document.body.appendChild(particle);
+
+                particle.style.transition = 'all 0.8s ease-out';
+                particle.style.opacity = '1';
+
+                requestAnimationFrame(() => {
+                    particle.style.left = targetX + 'px';
+                    particle.style.top = targetY + 'px';
+                    particle.style.opacity = '0';
+                    particle.style.transform = 'scale(0)';
+                });
+
+                setTimeout(() => {
+                    particle.remove();
+                }, 800);
+            }, i * 50);
+        }
+    }
+
+    // Эффект печатания для заголовка (если нужно)
+    function typeWriter(element, text, speed = 100) {
+        let i = 0;
+        element.textContent = '';
+
+        function type() {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+                setTimeout(type, speed);
+            }
+        }
+
+        type();
+    }
+
+    // Добавляем эффекты при прокрутке
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const parallax = document.querySelector('.decorative-circles');
+
+        if (parallax) {
+            const speed = scrolled * 0.5;
+            parallax.style.transform = `translateY(${speed}px)`;
+        }
+    });
+
+    // Приветственная анимация при загрузке страницы
+    {% if participations and participations|length > 0 %}
+    setTimeout(() => {
+        // Показываем конфетти для активных пользователей
+        {% if participations|selectattr('status', 'equalto', 'completed')|list|length >= 3 %}
+        createCelebrationEffect();
+        {% endif %}
+    }, 2000);
+
+    function createCelebrationEffect() {
+        const colors = ['#820000', '#fbbf24', '#10b981', '#3b82f6'];
+
+        for (let i = 0; i < 20; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.width = '8px';
+                particle.style.height = '8px';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '9999';
+                particle.style.left = Math.random() * window.innerWidth + 'px';
+                particle.style.top = '-10px';
+                particle.style.transition = 'all 3s ease-out';
+
+                document.body.appendChild(particle);
+
+                requestAnimationFrame(() => {
+                    particle.style.top = window.innerHeight + 10 + 'px';
+                    particle.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    particle.style.opacity = '0';
+                });
+
+                setTimeout(() => {
+                    particle.remove();
+                }, 3000);
+            }, i * 100);
+        }
+    }
+    {% endif %}
+</script>
 {% endblock %}

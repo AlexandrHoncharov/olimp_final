@@ -1,101 +1,968 @@
-<!-- olympiad/results.html -->
 {% extends "base.html" %}
 
 {% block title %}Результаты - {{ olympiad.title }}{% endblock %}
 
+{% block head %}
+<style>
+    /* Основные стили с анимациями */
+    .results-hero {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 25%, #dc2626 50%, #a91b2b 75%, #820000 100%);
+        border-radius: 32px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .results-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: hero-shimmer 4s infinite;
+    }
+
+    @keyframes hero-shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Анимированные декоративные элементы */
+    .decorative-hexagons {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 400px;
+        height: 100%;
+        opacity: 0.1;
+        pointer-events: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="140" viewBox="0 0 80 140"><polygon points="40,10 70,30 70,70 40,90 10,70 10,30" fill="white" /></svg>');
+        background-repeat: repeat;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+
+    /* Карточки статистики */
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(130, 0, 0, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(130, 0, 0, 0.15),
+                    0 0 0 1px rgba(130, 0, 0, 0.1);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-value {
+        font-size: 3.5rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 50%, #ef4444 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-icon {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #dc2626;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: rotate(360deg) scale(1.1);
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+    }
+
+    /* Блок-карточки с результатами */
+    .block-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 20px;
+        padding: 28px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .block-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.05), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .block-card:hover {
+        transform: translateX(8px);
+        box-shadow: 0 12px 32px rgba(130, 0, 0, 0.12);
+        border-color: rgba(130, 0, 0, 0.2);
+    }
+
+    .block-card:hover::before {
+        left: 100%;
+    }
+
+    .block-card.completed {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .block-card.not-attempted {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .block-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+    }
+
+    .block-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        margin-right: 16px;
+        box-shadow: 0 4px 12px rgba(130, 0, 0, 0.3);
+    }
+
+    /* Прогресс-бары для блоков */
+    .progress-container {
+        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+        border-radius: 16px;
+        height: 12px;
+        overflow: hidden;
+        margin: 16px 0;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: 16px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar.success {
+        background: linear-gradient(90deg, #10b981 0%, #059669 50%, #047857 100%);
+    }
+
+    .progress-bar.partial {
+        background: linear-gradient(90deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    }
+
+    .progress-bar.failed {
+        background: linear-gradient(90deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    }
+
+    .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: progress-shine 2s infinite;
+    }
+
+    @keyframes progress-shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Топ участников таблица */
+    .rankings-table {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(130, 0, 0, 0.1);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        padding: 24px;
+    }
+
+    .table-row {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.02), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .table-row:hover {
+        background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+        transform: translateX(4px);
+    }
+
+    .table-row:hover::before {
+        left: 100%;
+    }
+
+    .table-row.current-user {
+        background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
+        border: 2px solid #fbbf24;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+    }
+
+    .ranking-position {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-weight: bold;
+        color: white;
+        margin-right: 16px;
+    }
+
+    .ranking-position.first {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    }
+
+    .ranking-position.second {
+        background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        box-shadow: 0 4px 12px rgba(156, 163, 175, 0.4);
+    }
+
+    .ranking-position.third {
+        background: linear-gradient(135deg, #cd7f32 0%, #b97828 100%);
+        box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+    }
+
+    .ranking-position.other {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    }
+
+    /* Награды и значки */
+    .achievement-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-right: 12px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .achievement-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .achievement-badge:hover::before {
+        left: 100%;
+    }
+
+    .achievement-badge.excellent {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .achievement-badge.good {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .achievement-badge.satisfactory {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Анимации появления */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 60px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            opacity: 0;
+            transform: translate3d(-60px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes slideInFromRight {
+        from {
+            opacity: 0;
+            transform: translate3d(60px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    .animate-slideInFromLeft {
+        animation: slideInFromLeft 0.8s ease-out;
+    }
+
+    .animate-slideInFromRight {
+        animation: slideInFromRight 0.8s ease-out;
+    }
+
+    .animate-scaleIn {
+        animation: scaleIn 0.6s ease-out;
+    }
+
+    /* Эффект счетчика */
+    .counter {
+        transition: all 0.5s ease;
+    }
+
+    .counter.animate {
+        transform: scale(1.1);
+    }
+
+    /* Кнопки действий */
+    .action-button {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        padding: 16px 32px;
+        border-radius: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(130, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .action-button:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(130, 0, 0, 0.4);
+        text-decoration: none;
+        color: white;
+    }
+
+    .action-button:hover::before {
+        left: 100%;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .stat-value {
+            font-size: 2.5rem;
+        }
+
+        .stat-card {
+            padding: 24px;
+        }
+
+        .block-card {
+            padding: 20px;
+        }
+
+        .table-row:hover {
+            transform: none;
+        }
+    }
+
+    /* Дополнительные элементы */
+    .completion-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-green {
+        0%, 100% {
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+        50% {
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6);
+            transform: scale(1.1);
+        }
+    }
+
+    /* Карточка поздравления */
+    .congratulations-card {
+        background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
+        border: 2px solid #fbbf24;
+        border-radius: 24px;
+        padding: 32px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 32px;
+        box-shadow: 0 8px 25px rgba(251, 191, 36, 0.15);
+    }
+
+    .congratulations-card::before {
+        content: '🎉';
+        position: absolute;
+        font-size: 4rem;
+        top: -20px;
+        right: -20px;
+        opacity: 0.2;
+        animation: rotate 4s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="mb-6">
-        <a href="{{ url_for('profile') }}" class="text-primary hover:underline">&larr; Вернуться к профилю</a>
-    </div>
+<div class="mb-6 animate-fadeInUp">
+    <a href="{{ url_for('profile') }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Вернуться к профилю
+    </a>
+</div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-        <h1 class="text-2xl font-bold mb-4">Результаты олимпиады: {{ olympiad.title }}</h1>
+<!-- Поздравительная карточка для высоких результатов -->
+{% if participation.total_points >= 70 %}
+<div class="congratulations-card animate-scaleIn">
+    <h2 class="text-2xl font-bold text-amber-800 mb-4">🏆 Поздравляем с отличным результатом!</h2>
+    <p class="text-amber-700 text-lg">Вы показали превосходные знания и заняли высокое место в рейтинге!</p>
+</div>
+{% endif %}
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="p-4 bg-gray-50 rounded-lg">
-                <div class="text-gray-600 text-sm">Ваш результат</div>
-                <div class="text-3xl font-bold text-primary">{{ participation.total_points }} баллов</div>
+<!-- Героическая секция с основными результатами -->
+<div class="results-hero text-white p-8 md:p-12 mb-8 animate-fadeInUp">
+    <div class="decorative-hexagons"></div>
+    <div class="relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold mb-6">Результаты олимпиады</h1>
+        <h2 class="text-xl md:text-2xl font-medium mb-8 text-white text-opacity-90">{{ olympiad.title }}</h2>
+
+        <div class="flex items-center justify-center mb-8">
+            <div class="text-center">
+                <div class="text-6xl md:text-7xl font-black mb-4 counter" id="main-score">{{ participation.total_points }}</div>
+                <div class="text-xl md:text-2xl font-medium text-white text-opacity-90">Итоговый балл</div>
             </div>
-
-            <div class="p-4 bg-gray-50 rounded-lg">
-                <div class="text-gray-600 text-sm">Ваше место в рейтинге</div>
-                <div class="text-3xl font-bold">{{ user_rank }} из {{ total_participants }}</div>
-            </div>
-
-            <div class="p-4 bg-gray-50 rounded-lg">
-                <div class="text-gray-600 text-sm">Время завершения</div>
-                <div class="text-xl font-bold">{{ participation.finish_time.strftime('%d.%m.%Y %H:%M') }}</div>
-            </div>
-        </div>
-
-        <h2 class="text-xl font-semibold mb-3">Детали по блокам</h2>
-
-        <div class="space-y-4">
-            {% for stat in block_stats %}
-                <div class="p-4 border rounded-lg">
-                    <h3 class="font-medium mb-2">Блок {{ loop.index }}: {{ stat.block.title }}</h3>
-
-                    {% if stat.attempted %}
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                                <div class="text-gray-600">Баллы</div>
-                                <div class="font-medium">{{ stat.user_points }} / {{ stat.total_possible }}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-600">Процент</div>
-                                <div class="font-medium">{{ "%.1f"|format(stat.percentage) }}%</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-600">Порог прохождения</div>
-                                <div class="font-medium">{{ stat.block.threshold_percentage }}%</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-600">Статус</div>
-                                <div class="font-medium {% if stat.percentage >= stat.block.threshold_percentage %}text-green-600{% else %}text-red-600{% endif %}">
-                                    {% if stat.percentage >= stat.block.threshold_percentage %}
-                                        Пройден
-                                    {% else %}
-                                        Не пройден
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% else %}
-                        <p class="text-gray-600 italic">Вы не дошли до этого блока</p>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-semibold mb-4">Топ участников</h2>
-
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-4 py-2 text-left">Место</th>
-                        <th class="px-4 py-2 text-left">Участник</th>
-                        <th class="px-4
-                        <th class="px-4 py-2 text-left">Баллы</th>
-                        <th class="px-4 py-2 text-left">Время завершения</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in rankings[:10] %}
-                        {% set user = p.user %}
-                        <tr class="{% if p.id == participation.id %}bg-yellow-50{% endif %} {% if loop.index % 2 == 0 %}bg-gray-50{% endif %}">
-                            <td class="px-4 py-3 border-b">{{ loop.index }}</td>
-                            <td class="px-4 py-3 border-b font-medium">{{ user.full_name }}</td>
-                            <td class="px-4 py-3 border-b">{{ p.total_points }}</td>
-                            <td class="px-4 py-3 border-b text-sm">{{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
+
+<!-- Статистические карточки -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.1s">
+        <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+        </div>
+        <div class="stat-value counter" id="rank-counter">{{ user_rank }}</div>
+        <div class="stat-label">Место в рейтинге</div>
+    </div>
+
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.2s">
+        <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+        </div>
+        <div class="stat-value counter" id="participants-counter">{{ total_participants }}</div>
+        <div class="stat-label">Всего участников</div>
+    </div>
+
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.3s">
+        <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="stat-value">
+            {% if participation.finish_time %}
+                {{ participation.finish_time.strftime('%H:%M') }}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        <div class="stat-label">Время завершения</div>
+    </div>
+</div>
+
+<!-- Достижения -->
+<div class="mb-8 animate-slideInFromRight">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">🏅 Ваши достижения</h2>
+    <div class="flex flex-wrap">
+        {% set score_percentage = (participation.total_points / block_stats|sum(attribute='total_possible') * 100) if block_stats else 0 %}
+        {% if score_percentage >= 90 %}
+            <div class="achievement-badge excellent">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Превосходный результат ({{ score_percentage|round }}%)
+            </div>
+        {% elif score_percentage >= 75 %}
+            <div class="achievement-badge good">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+                </svg>
+                Хороший результат ({{ score_percentage|round }}%)
+            </div>
+        {% elif score_percentage >= 60 %}
+            <div class="achievement-badge satisfactory">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                </svg>
+                Удовлетворительный результат ({{ score_percentage|round }}%)
+            </div>
+        {% endif %}
+
+        {% if user_rank <= 3 %}
+            <div class="achievement-badge excellent">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Топ-3 участник
+            </div>
+        {% elif user_rank <= 10 %}
+            <div class="achievement-badge good">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                Топ-10 участник
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Детали по блокам -->
+<div class="mb-8 animate-slideInFromLeft">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">📚 Результаты по блокам</h2>
+
+    <div class="space-y-6">
+        {% for stat in block_stats %}
+            <div class="block-card {% if stat.attempted %}{% if stat.percentage >= stat.block.threshold_percentage %}completed{% else %}partial{% endif %}{% else %}not-attempted{% endif %}" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                {% if stat.attempted and stat.percentage >= stat.block.threshold_percentage %}
+                    <div class="completion-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                {% endif %}
+
+                <div class="block-title">
+                    <div class="block-number">{{ loop.index }}</div>
+                    {{ stat.block.title }}
+                </div>
+
+                {% if stat.attempted %}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-800">{{ stat.user_points }}</div>
+                            <div class="text-sm text-gray-600">Баллы</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-800">{{ stat.total_possible }}</div>
+                            <div class="text-sm text-gray-600">Максимум</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-800">{{ "%.1f"|format(stat.percentage) }}%</div>
+                            <div class="text-sm text-gray-600">Процент</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold {% if stat.percentage >= stat.block.threshold_percentage %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if stat.percentage >= stat.block.threshold_percentage %}
+                                    ✓ Пройден
+                                {% else %}
+                                    ✗ Не пройден
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-600">Порог: {{ stat.block.threshold_percentage }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="progress-bar {% if stat.percentage >= stat.block.threshold_percentage %}success{% elif stat.percentage >= 50 %}partial{% else %}failed{% endif %}"
+                             style="width: 0%"
+                             data-width="{{ stat.percentage }}%"></div>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 italic text-lg">Вы не дошли до этого блока</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Топ участников -->
+<div class="rankings-table animate-slideInFromRight">
+    <div class="table-header">
+        <h2 class="text-2xl font-bold flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            Топ участников
+        </h2>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Место</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Участник</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Время завершения</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for p in rankings[:10] %}
+                    {% set user = p.user %}
+                    <tr class="table-row {% if p.id == participation.id %}current-user{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="ranking-position {% if loop.index == 1 %}first{% elif loop.index == 2 %}second{% elif loop.index == 3 %}third{% else %}other{% endif %}">
+                                    {{ loop.index }}
+                                </div>
+                                {% if loop.index <= 3 %}
+                                    <span class="ml-2 text-2xl">
+                                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ user.full_name }}</div>
+                            {% if user.study_group %}
+                                <div class="text-sm text-gray-500">{{ user.study_group }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-lg font-bold text-gray-900">{{ p.total_points }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if p.finish_time %}
+                                {{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Кнопка возврата -->
+<div class="mt-12 text-center animate-fadeInUp">
+    <a href="{{ url_for('profile') }}" class="action-button">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Вернуться к профилю
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Анимация счетчиков
+        animateCounters();
+
+        // Анимация прогресс-баров
+        setTimeout(() => {
+            animateProgressBars();
+        }, 500);
+
+        // Добавление анимаций при появлении в viewport
+        setupIntersectionObserver();
+    });
+
+    function animateCounters() {
+        const counters = document.querySelectorAll('.counter');
+
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            const duration = 2000; // 2 секунды
+            const startTime = performance.now();
+
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Используем easing функцию для плавности
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(easeOutQuart * target);
+
+                counter.textContent = currentValue;
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                    counter.classList.add('animate');
+                    setTimeout(() => {
+                        counter.classList.remove('animate');
+                    }, 500);
+                }
+            }
+
+            requestAnimationFrame(updateCounter);
+        });
+    }
+
+    function animateProgressBars() {
+        const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+
+        progressBars.forEach((bar, index) => {
+            setTimeout(() => {
+                const targetWidth = bar.getAttribute('data-width');
+                bar.style.width = targetWidth;
+            }, index * 200);
+        });
+    }
+
+    function setupIntersectionObserver() {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -10% 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, observerOptions);
+
+        // Наблюдаем за всеми элементами с анимацией
+        document.querySelectorAll('[class*="animate-"]').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+    }
+
+    // Добавляем эффекты при наведении на карточки
+    document.querySelectorAll('.stat-card, .block-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = this.style.transform || '';
+            this.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+    });
+
+    // Конфетти эффект для высоких результатов
+    {% if participation.total_points >= 80 %}
+    setTimeout(() => {
+        createConfetti();
+    }, 1000);
+
+    function createConfetti() {
+        const confettiContainer = document.createElement('div');
+        confettiContainer.style.position = 'fixed';
+        confettiContainer.style.top = '0';
+        confettiContainer.style.left = '0';
+        confettiContainer.style.width = '100%';
+        confettiContainer.style.height = '100%';
+        confettiContainer.style.pointerEvents = 'none';
+        confettiContainer.style.zIndex = '9999';
+        document.body.appendChild(confettiContainer);
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                createConfettiPiece(confettiContainer);
+            }, i * 50);
+        }
+
+        setTimeout(() => {
+            confettiContainer.remove();
+        }, 5000);
+    }
+
+    function createConfettiPiece(container) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'absolute';
+        confetti.style.width = '10px';
+        confetti.style.height = '10px';
+        confetti.style.backgroundColor = ['#820000', '#dc2626', '#fbbf24', '#10b981'][Math.floor(Math.random() * 4)];
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.top = '-10px';
+        confetti.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        confetti.style.transition = 'all 3s ease-out';
+
+        container.appendChild(confetti);
+
+        requestAnimationFrame(() => {
+            confetti.style.top = window.innerHeight + 10 + 'px';
+            confetti.style.transform = 'rotate(' + (Math.random() * 360 + 720) + 'deg)';
+            confetti.style.opacity = '0';
+        });
+
+        setTimeout(() => {
+            confetti.remove();
+        }, 3000);
+    }
+    {% endif %}
+
+    // Эффект печатания для заголовка
+    const heroTitle = document.querySelector('.results-hero h1');
+    if (heroTitle) {
+        const text = heroTitle.textContent;
+        heroTitle.textContent = '';
+        heroTitle.style.borderRight = '2px solid white';
+
+        let index = 0;
+        function typeWriter() {
+            if (index < text.length) {
+                heroTitle.textContent += text.charAt(index);
+                index++;
+                setTimeout(typeWriter, 100);
+            } else {
+                setTimeout(() => {
+                    heroTitle.style.borderRight = 'none';
+                }, 500);
+            }
+        }
+
+        setTimeout(typeWriter, 500);
+    }
+</script>
 {% endblock %}

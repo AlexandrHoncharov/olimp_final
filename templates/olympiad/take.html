@@ -4,104 +4,282 @@
 
 {% block head %}
 <style>
-    /* Base styles */
+    /* Base styles с улучшенным дизайном */
     .question-card {
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         border-left: 4px solid transparent;
         overflow: hidden;
-    }
-    .question-card:hover {
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    .question-card.answered {
-        border-left-color: #34d399;
-    }
-    .question-card.active {
-        border-left-color: #770002;
+        position: relative;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 16px;
     }
 
-    /* Progress bar */
-    .progress-container {
-        height: 6px;
-        width: 100%;
-        background-color: #e5e7eb;
-        border-radius: 9999px;
-        overflow: hidden;
+    .question-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
     }
+
+    .question-card:hover::before {
+        opacity: 1;
+    }
+
+    .question-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 25px 50px -12px rgba(130, 0, 0, 0.15),
+                    0 0 0 1px rgba(130, 0, 0, 0.05);
+    }
+
+    .question-card.answered {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    }
+
+    .question-card.active {
+        border-left-color: #820000;
+        background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+    }
+
+    /* Улучшенный таймер */
+    .timer-container {
+        background: linear-gradient(145deg, #820000 0%, #a91b2b 50%, #820000 100%);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(130, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .timer-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .timer-display {
+        font-family: 'Courier New', monospace;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 1;
+    }
+
+    .timer-label {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .timer-warning {
+        animation: pulse-red 1s infinite;
+    }
+
+    @keyframes pulse-red {
+        0%, 100% {
+            background: linear-gradient(145deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
+        }
+        50% {
+            background: linear-gradient(145deg, #ef4444 0%, #f87171 50%, #ef4444 100%);
+            transform: scale(1.05);
+        }
+    }
+
+    /* Суперкрасивый прогресс-бар */
+    .progress-container {
+        height: 12px;
+        width: 100%;
+        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
     .progress-bar {
         height: 100%;
-        background: linear-gradient(90deg, #770002 0%, #990002 100%);
-        transition: width 0.5s ease;
-    }
-
-    /* Drag and drop styles */
-    .draggable {
-        cursor: grab;
-        user-select: none;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        background-color: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        transition: all 0.2s ease;
+        background: linear-gradient(90deg, #820000 0%, #dc2626 50%, #820000 100%);
+        border-radius: 20px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
     }
-    .draggable:hover {
-        background-color: #f3f4f6;
-        transform: translateY(-2px);
-    }
-    .draggable.dragging {
-        opacity: 0.8;
-        background-color: #dbeafe;
-        cursor: grabbing;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: progress-shine 2s infinite;
     }
 
+    @keyframes progress-shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Стили заголовка олимпиады */
+    .olympiad-header {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 50%, #820000 100%);
+        border-radius: 24px 24px 0 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .olympiad-header::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="120" viewBox="0 0 60 120"><polygon points="30,0 60,20 60,60 30,80 0,60 0,20" fill="white" opacity="0.05" /></svg>');
+        background-repeat: repeat;
+        pointer-events: none;
+    }
+
+    /* Drag and drop с улучшениями */
+    .draggable {
+        cursor: grab;
+        user-select: none;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .draggable::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .draggable:hover {
+        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+    }
+
+    .draggable:hover::before {
+        left: 100%;
+    }
+
+    .draggable.dragging {
+        opacity: 0.9;
+        background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+        cursor: grabbing;
+        transform: rotate(2deg) scale(1.05);
+        box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2);
+        border-color: #3b82f6;
+        z-index: 1000;
+    }
+
+    /* Стили для пар сопоставления */
     .matched-pair {
         display: flex;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
     }
+
+    .matched-pair:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
     .matched-pair .left-item {
         flex: 1;
         min-width: 0;
-        padding: 10px 14px;
-        background-color: #f3f4f6;
-        border-radius: 0.5rem 0 0 0.5rem;
-        border: 1px solid #e5e7eb;
-        border-right: none;
-        font-weight: 500;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
+        border: none;
+        font-weight: 600;
+        color: #374151;
     }
+
     .matched-pair .right-item {
         flex: 1;
         min-width: 0;
         padding: 0;
-        border-radius: 0 0.5rem 0.5rem 0;
-        background-color: #f8fafc;
-        border: 1px solid #e5e7eb;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border: none;
     }
+
     .matched-pair .connector {
-        padding: 0 8px;
+        padding: 0 16px;
         color: #6b7280;
         display: flex;
         align-items: center;
-    }
-    .connector-arrow {
-        width: 24px;
-        height: 24px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #f3f4f6 100%);
     }
 
-    /* Radio and checkbox styling */
+    .connector-arrow {
+        width: 28px;
+        height: 28px;
+        color: #820000;
+    }
+
+    /* Улучшенные checkbox и radio */
     .custom-radio,
     .custom-checkbox {
         position: relative;
-        padding-left: 28px;
+        padding: 16px 20px 16px 50px;
         cursor: pointer;
         user-select: none;
         display: flex;
         align-items: flex-start;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #f1f5f9;
     }
+
+    .custom-radio:hover,
+    .custom-checkbox:hover {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-color: #e2e8f0;
+        transform: translateX(4px);
+    }
+
     .custom-radio input,
     .custom-checkbox input {
         position: absolute;
@@ -110,263 +288,474 @@
         height: 0;
         width: 0;
     }
+
     .radio-checkmark,
     .checkbox-checkmark {
         position: absolute;
-        top: 3px;
-        left: 0;
-        height: 20px;
-        width: 20px;
-        background-color: #fff;
-        border: 2px solid #d1d5db;
-        transition: all 0.2s ease;
+        top: 18px;
+        left: 16px;
+        height: 24px;
+        width: 24px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 3px solid #d1d5db;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
+
     .radio-checkmark {
         border-radius: 50%;
     }
+
     .checkbox-checkmark {
-        border-radius: 4px;
+        border-radius: 8px;
     }
+
     .custom-radio:hover .radio-checkmark,
     .custom-checkbox:hover .checkbox-checkmark {
         border-color: #9ca3af;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
     .custom-radio input:checked ~ .radio-checkmark,
     .custom-checkbox input:checked ~ .checkbox-checkmark {
-        background-color: #770002;
-        border-color: #770002;
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        border-color: #820000;
+        box-shadow: 0 0 0 3px rgba(130, 0, 0, 0.2),
+                    0 4px 12px rgba(130, 0, 0, 0.3);
+        transform: scale(1.1);
     }
+
     .radio-checkmark:after,
     .checkbox-checkmark:after {
         content: "";
         position: absolute;
         display: none;
+        transition: all 0.2s ease;
     }
+
     .custom-radio input:checked ~ .radio-checkmark:after,
     .custom-checkbox input:checked ~ .checkbox-checkmark:after {
         display: block;
+        animation: checkmark-appear 0.3s ease-out;
     }
+
+    @keyframes checkmark-appear {
+        0% {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
     .custom-radio .radio-checkmark:after {
         top: 5px;
         left: 5px;
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         background: white;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
+
     .custom-checkbox .checkbox-checkmark:after {
-        left: 6px;
-        top: 2px;
-        width: 4px;
-        height: 8px;
+        left: 7px;
+        top: 3px;
+        width: 5px;
+        height: 10px;
         border: solid white;
-        border-width: 0 2px 2px 0;
+        border-width: 0 3px 3px 0;
         transform: rotate(45deg);
     }
 
-    /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out;
-    }
-    .animate-slideIn {
-        animation: slideIn 0.3s ease-out;
-    }
-    .pulse {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(119, 0, 2, 0.4);
-        }
-        70% {
-            box-shadow: 0 0 0 10px rgba(119, 0, 2, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(119, 0, 2, 0);
-        }
-    }
-
-    /* Button effects */
+    /* Анимированные кнопки */
     .btn-action {
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        box-shadow: 0 4px 15px rgba(130, 0, 0, 0.3);
     }
-    .btn-action::after {
+
+    .btn-action::before {
         content: '';
         position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 5px;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.5);
-        opacity: 0;
-        border-radius: 100%;
-        transform: scale(1, 1) translate(-50%);
-        transform-origin: 50% 50%;
-    }
-    .btn-action:hover::after {
-        animation: ripple 1s ease-out;
-    }
-    @keyframes ripple {
-        0% {
-            transform: scale(0, 0);
-            opacity: 0.5;
-        }
-        100% {
-            transform: scale(30, 30);
-            opacity: 0;
-        }
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
     }
 
-    /* Ranking modal styles */
+    .btn-action:hover::before {
+        left: 100%;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(130, 0, 0, 0.4);
+    }
+
+    .btn-action:active {
+        transform: translateY(-1px) scale(1.02);
+        transition: all 0.1s ease;
+    }
+
+    /* Улучшенная статистика */
+    .stats-pill {
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 25px;
+        padding: 8px 20px;
+        display: inline-flex;
+        align-items: center;
+        margin-right: 16px;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .stats-pill:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+    }
+
+    .stats-pill .icon {
+        margin-right: 8px;
+        color: #820000;
+    }
+
+    /* Модальное окно рейтинга */
     .rank-header {
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
-        border-radius: 0.5rem 0.5rem 0 0;
-    }
-    .rank-container {
-        text-align: center;
-        margin-bottom: 24px;
-    }
-    .rank-value {
-        font-size: 64px;
-        font-weight: bold;
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        line-height: 1;
-    }
-    .rank-label {
-        margin-top: 8px;
-        font-size: 16px;
-        color: #64748b;
-    }
-    .rank-progress {
-        margin-top: 16px;
-        height: 10px;
-        background-color: #e5e7eb;
-        border-radius: 9999px;
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 50%, #820000 100%);
+        border-radius: 16px 16px 0 0;
+        position: relative;
         overflow: hidden;
     }
-    .rank-progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #770002 0%, #990002 100%);
-        transition: width 1s ease;
+
+    .rank-container {
+        text-align: center;
+        margin-bottom: 32px;
+        position: relative;
     }
 
-    /* Stats box */
+    .rank-value {
+        font-size: 4rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 50%, #820000 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        text-shadow: 0 2px 4px rgba(130, 0, 0, 0.2);
+        animation: rank-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes rank-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .rank-label {
+        margin-top: 12px;
+        font-size: 1.125rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .rank-progress {
+        margin-top: 24px;
+        height: 12px;
+        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .rank-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
+        border-radius: 20px;
+        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rank-progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: rank-shine 2s infinite;
+    }
+
+    @keyframes rank-shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Стильные карточки статистики в модальном окне */
     .stats-box {
         display: flex;
         align-items: center;
-        padding: 12px;
-        margin-bottom: 12px;
-        border-radius: 0.5rem;
-        background-color: #f9fafb;
-        border: 1px solid #e5e7eb;
+        padding: 20px;
+        margin-bottom: 16px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
+
+    .stats-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.05), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .stats-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+    }
+
+    .stats-box:hover::before {
+        left: 100%;
+    }
+
     .stats-icon {
-        width: 36px;
-        height: 36px;
-        margin-right: 12px;
-        padding: 8px;
-        background-color: #f3f4f6;
-        border-radius: 9999px;
+        width: 48px;
+        height: 48px;
+        margin-right: 16px;
+        padding: 12px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
     .stats-content {
         flex: 1;
     }
+
     .stats-label {
         font-size: 14px;
         color: #6b7280;
-    }
-    .stats-value {
-        font-size: 16px;
-        font-weight: 600;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
-    .olympiad-header {
-        background: linear-gradient(135deg, #770002 0%, #990002 100%);
-        border-radius: 0.5rem 0.5rem 0 0;
+    .stats-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-top: 4px;
+    }
+
+    /* Анимация появления */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 40px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            opacity: 0;
+            transform: translate3d(-40px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .animate-slideInFromLeft {
+        animation: slideInFromLeft 0.6s ease-out;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .timer-display {
+            font-size: 2rem;
+        }
+
+        .question-card {
+            margin-bottom: 20px;
+        }
+
+        .matched-pair {
+            flex-direction: column;
+        }
+
+        .matched-pair .connector {
+            transform: rotate(90deg);
+            padding: 8px 0;
+        }
+
+        .stats-box {
+            padding: 16px;
+        }
+
+        .stats-icon {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    /* Специальные эффекты */
+    .question-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 1.125rem;
+        margin-right: 16px;
+        box-shadow: 0 4px 12px rgba(130, 0, 0, 0.3);
+    }
+
+    .pulse-slow {
+        animation: pulse-slow 3s infinite;
+    }
+
+    @keyframes pulse-slow {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="mb-6">
-    <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="inline-flex items-center text-primary hover:text-primary-dark transition">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+    <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
         </svg>
         Вернуться к олимпиаде
     </a>
 </div>
 
-<div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
-    <div class="olympiad-header text-white p-6">
-        <h1 class="text-2xl font-bold mb-2">{{ olympiad.title }}</h1>
-        <h2 class="text-xl font-medium mb-4">Блок: {{ block.title }}</h2>
+<div class="bg-white rounded-3xl shadow-2xl overflow-hidden mb-8 animate-fadeInUp">
+    <div class="olympiad-header text-white p-8">
+        <div class="relative z-10">
+            <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ olympiad.title }}</h1>
+            <h2 class="text-xl md:text-2xl font-medium mb-6">Блок: {{ block.title }}</h2>
 
-        {% if block.description %}
-            <p class="mb-4 text-white text-opacity-90">{{ block.description }}</p>
-        {% endif %}
+            {% if block.description %}
+                <p class="mb-6 text-white text-opacity-90 text-lg">{{ block.description }}</p>
+            {% endif %}
+
+            <!-- Таймер -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="timer-container p-6 text-center">
+                    <div class="timer-label mb-2">Время с начала</div>
+                    <div id="elapsed-timer" class="timer-display">00:00:00</div>
+                </div>
+
+                <div class="timer-container p-6 text-center">
+                    <div class="timer-label mb-2">До окончания</div>
+                    <div id="remaining-timer" class="timer-display">00:00:00</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="p-6">
-        <div class="flex flex-wrap justify-between items-center mb-4">
-            <div class="flex items-center mb-3 md:mb-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+    <div class="p-8">
+        <div class="flex flex-wrap justify-between items-center mb-6">
+            <div class="stats-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                 </svg>
-                <span class="text-gray-600">
+                <span class="text-gray-700 font-medium">
                     Начало: {{ participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else 'Н/Д' }}
                 </span>
             </div>
 
-            <div>
-                <span class="font-medium mr-2">Прогресс:</span>
-                <span id="answer-count" class="font-bold text-primary">{{ user_answers|length }}</span> / <span class="font-bold">{{ questions|length }}</span>
+            <div class="stats-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                </svg>
+                <span class="font-bold text-[#820000]">Прогресс:</span>
+                <span id="answer-count" class="font-bold text-[#820000] ml-1">{{ user_answers|length }}</span> / <span class="font-bold text-gray-700">{{ questions|length }}</span>
             </div>
         </div>
 
-        <div class="progress-container mb-6">
-            <div class="progress-bar" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
+        <div class="progress-container mb-8">
+            <div class="progress-bar" id="main-progress-bar" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
         </div>
     </div>
 </div>
 
-<div class="space-y-6 mb-8">
+<div class="space-y-8 mb-8">
     {% for question in questions %}
         <div
             id="question-{{ question.id }}"
-            class="question-card bg-white p-6 rounded-lg shadow-md transition {% if question.id in user_answers %}answered{% endif %}"
+            class="question-card p-8 {% if question.id in user_answers %}answered{% endif %} animate-slideInFromLeft"
             data-question-id="{{ question.id }}"
             data-question-type="{{ question.question_type }}"
+            style="animation-delay: {{ loop.index0 * 0.1 }}s"
         >
-            <div class="flex justify-between items-start mb-4">
-                <h3 class="text-lg font-semibold">Вопрос {{ loop.index }}: {{ question.text }}</h3>
-                <div id="answer-status-{{ question.id }}" class="answer-status {% if question.id in user_answers %}flex{% else %}hidden{% endif %} items-center text-green-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <div class="flex items-start justify-between mb-6">
+                <div class="flex items-start">
+                    <div class="question-number">{{ loop.index }}</div>
+                    <h3 class="text-xl md:text-2xl font-bold text-gray-800 leading-tight">{{ question.text }}</h3>
+                </div>
+                <div id="answer-status-{{ question.id }}" class="answer-status {% if question.id in user_answers %}flex{% else %}hidden{% endif %} items-center text-green-600 bg-green-50 px-4 py-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                     </svg>
-                    <span class="text-sm">Ответ сохранен</span>
+                    <span class="text-sm font-medium">Ответ сохранен</span>
                 </div>
             </div>
 
-            <form id="question-form-{{ question.id }}" class="mb-4">
+            <form id="question-form-{{ question.id }}" class="mb-6">
                 {% if question.question_type == 'test' %}
-                    <div class="space-y-3 mb-6">
+                    <div class="space-y-4 mb-8">
                         {% if question.options_list %}
                             {% set isMultiple = question.correct_answers_list|length > 1 %}
                             {% for option in question.options_list %}
-                                <label class="custom-{% if isMultiple %}checkbox{% else %}radio{% endif %} block p-3 rounded-lg hover:bg-gray-50 transition">
+                                <label class="custom-{% if isMultiple %}checkbox{% else %}radio{% endif %} block transition-all duration-300">
                                     <input
                                         type="{% if isMultiple %}checkbox{% else %}radio{% endif %}"
                                         name="question-{{ question.id }}"
@@ -375,17 +764,26 @@
                                         {% if question.id in user_answers and option in user_answers[question.id] %}checked{% endif %}
                                     >
                                     <span class="{% if isMultiple %}checkbox{% else %}radio{% endif %}-checkmark"></span>
-                                    <span class="ml-2">{{ option }}</span>
+                                    <span class="text-gray-800 font-medium">{{ option }}</span>
                                 </label>
                             {% endfor %}
                         {% else %}
-                            <p class="text-red-500">Ошибка: не удалось загрузить варианты ответов</p>
+                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить варианты ответов</p>
                         {% endif %}
                     </div>
                 {% elif question.question_type == 'matching' %}
                     <div class="matching-container" id="matching-container-{{ question.id }}">
                         {% if question.matches_list %}
                             <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+
+                            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-blue-800 text-sm font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                    Перетащите элементы из правой колонки к соответствующим элементам в левой
+                                </p>
+                            </div>
 
                             <div class="reorder-container" id="matches-list-{{ question.id }}">
                                 {% for match in question.matches_list %}
@@ -403,7 +801,7 @@
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="text-red-500">Ошибка: не удалось загрузить пары соответствия</p>
+                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить пары соответствия</p>
                         {% endif %}
                     </div>
                 {% endif %}
@@ -411,44 +809,52 @@
                 <!-- Кнопка для отправки ответа -->
                 <button
                     type="button"
-                    class="btn-action px-5 py-2.5 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition shadow-md flex items-center answer-button mt-4 {% if question.id in user_answers %}bg-green-600 hover:bg-green-700{% endif %}"
+                    class="btn-action px-8 py-4 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-medium rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-xl flex items-center answer-button {% if question.id in user_answers %}from-green-600 to-green-700 hover:from-green-700 hover:to-green-800{% endif %}"
                     data-question-id="{{ question.id }}"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
-                    Ответить
+                    Сохранить ответ
                 </button>
             </form>
 
             <div class="flex justify-between items-center">
-                <div class="text-sm bg-gray-100 py-1 px-3 rounded-full">
-                    <span class="font-medium">Баллы:</span> {{ question.points }}
+                <div class="stats-pill">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
+                    </svg>
+                    <span class="font-medium text-gray-700">Баллы: <span class="text-[#820000] font-bold">{{ question.points }}</span></span>
                 </div>
             </div>
         </div>
     {% endfor %}
 </div>
 
-<div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-    <div class="flex flex-col sm:flex-row justify-between items-center">
-        <div class="mb-4 sm:mb-0">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
+<div class="bg-gradient-to-r from-white via-gray-50 to-white p-8 rounded-3xl shadow-2xl mb-6 animate-fadeInUp">
+    <div class="flex flex-col lg:flex-row justify-between items-center">
+        <div class="mb-6 lg:mb-0">
+            <div class="flex items-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#820000] mr-3" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                     <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                 </svg>
-                <span class="font-medium">Ответов:</span>
-                <span id="answers-count" class="ml-2 font-bold text-primary">{{ user_answers|length }}</span> / <span class="font-bold">{{ questions|length }}</span>
+                <span class="text-xl font-bold text-gray-700">Готовы завершить блок?</span>
+            </div>
+            <div class="text-lg">
+                <span class="font-medium">Отвечено:</span>
+                <span id="answers-count" class="ml-2 text-2xl font-bold text-[#820000]">{{ user_answers|length }}</span>
+                <span class="text-gray-500">из</span>
+                <span class="text-2xl font-bold text-gray-700">{{ questions|length }}</span>
             </div>
         </div>
         <button
             id="submit-block-button"
-            class="btn-action px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition shadow-md flex items-center {% if user_answers|length < questions|length %}opacity-50 cursor-not-allowed{% else %}pulse{% endif %}"
+            class="btn-action px-10 py-5 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl flex items-center text-lg {% if user_answers|length < questions|length %}opacity-50 cursor-not-allowed{% else %}pulse-slow{% endif %}"
             {% if user_answers|length < questions|length %}disabled{% endif %}
         >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
             </svg>
             Завершить блок
         </button>
@@ -457,29 +863,34 @@
 
 <!-- Модальное окно с рейтингом -->
 <div id="ranking-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
-    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 animate-fadeIn">
-        <div class="rank-header px-6 py-4 flex justify-between items-center text-white">
-            <h3 class="text-xl font-medium">Ваш текущий рейтинг</h3>
-            <button onclick="closeRankingModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full mx-4 animate-fadeInUp">
+        <div class="rank-header px-8 py-6 flex justify-between items-center text-white">
+            <h3 class="text-2xl font-bold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Ваш результат
+            </h3>
+            <button onclick="closeRankingModal()" class="text-white hover:text-gray-200 text-3xl transition-colors duration-200">&times;</button>
         </div>
         <div class="p-8">
             <div class="rank-container">
                 <div class="rank-value" id="rank-position">0</div>
-                <div class="rank-label">Ваше место</div>
+                <div class="rank-label">Ваше место в рейтинге</div>
 
-                <div class="flex justify-between text-sm text-gray-600 mt-4">
-                    <span>0%</span>
-                    <span id="rank-percentage">0%</span>
-                    <span>100%</span>
+                <div class="flex justify-between text-sm text-gray-600 mt-6">
+                    <span class="font-medium">0%</span>
+                    <span id="rank-percentage" class="font-bold text-lg text-[#820000]">0%</span>
+                    <span class="font-medium">100%</span>
                 </div>
                 <div class="rank-progress">
                     <div class="rank-progress-bar" id="rank-progress-bar" style="width: 0%"></div>
                 </div>
             </div>
 
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="stats-box">
-                    <div class="stats-icon text-primary">
+                    <div class="stats-icon text-[#820000]">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                         </svg>
@@ -530,11 +941,11 @@
             <div class="mt-8 text-center">
                 <button
                     id="continue-button"
-                    class="btn-action px-6 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition shadow-md"
+                    class="btn-action px-10 py-4 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl"
                     onclick="continueAfterRanking()"
                 >
                     <span class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                         Продолжить олимпиаду
@@ -548,7 +959,61 @@
 
 {% block scripts %}
 <script>
+    // Переменные для таймеров
+    let startTime = new Date('{{ participation.start_time.isoformat() }}');
+    let endTime = new Date('{{ olympiad.end_time.isoformat() }}');
+    let elapsedTimer, remainingTimer;
+
+    // Функция обновления таймеров
+    function updateTimers() {
+        const now = new Date();
+
+        // Время, прошедшее с начала
+        const elapsedMs = now - startTime;
+        const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+        const elapsedMinutes = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
+        const elapsedSeconds = Math.floor((elapsedMs % (1000 * 60)) / 1000);
+
+        const elapsedDisplay = `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
+        document.getElementById('elapsed-timer').textContent = elapsedDisplay;
+
+        // Время до окончания
+        const remainingMs = endTime - now;
+
+        if (remainingMs > 0) {
+            const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+            const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            const remainingSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+            const remainingDisplay = `${String(remainingHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            document.getElementById('remaining-timer').textContent = remainingDisplay;
+
+            // Предупреждение если осталось мало времени (меньше 10 минут)
+            const remainingTimerElement = document.getElementById('remaining-timer').parentElement;
+            if (remainingMs < 10 * 60 * 1000) {
+                remainingTimerElement.classList.add('timer-warning');
+            } else {
+                remainingTimerElement.classList.remove('timer-warning');
+            }
+        } else {
+            document.getElementById('remaining-timer').textContent = '00:00:00';
+            document.getElementById('remaining-timer').parentElement.classList.add('timer-warning');
+
+            // Автоматическая отправка, если время истекло
+            if (remainingMs <= 0) {
+                showMessage('Время олимпиады истекло! Автоматическая отправка блока...', 'warning');
+                setTimeout(() => {
+                    submitBlock();
+                }, 3000);
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Запуск таймеров
+        updateTimers();
+        setInterval(updateTimers, 1000);
+
         // Инициализация
         initMatchingQuestions();
         updateAnswerStatusDisplay();
@@ -706,8 +1171,8 @@
 
             // Отправляем ответ
             const button = questionContainer.querySelector('.answer-button');
-            const originalText = button.textContent;
-            button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Сохранение...';
+            const originalText = button.innerHTML;
+            button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Сохранение...';
             button.disabled = true;
 
             axios.post(`{{ url_for("submit_answer", olympiad_id=olympiad.id) }}`, {
@@ -719,19 +1184,18 @@
                     // Показываем статус сохранения
                     const statusElement = document.getElementById(`answer-status-${questionId}`);
                     statusElement.classList.remove('hidden');
-                    statusElement.classList.add('flex', 'animate-fadeIn');
+                    statusElement.classList.add('flex', 'animate-fadeInUp');
 
                     // Подсвечиваем вопрос
-                    questionContainer.classList.add('answered', 'animate-slideIn');
+                    questionContainer.classList.add('answered', 'animate-slideInFromLeft');
 
                     // Обновляем счетчик ответов
                     updateAnswerCount();
 
                     // Сбрасываем кнопку
-                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Ответить';
+                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Сохранить ответ';
                     button.disabled = false;
-                    button.classList.remove('bg-primary', 'hover:bg-primary-dark');
-                    button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    button.className = button.className.replace('from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]', 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800');
 
                     // Показываем сообщение
                     showMessage('Ответ успешно сохранен!');
@@ -752,11 +1216,11 @@
         function highlightAnswerButton(questionId) {
             const button = document.querySelector(`.answer-button[data-question-id="${questionId}"]`);
             if (button) {
-                button.classList.remove('bg-green-600', 'hover:bg-green-700');
-                button.classList.add('bg-primary', 'hover:bg-primary-dark', 'animate-pulse');
+                button.className = button.className.replace('from-green-600 to-green-700 hover:from-green-700 hover:to-green-800', 'from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]');
+                button.classList.add('pulse-slow');
                 setTimeout(() => {
-                    button.classList.remove('animate-pulse');
-                }, 1000);
+                    button.classList.remove('pulse-slow');
+                }, 3000);
             }
         }
 
@@ -776,8 +1240,7 @@
 
                 const answerButton{{ q_id }} = document.querySelector(`.answer-button[data-question-id="{{ q_id }}"]`);
                 if (answerButton{{ q_id }}) {
-                    answerButton{{ q_id }}.classList.remove('bg-primary', 'hover:bg-primary-dark');
-                    answerButton{{ q_id }}.classList.add('bg-green-600', 'hover:bg-green-700');
+                    answerButton{{ q_id }}.className = answerButton{{ q_id }}.className.replace('from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]', 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800');
                 }
             {% endfor %}
         }
@@ -797,7 +1260,7 @@
             }
 
             // Обновляем прогресс-бар
-            const progressBar = document.querySelector('.progress-bar');
+            const progressBar = document.getElementById('main-progress-bar');
             if (progressBar) {
                 progressBar.style.width = `${(answeredQuestions / {{ questions|length }}) * 100}%`;
             }
@@ -807,11 +1270,11 @@
             if (answeredQuestions >= {{ questions|length }}) {
                 submitButton.disabled = false;
                 submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.add('pulse');
+                submitButton.classList.add('pulse-slow');
             } else {
                 submitButton.disabled = true;
                 submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.remove('pulse');
+                submitButton.classList.remove('pulse-slow');
             }
         }
 
@@ -836,7 +1299,7 @@
         }
 
         const button = document.getElementById('submit-block-button');
-        button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Отправка...';
+        button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Отправка...';
         button.disabled = true;
 
         // Обязательно задаем тип данных как JSON
@@ -852,14 +1315,14 @@
                 fetchRanking(response.data.redirect);
             } else {
                 showMessage(response.data.message || 'Ошибка при отправке блока', 'error');
-                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Завершить блок';
+                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg> Завершить блок';
                 button.disabled = false;
             }
         })
         .catch(error => {
             console.error("Error in submit_block:", error);
             showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
-            button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Завершить блок';
+            button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg> Завершить блок';
             button.disabled = false;
         });
     }
@@ -902,7 +1365,7 @@
                     // Анимируем прогресс-бар с задержкой
                     setTimeout(() => {
                         document.getElementById('rank-progress-bar').style.width = rankPercentage + '%';
-                    }, 300);
+                    }, 500);
 
                     // Устанавливаем баллы за блок
                     document.getElementById('block-points').textContent = response.data.block_points;
@@ -940,7 +1403,7 @@
             return;
         }
         modal.style.display = 'flex';
-        document.body.classList.add('overflow-hidden');
+        document.body.style.overflow = 'hidden';
     }
 
     // Закрыть модальное окно с рейтингом
@@ -948,7 +1411,7 @@
         const modal = document.getElementById('ranking-modal');
         if (!modal) return;
         modal.style.display = 'none';
-        document.body.classList.remove('overflow-hidden');
+        document.body.style.overflow = '';
     }
 
     // Функция для продолжения после просмотра рейтинга
@@ -960,6 +1423,17 @@
             closeRankingModal();
         }
     }
+
+    // Предупреждение о закрытии страницы
+    window.addEventListener('beforeunload', function(e) {
+        const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
+        const totalQuestions = {{ questions|length }};
+
+        if (answeredQuestions > 0 && answeredQuestions < totalQuestions) {
+            e.preventDefault();
+            e.returnValue = 'У вас есть несохраненные ответы. Вы уверены, что хотите покинуть страницу?';
+        }
+    });
 
     // Глобальные функции
     window.closeRankingModal = closeRankingModal;
