@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика - Система олимпиад{% endblock %}
+
+{% block head %}
+<style>
+    .analytics-hero {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 25%, #dc2626 50%, #a91b2b 75%, #820000 100%);
+        border-radius: 32px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+    }
+
+    .analytics-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: hero-shimmer 4s infinite;
+    }
+
+    @keyframes hero-shimmer {
+        0% { left: -100%; opacity: 0; }
+        50% { opacity: 1; }
+        100% { left: 100%; opacity: 0; }
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        padding: 32px;
+        border: 1px solid rgba(130, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(130, 0, 0, 0.15),
+                    0 0 0 1px rgba(130, 0, 0, 0.1);
+    }
+
+    .metric-card:hover::before {
+        opacity: 1;
+    }
+
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .metric-value.primary {
+        background: linear-gradient(135deg, #820000 0%, #dc2626 50%, #ef4444 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-label {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .metric-icon {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .metric-icon.primary {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        color: #dc2626;
+    }
+
+    .metric-icon.success {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        color: #059669;
+    }
+
+    .metric-icon.info {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        color: #2563eb;
+    }
+
+    .metric-icon.warning {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        color: #d97706;
+    }
+
+    .metric-card:hover .metric-icon {
+        transform: rotate(360deg) scale(1.15);
+    }
+
+    .metric-card:hover .metric-icon.primary {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+    }
+
+    .metric-card:hover .metric-icon.success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+    }
+
+    .metric-card:hover .metric-icon.info {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        color: white;
+    }
+
+    .metric-card:hover .metric-icon.warning {
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+        color: white;
+    }
+
+    .chart-container {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(130, 0, 0, 0.1);
+    }
+
+    .chart-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+    }
+
+    .chart-title svg {
+        margin-right: 12px;
+        color: #820000;
+    }
+
+    .ranking-table {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(130, 0, 0, 0.1);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        padding: 24px;
+    }
+
+    .table-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+    }
+
+    .table-title svg {
+        margin-right: 12px;
+    }
+
+    .table-row {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.02), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .table-row:hover {
+        background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+        transform: translateX(4px);
+    }
+
+    .table-row:hover::before {
+        left: 100%;
+    }
+
+    .progress-bar-container {
+        background: #e5e7eb;
+        border-radius: 12px;
+        height: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #820000 0%, #dc2626 100%);
+        border-radius: 12px;
+        transition: width 1s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: progress-shine 2s infinite;
+    }
+
+    @keyframes progress-shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Простая стилизация дашборда без внешних библиотек */
+    .simple-chart {
+        display: flex;
+        align-items: end;
+        height: 200px;
+        gap: 12px;
+        padding: 20px 0;
+    }
+
+    .chart-bar {
+        flex: 1;
+        background: linear-gradient(to top, #820000, #dc2626);
+        border-radius: 8px 8px 0 0;
+        position: relative;
+        transition: all 0.3s ease;
+        min-height: 20px;
+    }
+
+    .chart-bar:hover {
+        transform: scaleY(1.05);
+        background: linear-gradient(to top, #990002, #ef4444);
+    }
+
+    .chart-bar::after {
+        content: attr(data-value);
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1f2937;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .chart-bar:hover::after {
+        opacity: 1;
+    }
+
+    .chart-labels {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .chart-label {
+        flex: 1;
+        text-align: center;
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 40px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            opacity: 0;
+            transform: translate3d(-40px, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .animate-slideInFromLeft {
+        animation: slideInFromLeft 0.6s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 animate-fadeInUp">
+    <a href="{{ url_for('admin_olympiads') }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Вернуться к панели администратора
+    </a>
+</div>
+
+<!-- Героическая секция -->
+<div class="analytics-hero text-white p-8 md:p-12 mb-8 animate-fadeInUp">
+    <div class="relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold mb-4">📊 Аналитика и статистика</h1>
+        <p class="text-white text-opacity-90 text-lg">Подробная информация о работе системы олимпиад</p>
+    </div>
+</div>
+
+<!-- Основные метрики -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+    <div class="metric-card animate-slideInFromLeft" style="animation-delay: 0.1s">
+        <div class="metric-icon primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="metric-value primary">{{ total_olympiads }}</div>
+        <div class="metric-label">Всего олимпиад</div>
+    </div>
+
+    <div class="metric-card animate-slideInFromLeft" style="animation-delay: 0.2s">
+        <div class="metric-icon info">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+        </div>
+        <div class="metric-value info">{{ total_users }}</div>
+        <div class="metric-label">Пользователей</div>
+    </div>
+
+    <div class="metric-card animate-slideInFromLeft" style="animation-delay: 0.3s">
+        <div class="metric-icon success">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="metric-value success">{{ completed_participations }}</div>
+        <div class="metric-label">Завершено олимпиад</div>
+    </div>
+
+    <div class="metric-card animate-slideInFromLeft" style="animation-delay: 0.4s">
+        <div class="metric-icon warning">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-7 h-7">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="metric-value warning">{{ active_olympiads }}</div>
+        <div class="metric-label">Активных олимпиад</div>
+    </div>
+</div>
+
+<!-- Дополнительная статистика -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- График участия -->
+    <div class="chart-container animate-fadeInUp">
+        <h3 class="chart-title">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            Статистика участия
+        </h3>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div class="text-center">
+                <div class="text-3xl font-bold text-gray-800 mb-2">{{ total_participations }}</div>
+                <div class="text-sm text-gray-600">Всего участий</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold text-green-600 mb-2">
+                    {% if total_participations > 0 %}
+                        {{ "%.1f"|format((completed_participations / total_participations) * 100) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
+                <div class="text-sm text-gray-600">Коэффициент завершения</div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: {% if total_participations > 0 %}{{ (completed_participations / total_participations) * 100 }}%{% else %}0%{% endif %}"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-sm text-gray-600">
+                <span>Завершено: {{ completed_participations }}</span>
+                <span>Всего: {{ total_participations }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статус олимпиад -->
+    <div class="chart-container animate-fadeInUp">
+        <h3 class="chart-title">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+            Статус олимпиад
+        </h3>
+
+        <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600 mb-1">{{ active_olympiads }}</div>
+                <div class="text-sm text-green-700">Активные</div>
+            </div>
+            <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                <div class="text-2xl font-bold text-yellow-600 mb-1">{{ upcoming_olympiads }}</div>
+                <div class="text-sm text-yellow-700">Предстоящие</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-600 mb-1">{{ total_olympiads - active_olympiads - upcoming_olympiads }}</div>
+                <div class="text-sm text-gray-700">Завершенные</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Топ олимпиад по участникам -->
+{% if olympiad_stats %}
+<div class="ranking-table animate-fadeInUp">
+    <div class="table-header">
+        <h3 class="table-title">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            Топ олимпиад по количеству участников
+        </h3>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название олимпиады</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Участники</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Популярность</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for stat in olympiad_stats %}
+                <tr class="table-row">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {{ loop.index }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">{{ stat.title }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-lg font-bold text-gray-900">{{ stat.participants }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar h-2 rounded-full" style="width: {{ (stat.participants / olympiad_stats[0].participants) * 100 }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Анимация прогресс-баров
+        setTimeout(() => {
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 100);
+            });
+        }, 500);
+
+        // Анимация метрик
+        animateCounters();
+    });
+
+    function animateCounters() {
+        const counters = document.querySelectorAll('.metric-value');
+
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            const duration = 2000;
+            const startTime = performance.now();
+
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(easeOutQuart * target);
+
+                counter.textContent = currentValue;
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                }
+            }
+
+            setTimeout(() => {
+                requestAnimationFrame(updateCounter);
+            }, 500);
+        });
+    }
+</script>
+{% endblock %}

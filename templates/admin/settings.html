@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки системы - Система олимпиад{% endblock %}
+
+{% block head %}
+<style>
+    .settings-hero {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 25%, #dc2626 50%, #a91b2b 75%, #820000 100%);
+        border-radius: 32px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+    }
+
+    .settings-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: hero-shimmer 4s infinite;
+    }
+
+    @keyframes hero-shimmer {
+        0% { left: -100%; opacity: 0; }
+        50% { opacity: 1; }
+        100% { left: 100%; opacity: 0; }
+    }
+
+    .settings-section {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        padding: 32px;
+        border: 1px solid rgba(130, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .settings-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .settings-section:hover {
+        transform: translateY(-8px) scale(1.01);
+        box-shadow: 0 20px 40px rgba(130, 0, 0, 0.15);
+    }
+
+    .settings-section:hover::before {
+        opacity: 1;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .section-title svg {
+        margin-right: 12px;
+        color: #820000;
+    }
+
+    .section-description {
+        color: #6b7280;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .setting-item {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .setting-item:hover {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        transform: translateX(4px);
+    }
+
+    .setting-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .setting-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-bottom: 16px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        background: white;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #820000;
+        box-shadow: 0 0 0 3px rgba(130, 0, 0, 0.1);
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+        transition: .4s;
+        border-radius: 17px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background: white;
+        transition: .4s;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked + .slider {
+        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .action-button {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(130, 0, 0, 0.3);
+        border: none;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .action-button:hover::before {
+        left: 100%;
+    }
+
+    .action-button:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 25px rgba(130, 0, 0, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .alert-box {
+        background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .alert-box.warning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .alert-icon {
+        flex-shrink: 0;
+        margin-right: 12px;
+        margin-top: 2px;
+    }
+
+    .alert-content h4 {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 8px;
+    }
+
+    .alert-content p {
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .system-info {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .info-item {
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 4px;
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: #059669;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 40px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 animate-fadeInUp">
+    <a href="{{ url_for('admin_olympiads') }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Вернуться к панели администратора
+    </a>
+</div>
+
+<!-- Героическая секция -->
+<div class="settings-hero text-white p-8 md:p-12 mb-8 animate-fadeInUp">
+    <div class="relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold mb-4">⚙️ Настройки системы</h1>
+        <p class="text-white text-opacity-90 text-lg">Конфигурация параметров системы олимпиад</p>
+    </div>
+</div>
+
+<!-- Информация о системе -->
+<div class="system-info animate-fadeInUp">
+    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        Информация о системе
+    </h3>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Версия системы</div>
+            <div class="info-value">v1.0.0</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Статус</div>
+            <div class="info-value">Активна</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Последнее обновление</div>
+            <div class="info-value">{{ moment().format('DD.MM.YYYY') }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Разработчик</div>
+            <div class="info-value">МелГУ IT-отдел</div>
+        </div>
+    </div>
+</div>
+
+<!-- Предупреждение -->
+<div class="alert-box warning animate-fadeInUp">
+    <div class="alert-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+    </div>
+    <div class="alert-content">
+        <h4>Важно!</h4>
+        <p>Изменения в настройках будут применены ко всей системе. Пожалуйста, будьте осторожны при изменении критических параметров.</p>
+    </div>
+</div>
+
+<!-- Общие настройки -->
+<div class="settings-section animate-fadeInUp" style="animation-delay: 0.1s">
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+        </svg>
+        Общие настройки
+    </h2>
+    <p class="section-description">Основные параметры работы системы олимпиад</p>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Название системы</span>
+        </div>
+        <div class="setting-description">Отображается в заголовке страниц и уведомлениях</div>
+        <input type="text" class="form-control" value="Система олимпиад МелГУ" disabled>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Максимальный размер загружаемых файлов</span>
+            <span class="text-sm text-gray-500">16 MB</span>
+        </div>
+        <div class="setting-description">Максимальный размер PDF файлов для олимпиад</div>
+        <input type="range" class="form-control" min="1" max="50" value="16" disabled>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Автоматическое удаление старых файлов</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Автоматически удалять PDF файлы завершенных олимпиад через 6 месяцев</div>
+    </div>
+</div>
+
+<!-- Настройки уведомлений -->
+<div class="settings-section animate-fadeInUp" style="animation-delay: 0.2s">
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+        </svg>
+        Уведомления
+    </h2>
+    <p class="section-description">Настройки системы уведомлений</p>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Email уведомления для администраторов</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Отправлять уведомления о новых регистрациях и завершенных олимпиадах</div>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Уведомления участникам</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Отправлять участникам напоминания о предстоящих олимпиадах</div>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Email для системных уведомлений</span>
+        </div>
+        <div class="setting-description">Email адрес для отправки системных уведомлений</div>
+        <input type="email" class="form-control" value="admin@melgu.edu.ua" disabled>
+    </div>
+</div>
+
+<!-- Настройки безопасности -->
+<div class="settings-section animate-fadeInUp" style="animation-delay: 0.3s">
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        Безопасность
+    </h2>
+    <p class="section-description">Настройки безопасности и доступа</p>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Минимальная длина пароля</span>
+            <span class="text-sm text-gray-500">6 символов</span>
+        </div>
+        <div class="setting-description">Минимальное количество символов в пароле пользователя</div>
+        <input type="number" class="form-control" min="4" max="20" value="6" disabled>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Автоматический выход из системы</span>
+            <label class="toggle-switch">
+                <input type="checkbox" disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Автоматически завершать сеансы пользователей через 24 часа неактивности</div>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Логирование действий администраторов</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Вести журнал всех действий администраторов в системе</div>
+    </div>
+</div>
+
+<!-- Настройки резервного копирования -->
+<div class="settings-section animate-fadeInUp" style="animation-delay: 0.4s">
+    <h2 class="section-title">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm1 5a1 1 0 100 2h6a1 1 0 100-2H4z" />
+        </svg>
+        Резервное копирование
+    </h2>
+    <p class="section-description">Настройки создания резервных копий данных</p>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Автоматическое резервное копирование</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Создавать резервные копии базы данных каждую неделю</div>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Хранение резервных копий</span>
+            <span class="text-sm text-gray-500">30 дней</span>
+        </div>
+        <div class="setting-description">Количество дней для хранения резервных копий</div>
+        <input type="number" class="form-control" min="7" max="365" value="30" disabled>
+    </div>
+
+    <div class="setting-item">
+        <div class="setting-label">
+            <span>Включать файлы в резервные копии</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-description">Включать загруженные PDF файлы в резервные копии</div>
+    </div>
+</div>
+
+<!-- Информационное сообщение -->
+<div class="alert-box animate-fadeInUp" style="animation-delay: 0.5s">
+    <div class="alert-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+    </div>
+    <div class="alert-content">
+        <h4>Дополнительные настройки</h4>
+        <p>В данной версии системы доступен только режим просмотра настроек. Для изменения параметров обратитесь к системному администратору.</p>
+    </div>
+</div>
+
+<!-- Кнопки действий -->
+<div class="flex flex-wrap gap-4 mt-8 animate-fadeInUp" style="animation-delay: 0.6s">
+    <button class="action-button" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        Сохранить изменения
+    </button>
+    <button class="action-button" style="background: linear-gradient(135deg, #6b7280 0%, #374151 100%);" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+        </svg>
+        Сбросить настройки
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Простая анимация появления элементов
+        const elements = document.querySelectorAll('.animate-fadeInUp');
+        elements.forEach((element, index) => {
+            setTimeout(() => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+
+        // Инициализируем элементы как невидимые для анимации
+        elements.forEach(element => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(20px)';
+            element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        });
+
+        // Показываем информационное сообщение
+        setTimeout(() => {
+            showMessage('Настройки находятся в режиме просмотра. Изменения недоступны в демо-версии.', 'info');
+        }, 2000);
+    });
+</script>
+{% endblock %}

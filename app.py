@@ -9,6 +9,11 @@ import json
 import pdfkit
 from io import BytesIO
 import uuid
+from docx import Document
+from docx.shared import Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+import tempfile
 
 # Инициализация приложения
 app = Flask(__name__)
@@ -229,6 +234,302 @@ def admin_olympiads():
     olympiads = Olympiad.query.all()
     return render_template('admin/olympiads.html', olympiads=olympiads)
 
+
+# Маршрут для управления пользователями
+@app.route('/admin/users', methods=['GET'])
+@login_required
+def admin_users():
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
+
+
+# Маршрут для аналитики
+@app.route('/admin/analytics', methods=['GET'])
+@login_required
+def admin_analytics():
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    # Общая статистика
+    total_olympiads = Olympiad.query.count()
+    total_users = User.query.count()
+    total_participations = Participation.query.count()
+    completed_participations = Participation.query.filter_by(status='completed').count()
+
+    # Статистика по олимпиадам
+    current_time = datetime.utcnow()
+    active_olympiads = Olympiad.query.filter(
+        Olympiad.start_time <= current_time,
+        Olympiad.end_time > current_time
+    ).count()
+
+    upcoming_olympiads = Olympiad.query.filter(
+        Olympiad.start_time > current_time
+    ).count()
+
+    # Топ олимпиад по участникам
+    olympiad_stats = db.session.query(
+        Olympiad.title,
+        db.func.count(Participation.id).label('participants')
+    ).join(Participation).group_by(Olympiad.id).order_by(
+        db.func.count(Participation.id).desc()
+    ).limit(10).all()
+
+    return render_template('admin/analytics.html',
+                           total_olympiads=total_olympiads,
+                           total_users=total_users,
+                           total_participations=total_participations,
+                           completed_participations=completed_participations,
+                           active_olympiads=active_olympiads,
+                           upcoming_olympiads=upcoming_olympiads,
+                           olympiad_stats=olympiad_stats)
+
+
+# Маршрут для настроек системы
+@app.route('/admin/settings', methods=['GET'])
+@login_required
+def admin_settings():
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    return render_template('admin/settings.html')
+
+
+# Маршрут для генерации DOCX документа с результатами
+@app.route('/admin/olympiad/<int:olympiad_id>/export_docx', methods=['GET'])
+@login_required
+def export_results_docx(olympiad_id):
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Получаем участников с результатами
+    participations = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).order_by(Participation.total_points.desc()).all()
+
+    # Создаем документ
+    doc = Document()
+
+    # Настройка для русского языка
+    doc.core_properties.language = 'ru-RU'
+
+    # Заголовок документа
+    title_paragraph = doc.add_paragraph()
+    title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title_paragraph.add_run('ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ')
+    title_run.bold = True
+    title_run.font.size = Inches(0.15)
+
+    title_paragraph2 = doc.add_paragraph()
+    title_paragraph2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run2 = title_paragraph2.add_run('ВЫСШЕГО ОБРАЗОВАНИЯ')
+    title_run2.bold = True
+    title_run2.font.size = Inches(0.15)
+
+    # Название университета
+    university_paragraph = doc.add_paragraph()
+    university_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    university_run = university_paragraph.add_run('МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ')
+    university_run.bold = True
+    university_run.font.size = Inches(0.16)
+
+    # Добавляем пустую строку
+    doc.add_paragraph()
+
+    # Факультет и кафедра
+    faculty_paragraph = doc.add_paragraph()
+    faculty_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    faculty_run = faculty_paragraph.add_run('Технический факультет')
+    faculty_run.bold = True
+
+    department_paragraph = doc.add_paragraph()
+    department_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    department_run = department_paragraph.add_run('кафедра «Гражданская безопасность»')
+    department_run.bold = True
+
+    # Добавляем пустую строку
+    doc.add_paragraph()
+
+    # Заголовок результатов
+    results_title = doc.add_paragraph()
+    results_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    results_run = results_title.add_run('РЕЗУЛЬТАТЫ ПОБЕДИТЕЛЕЙ')
+    results_run.bold = True
+    results_run.font.size = Inches(0.16)
+
+    # Название олимпиады
+    olympiad_paragraph = doc.add_paragraph()
+    olympiad_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    olympiad_run = olympiad_paragraph.add_run('предметной студенческой Олимпиады')
+    olympiad_run.bold = True
+
+    subject_paragraph = doc.add_paragraph()
+    subject_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    subject_run = subject_paragraph.add_run('по дисциплине')
+    subject_run.bold = True
+
+    discipline_paragraph = doc.add_paragraph()
+    discipline_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    discipline_run = discipline_paragraph.add_run(f'«{olympiad.title}»')
+    discipline_run.bold = True
+
+    # Дата проведения
+    date_paragraph = doc.add_paragraph()
+    date_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    date_run = date_paragraph.add_run(
+        f'проведенной «{olympiad.end_time.strftime("%d")}» {get_month_name(olympiad.end_time.month)} {olympiad.end_time.year} г.')
+    date_run.bold = True
+
+    # Добавляем пустую строку
+    doc.add_paragraph()
+
+    # Создаем таблицу с результатами
+    table = doc.add_table(rows=1, cols=4)
+    table.style = 'Table Grid'
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    # Заголовки таблицы
+    header_cells = table.rows[0].cells
+    header_cells[0].text = '№ п/п'
+    header_cells[1].text = 'Фамилия, имя, отчество студента'
+    header_cells[2].text = 'Место (I, II, III)'
+    header_cells[3].text = 'Количество набранных баллов'
+
+    # Делаем заголовки жирными
+    for cell in header_cells:
+        for paragraph in cell.paragraphs:
+            for run in paragraph.runs:
+                run.bold = True
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Заполняем таблицу участниками
+    place_names = {1: 'I', 2: 'II', 3: 'III'}
+
+    for idx, participation in enumerate(participations[:10], 1):  # Берем только топ-10
+        user = participation.user
+        row_cells = table.add_row().cells
+        row_cells[0].text = str(idx)
+        row_cells[1].text = user.full_name
+
+        # Определяем место
+        if idx <= 3:
+            row_cells[2].text = place_names.get(idx, str(idx))
+        else:
+            row_cells[2].text = str(idx)
+
+        row_cells[3].text = str(participation.total_points)
+
+        # Центрируем первую, третью и четвертую колонки
+        row_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Добавляем пустые строки для дополнительных записей
+    for i in range(3):
+        row_cells = table.add_row().cells
+        row_cells[0].text = ''
+        row_cells[1].text = ''
+        row_cells[2].text = ''
+        row_cells[3].text = ''
+
+    # Добавляем дату подписания
+    doc.add_paragraph()
+    doc.add_paragraph()
+    date_sign_paragraph = doc.add_paragraph()
+    date_sign_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    date_sign_run = date_sign_paragraph.add_run(
+        f'«{datetime.now().strftime("%d")}» {get_month_name(datetime.now().month)} {datetime.now().year} г.')
+
+    # Добавляем подписи жюри
+    doc.add_paragraph()
+    jury_paragraph = doc.add_paragraph('Члены жюри:')
+    jury_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    # Таблица для подписей
+    signatures_table = doc.add_table(rows=3, cols=2)
+    signatures_table.style = 'Table Grid'
+
+    for i in range(3):
+        cells = signatures_table.rows[i].cells
+        cells[0].text = '(подпись)'
+        cells[1].text = '(инициалы, фамилия уч. степень, должность)'
+        cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Сохраняем документ во временный файл
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.docx')
+    doc.save(temp_file.name)
+    temp_file.close()
+
+    # Возвращаем файл пользователю
+    return send_file(
+        temp_file.name,
+        as_attachment=True,
+        download_name=f'Результаты_олимпиады_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.docx',
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+
+
+def get_month_name(month_num):
+    """Возвращает название месяца на русском языке"""
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+    return months.get(month_num, 'месяца')
+
+
+# Маршрут для изменения статуса пользователя
+@app.route('/admin/users/<int:user_id>/toggle_admin', methods=['POST'])
+@login_required
+def toggle_user_admin(user_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    user = User.query.get_or_404(user_id)
+
+    # Защита от отключения админки у самого себя
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'Нельзя изменить собственный статус администратора'})
+
+    user.is_admin = not user.is_admin
+    db.session.commit()
+
+    status = 'добавлены' if user.is_admin else 'отозваны'
+    return jsonify({'success': True, 'message': f'Права администратора {status}'})
+
+
+# Маршрут для удаления пользователя
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    user = User.query.get_or_404(user_id)
+
+    # Защита от удаления самого себя
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'Нельзя удалить собственного пользователя'})
+
+    # Удаляем связанные участия в олимпиадах
+    Participation.query.filter_by(user_id=user.id).delete()
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Пользователь успешно удален'})
 
 @app.route('/admin/olympiad/create', methods=['POST'])
 @login_required

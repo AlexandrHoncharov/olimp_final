@@ -499,6 +499,44 @@
         transform: scale(1.1);
     }
 
+    /* ИСПРАВЛЕНИЕ МОДАЛЬНОГО ОКНА */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999; /* Увеличиваем z-index */
+        backdrop-filter: blur(8px);
+        animation: fadeIn 0.3s ease-out;
+        overflow-y: auto; /* Добавляем прокрутку */
+        padding: 20px; /* Добавляем отступы */
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        max-width: min(90vw, 600px); /* Ограничиваем ширину */
+        width: 100%;
+        max-height: min(90vh, 800px); /* Ограничиваем высоту */
+        overflow: hidden;
+        animation: scaleIn 0.3s ease-out;
+        position: relative;
+        margin: auto; /* Центрируем */
+    }
+
+    .modal-body {
+        padding: 32px;
+        position: relative;
+        overflow-y: auto; /* Добавляем прокрутку к содержимому */
+        max-height: calc(90vh - 200px); /* Ограничиваем высоту содержимого */
+    }
+
     /* Адаптивность */
     @media (max-width: 768px) {
         .stat-value {
@@ -523,6 +561,16 @@
 
         .admin-hero {
             padding: 24px;
+        }
+
+        .modal-content {
+            max-width: 95vw;
+            margin: 10px auto;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: calc(90vh - 150px);
         }
     }
 </style>
@@ -626,7 +674,7 @@
             </span>
         </a>
 
-        <a href="#analytics" class="action-card">
+        <a href="{{ url_for('admin_analytics') }}" class="action-card">
             <div class="action-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
@@ -642,7 +690,7 @@
             </span>
         </a>
 
-        <a href="#users" class="action-card">
+        <a href="{{ url_for('admin_users') }}" class="action-card">
             <div class="action-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
@@ -658,7 +706,7 @@
             </span>
         </a>
 
-        <a href="#settings" class="action-card">
+        <a href="{{ url_for('admin_settings') }}" class="action-card">
             <div class="action-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
@@ -755,6 +803,11 @@
                                             <a href="{{ url_for('admin_rankings', olympiad_id=olympiad.id) }}" class="text-blue-600 hover:text-blue-900 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                                                </svg>
+                                            </a>
+                                            <a href="{{ url_for('export_results_docx', olympiad_id=olympiad.id) }}" class="text-green-600 hover:text-green-900 transition-colors" title="Экспорт в DOCX">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                 </svg>
                                             </a>
                                         {% endif %}
