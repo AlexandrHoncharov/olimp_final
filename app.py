@@ -6,12 +6,25 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import os
 import json
+from docx.shared import Inches, Pt, RGBColor
 import pdfkit
 from io import BytesIO
 import uuid
 from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+import io
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils.dataframe import dataframe_to_rows
+import csv
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.shared import qn
+
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import tempfile
 
@@ -298,185 +311,582 @@ def admin_settings():
         flash('У вас нет доступа к этой странице', 'error')
         return redirect(url_for('index'))
 
-    return render_template('admin/settings.html')
+    return render_template('admin/settings.html', stats=stats)
 
 
 # Маршрут для генерации DOCX документа с результатами
+# Добавьте эти импорты в начало файла app.py
+import io
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils.dataframe import dataframe_to_rows
+import csv
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
+
 @app.route('/admin/olympiad/<int:olympiad_id>/export_docx', methods=['GET'])
 @login_required
-def export_results_docx(olympiad_id):
+def export_rankings_docx(olympiad_id):
+    """Экспорт результатов в формате DOCX с официальным оформлением МелГУ"""
     if not current_user.is_admin:
         flash('У вас нет доступа к этой странице', 'error')
         return redirect(url_for('index'))
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем участников с результатами
+    # Получаем всех участников с результатами
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
     ).order_by(Participation.total_points.desc()).all()
 
-    # Создаем документ
+    # Создаем новый документ
     doc = Document()
 
-    # Настройка для русского языка
-    doc.core_properties.language = 'ru-RU'
+    # Настройка стилей документа
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Times New Roman'
+    font.size = Pt(14)
 
-    # Заголовок документа
-    title_paragraph = doc.add_paragraph()
-    title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_run = title_paragraph.add_run('ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ')
-    title_run.bold = True
-    title_run.font.size = Inches(0.15)
+    # Заголовок организации
+    header1 = doc.add_paragraph()
+    header1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run1 = header1.add_run('ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ')
+    run1.font.name = 'Times New Roman'
+    run1.font.size = Pt(14)
+    run1.font.bold = True
 
-    title_paragraph2 = doc.add_paragraph()
-    title_paragraph2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_run2 = title_paragraph2.add_run('ВЫСШЕГО ОБРАЗОВАНИЯ')
-    title_run2.bold = True
-    title_run2.font.size = Inches(0.15)
+    header2 = doc.add_paragraph()
+    header2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run2 = header2.add_run('МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ')
+    run2.font.name = 'Times New Roman'
+    run2.font.size = Pt(14)
+    run2.font.bold = True
 
-    # Название университета
-    university_paragraph = doc.add_paragraph()
-    university_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    university_run = university_paragraph.add_run('МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ')
-    university_run.bold = True
-    university_run.font.size = Inches(0.16)
-
-    # Добавляем пустую строку
+    # Пустая строка
     doc.add_paragraph()
 
     # Факультет и кафедра
-    faculty_paragraph = doc.add_paragraph()
-    faculty_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    faculty_run = faculty_paragraph.add_run('Технический факультет')
-    faculty_run.bold = True
+    faculty = doc.add_paragraph()
+    faculty.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run3 = faculty.add_run('Технический факультет')
+    run3.font.name = 'Times New Roman'
+    run3.font.size = Pt(14)
+    run3.font.bold = True
 
-    department_paragraph = doc.add_paragraph()
-    department_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    department_run = department_paragraph.add_run('кафедра «Гражданская безопасность»')
-    department_run.bold = True
+    department = doc.add_paragraph()
+    department.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run4 = department.add_run('кафедра «Гражданская безопасность»')
+    run4.font.name = 'Times New Roman'
+    run4.font.size = Pt(14)
+    run4.font.bold = True
 
-    # Добавляем пустую строку
-    doc.add_paragraph()
+    # 5 пустых строк
+    for _ in range(5):
+        doc.add_paragraph()
 
     # Заголовок результатов
     results_title = doc.add_paragraph()
     results_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    results_run = results_title.add_run('РЕЗУЛЬТАТЫ ПОБЕДИТЕЛЕЙ')
-    results_run.bold = True
-    results_run.font.size = Inches(0.16)
+    run5 = results_title.add_run('РЕЗУЛЬТАТЫ ПОБЕДИТЕЛЕЙ')
+    run5.font.name = 'Times New Roman'
+    run5.font.size = Pt(14)
+    run5.font.bold = True
+
+    # Пустая строка
+    doc.add_paragraph()
 
     # Название олимпиады
-    olympiad_paragraph = doc.add_paragraph()
-    olympiad_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    olympiad_run = olympiad_paragraph.add_run('предметной студенческой Олимпиады')
-    olympiad_run.bold = True
+    olympiad_title = doc.add_paragraph()
+    olympiad_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run6 = olympiad_title.add_run('предметной студенческой Олимпиады')
+    run6.font.name = 'Times New Roman'
+    run6.font.size = Pt(14)
+    run6.font.bold = True
 
-    subject_paragraph = doc.add_paragraph()
-    subject_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    subject_run = subject_paragraph.add_run('по дисциплине')
-    subject_run.bold = True
+    discipline1 = doc.add_paragraph()
+    discipline1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run7 = discipline1.add_run('по дисциплине')
+    run7.font.name = 'Times New Roman'
+    run7.font.size = Pt(14)
+    run7.font.bold = True
 
-    discipline_paragraph = doc.add_paragraph()
-    discipline_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    discipline_run = discipline_paragraph.add_run(f'«{olympiad.title}»')
-    discipline_run.bold = True
+    # Используем название олимпиады из системы
+    discipline2 = doc.add_paragraph()
+    discipline2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run8 = discipline2.add_run(f'«{olympiad.title}»')
+    run8.font.name = 'Times New Roman'
+    run8.font.size = Pt(14)
+    run8.font.bold = True
+
+    # Пустая строка
+    doc.add_paragraph()
 
     # Дата проведения
-    date_paragraph = doc.add_paragraph()
-    date_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    date_run = date_paragraph.add_run(
-        f'проведенной «{olympiad.end_time.strftime("%d")}» {get_month_name(olympiad.end_time.month)} {olympiad.end_time.year} г.')
-    date_run.bold = True
+    date_conducted = doc.add_paragraph()
+    date_conducted.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run9 = date_conducted.add_run(
+        f'проведенной «{olympiad.start_time.day}» {_get_month_name(olympiad.start_time.month)} {olympiad.start_time.year} г.')
+    run9.font.name = 'Times New Roman'
+    run9.font.size = Pt(14)
+    run9.font.bold = True
 
-    # Добавляем пустую строку
+    # Пустая строка
     doc.add_paragraph()
 
-    # Создаем таблицу с результатами
-    table = doc.add_table(rows=1, cols=4)
-    table.style = 'Table Grid'
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    # Таблица с результатами
+    # Определяем количество столбцов (только топ-10 или все, если меньше 10)
+    top_participants = participations[:10] if len(participations) > 10 else participations
 
-    # Заголовки таблицы
-    header_cells = table.rows[0].cells
-    header_cells[0].text = '№ п/п'
-    header_cells[1].text = 'Фамилия, имя, отчество студента'
-    header_cells[2].text = 'Место (I, II, III)'
-    header_cells[3].text = 'Количество набранных баллов'
+    if top_participants:
+        table = doc.add_table(rows=1, cols=4)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.style = 'Table Grid'
 
-    # Делаем заголовки жирными
-    for cell in header_cells:
-        for paragraph in cell.paragraphs:
-            for run in paragraph.runs:
-                run.bold = True
-        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Заголовки таблицы
+        hdr_cells = table.rows[0].cells
+        headers = ['Место', 'ФИО студента', 'Группа', 'Количество баллов']
 
-    # Заполняем таблицу участниками
-    place_names = {1: 'I', 2: 'II', 3: 'III'}
+        for i, header in enumerate(headers):
+            hdr_cells[i].text = header
+            # Форматирование заголовков
+            for paragraph in hdr_cells[i].paragraphs:
+                for run in paragraph.runs:
+                    run.font.name = 'Times New Roman'
+                    run.font.size = Pt(14)
+                    run.font.bold = True
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    for idx, participation in enumerate(participations[:10], 1):  # Берем только топ-10
-        user = participation.user
-        row_cells = table.add_row().cells
-        row_cells[0].text = str(idx)
-        row_cells[1].text = user.full_name
+        # Заполнение данными
+        for i, participation in enumerate(top_participants, 1):
+            user = User.query.get(participation.user_id)
+            row_cells = table.add_row().cells
 
-        # Определяем место
-        if idx <= 3:
-            row_cells[2].text = place_names.get(idx, str(idx))
-        else:
-            row_cells[2].text = str(idx)
+            # Данные строки
+            row_data = [
+                str(i),
+                user.full_name,
+                user.study_group or '-',
+                str(participation.total_points)
+            ]
 
-        row_cells[3].text = str(participation.total_points)
+            for j, data in enumerate(row_data):
+                row_cells[j].text = data
+                # Форматирование ячеек
+                for paragraph in row_cells[j].paragraphs:
+                    for run in paragraph.runs:
+                        run.font.name = 'Times New Roman'
+                        run.font.size = Pt(14)
+                    # Центрирование для места и баллов, левое выравнивание для ФИО и группы
+                    if j in [0, 3]:  # Место и баллы
+                        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    else:  # ФИО и группа
+                        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-        # Центрируем первую, третью и четвертую колонки
-        row_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Настройка ширины столбцов
+        for i, width in enumerate([Inches(1), Inches(3), Inches(1.5), Inches(1.5)]):
+            for row in table.rows:
+                row.cells[i].width = width
 
-    # Добавляем пустые строки для дополнительных записей
-    for i in range(3):
-        row_cells = table.add_row().cells
-        row_cells[0].text = ''
-        row_cells[1].text = ''
-        row_cells[2].text = ''
-        row_cells[3].text = ''
+    # 4 пустые строки
+    for _ in range(4):
+        doc.add_paragraph()
 
-    # Добавляем дату подписания
+    # Дата подписания
+    signature_date = doc.add_paragraph()
+    signature_date.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    run10 = signature_date.add_run(f'«___»____________ {datetime.now().year} г.')
+    run10.font.name = 'Times New Roman'
+    run10.font.size = Pt(14)
+
+    # Пустая строка
     doc.add_paragraph()
+
+    # Таблица для подписей жюри
+    jury_title = doc.add_paragraph()
+    jury_title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    run11 = jury_title.add_run('Члены жюри:')
+    run11.font.name = 'Times New Roman'
+    run11.font.size = Pt(14)
+    run11.font.bold = True
+
     doc.add_paragraph()
-    date_sign_paragraph = doc.add_paragraph()
-    date_sign_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    date_sign_run = date_sign_paragraph.add_run(
-        f'«{datetime.now().strftime("%d")}» {get_month_name(datetime.now().month)} {datetime.now().year} г.')
 
-    # Добавляем подписи жюри
-    doc.add_paragraph()
-    jury_paragraph = doc.add_paragraph('Члены жюри:')
-    jury_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    # Создаем таблицу для подписей (3 строки по 4 столбца: пустой, подпись, пустой, ФИО)
+    jury_table = doc.add_table(rows=3, cols=4)
+    jury_table.style = None  # Убираем границы
 
-    # Таблица для подписей
-    signatures_table = doc.add_table(rows=3, cols=2)
-    signatures_table.style = 'Table Grid'
+    # Устанавливаем ширину столбцов
+    for i, width in enumerate([Inches(1), Inches(1.5), Inches(1), Inches(3.5)]):
+        for row in jury_table.rows:
+            row.cells[i].width = width
 
-    for i in range(3):
-        cells = signatures_table.rows[i].cells
-        cells[0].text = '(подпись)'
-        cells[1].text = '(инициалы, фамилия уч. степень, должность)'
-        cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    jury_signatures = [
+        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)'],
+        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)'],
+        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)']
+    ]
 
-    # Сохраняем документ во временный файл
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.docx')
-    doc.save(temp_file.name)
-    temp_file.close()
+    for row_idx, row_data in enumerate(jury_signatures):
+        # Добавляем пустые строки для подписей
+        for _ in range(3):
+            doc.add_paragraph()
 
-    # Возвращаем файл пользователю
+        row = jury_table.rows[row_idx]
+
+        for col_idx, cell_text in enumerate(row_data):
+            cell = row.cells[col_idx]
+
+            if cell_text:  # Если ячейка не пустая (столбцы 1 и 3 - подпись и ФИО)
+                # Добавляем текст
+                cell.text = cell_text
+
+                # Форматируем текст
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.name = 'Times New Roman'
+                        run.font.size = Pt(14)
+                    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+                # Добавляем верхнее подчеркивание (границу)
+                tc = cell._tc
+                tcPr = tc.get_or_add_tcPr()
+                tcBorders = OxmlElement('w:tcBorders')
+                top_border = OxmlElement('w:top')
+                top_border.set(qn('w:val'), 'single')
+                top_border.set(qn('w:sz'), '4')
+                top_border.set(qn('w:space'), '0')
+                top_border.set(qn('w:color'), '000000')
+                tcBorders.append(top_border)
+                tcPr.append(tcBorders)
+
+    # Сохраняем документ в память
+    doc_io = BytesIO()
+    doc.save(doc_io)
+    doc_io.seek(0)
+
+    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.docx'
+
     return send_file(
-        temp_file.name,
+        doc_io,
         as_attachment=True,
-        download_name=f'Результаты_олимпиады_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.docx',
+        download_name=filename,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+
+
+def _get_month_name(month_num):
+    """Возвращает название месяца на русском языке"""
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+    return months.get(month_num, '')
+
+
+@app.route('/admin/olympiad/<int:olympiad_id>/export_excel', methods=['GET'])
+@login_required
+def export_rankings_excel(olympiad_id):
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Получаем всех участников с результатами
+    participations = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).order_by(Participation.total_points.desc()).all()
+
+    # Создаем workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Результаты"
+
+    # Заголовки
+    headers = ['Место', 'ФИО', 'Группа', 'Баллы', 'Начало', 'Завершение', 'Время (мин)']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="820000", end_color="820000", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+
+    # Заполняем данными
+    for row, participation in enumerate(participations, 2):
+        user = User.query.get(participation.user_id)
+        duration = None
+        if participation.finish_time and participation.start_time:
+            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+
+        data = [
+            row - 1,  # Место
+            user.full_name,
+            user.study_group or '-',
+            participation.total_points,
+            participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
+            f"{duration:.1f}" if duration else '-'
+        ]
+
+        for col, value in enumerate(data, 1):
+            cell = ws.cell(row=row, column=col, value=value)
+            cell.alignment = Alignment(horizontal="center")
+
+    # Автоподгонка ширины колонок
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Добавляем информацию об олимпиаде на отдельный лист
+    info_ws = wb.create_sheet("Информация об олимпиаде")
+    info_data = [
+        ['Название олимпиады', olympiad.title],
+        ['Описание', olympiad.description],
+        ['Дата начала', olympiad.start_time.strftime('%d.%m.%Y %H:%M')],
+        ['Дата окончания', olympiad.end_time.strftime('%d.%m.%Y %H:%M')],
+        ['Всего участников', len(participations)],
+        ['Дата экспорта', datetime.now().strftime('%d.%m.%Y %H:%M')]
+    ]
+
+    for row, (key, value) in enumerate(info_data, 1):
+        info_ws.cell(row=row, column=1, value=key).font = Font(bold=True)
+        info_ws.cell(row=row, column=2, value=value)
+
+    # Сохраняем в память
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
+@app.route('/admin/olympiad/<int:olympiad_id>/export_csv', methods=['GET'])
+@login_required
+def export_rankings_csv(olympiad_id):
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Получаем всех участников с результатами
+    participations = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).order_by(Participation.total_points.desc()).all()
+
+    # Создаем CSV в памяти
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+
+    # Заголовки
+    writer.writerow(['Место', 'ФИО', 'Группа', 'Баллы', 'Начало', 'Завершение', 'Время (мин)'])
+
+    # Данные
+    for i, participation in enumerate(participations, 1):
+        user = User.query.get(participation.user_id)
+        duration = None
+        if participation.finish_time and participation.start_time:
+            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+
+        writer.writerow([
+            i,
+            user.full_name,
+            user.study_group or '-',
+            participation.total_points,
+            participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
+            f"{duration:.1f}" if duration else '-'
+        ])
+
+    output.seek(0)
+    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
+
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8-sig')),
+        as_attachment=True,
+        download_name=filename,
+        mimetype='text/csv'
+    )
+
+
+@app.route('/admin/olympiad/<int:olympiad_id>/export_detailed', methods=['GET'])
+@login_required
+def export_detailed_results(olympiad_id):
+    """Детальный экспорт с результатами по блокам"""
+    if not current_user.is_admin:
+        flash('У вас нет доступа к этой странице', 'error')
+        return redirect(url_for('index'))
+
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Получаем все блоки олимпиады
+    blocks = Block.query.filter_by(olympiad_id=olympiad_id).order_by(Block.order).all()
+
+    # Получаем всех участников
+    participations = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).order_by(Participation.total_points.desc()).all()
+
+    # Создаем workbook с детальным анализом
+    wb = Workbook()
+
+    # Основной лист с результатами
+    ws = wb.active
+    ws.title = "Сводные результаты"
+
+    # Формируем заголовки
+    headers = ['Место', 'ФИО', 'Группа', 'Итого баллов']
+    for block in blocks:
+        headers.append(f'Блок {block.order}: {block.title}')
+    headers.extend(['Начало', 'Завершение', 'Время'])
+
+    # Записываем заголовки
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="820000", end_color="820000", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+
+    # Заполняем данными
+    for row, participation in enumerate(participations, 2):
+        user = User.query.get(participation.user_id)
+        duration = None
+        if participation.finish_time and participation.start_time:
+            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+
+        # Основные данные
+        data = [
+            row - 1,  # Место
+            user.full_name,
+            user.study_group or '-',
+            participation.total_points
+        ]
+
+        # Баллы по блокам
+        for block in blocks:
+            block_result = BlockResult.query.filter_by(
+                participation_id=participation.id,
+                block_id=block.id
+            ).first()
+
+            if block_result:
+                data.append(f"{block_result.points_earned:.1f}")
+            else:
+                # Подсчитываем из ответов, если нет записи в BlockResult
+                questions = Question.query.filter_by(block_id=block.id).all()
+                answers = Answer.query.filter(
+                    Answer.participation_id == participation.id,
+                    Answer.question_id.in_([q.id for q in questions])
+                ).all()
+
+                if answers:
+                    total_points = sum(answer.points_earned for answer in answers)
+                    data.append(f"{total_points:.1f}")
+                else:
+                    data.append("0.0")
+
+        # Время
+        data.extend([
+            participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
+            f"{duration:.1f}" if duration else '-'
+        ])
+
+        for col, value in enumerate(data, 1):
+            cell = ws.cell(row=row, column=col, value=value)
+            cell.alignment = Alignment(horizontal="center")
+
+    # Автоподгонка ширины
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Добавляем статистику по блокам
+    stats_ws = wb.create_sheet("Статистика по блокам")
+
+    # Заголовки статистики
+    stats_headers = ['Блок', 'Средний балл', 'Максимум', 'Минимум', 'Прошли порог', 'Процент прохождения']
+    for col, header in enumerate(stats_headers, 1):
+        cell = stats_ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+
+    # Статистика по каждому блоку
+    for row, block in enumerate(blocks, 2):
+        block_results = BlockResult.query.filter_by(block_id=block.id).all()
+
+        if block_results:
+            points = [br.points_earned for br in block_results]
+            avg_points = sum(points) / len(points)
+            max_points = max(points)
+            min_points = min(points)
+
+            # Считаем сколько прошли порог
+            threshold_points = block.max_points * (block.threshold_percentage / 100)
+            passed_threshold = len([p for p in points if p >= threshold_points])
+            pass_percentage = (passed_threshold / len(points)) * 100
+        else:
+            avg_points = max_points = min_points = 0
+            passed_threshold = 0
+            pass_percentage = 0
+
+        stats_data = [
+            f'Блок {block.order}: {block.title}',
+            f"{avg_points:.1f}",
+            f"{max_points:.1f}",
+            f"{min_points:.1f}",
+            f"{passed_threshold}/{len(block_results) if block_results else 0}",
+            f"{pass_percentage:.1f}%"
+        ]
+
+        for col, value in enumerate(stats_data, 1):
+            stats_ws.cell(row=row, column=col, value=value)
+
+    # Сохраняем файл
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f'detailed_results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 

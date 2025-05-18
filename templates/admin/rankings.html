@@ -3,78 +3,672 @@
 
 {% block title %}Результаты олимпиады - {{ olympiad.title }}{% endblock %}
 
+{% block head %}
+<style>
+    .rankings-hero {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 25%, #dc2626 50%, #a91b2b 75%, #820000 100%);
+        border-radius: 32px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .rankings-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: hero-shimmer 4s infinite;
+    }
+
+    @keyframes hero-shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .export-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .export-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.875rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .export-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .export-btn:hover::before {
+        left: 100%;
+    }
+
+    .export-btn:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: white;
+    }
+
+    .export-btn.docx {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .export-btn.docx:hover {
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        transform: translateY(-3px) scale(1.02);
+    }
+
+    .export-btn.pdf {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(130, 0, 0, 0.3);
+    }
+
+    .export-btn.pdf:hover {
+        box-shadow: 0 6px 20px rgba(130, 0, 0, 0.4);
+        transform: translateY(-3px) scale(1.02);
+    }
+
+    .export-btn.excel {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .export-btn.excel:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        transform: translateY(-3px) scale(1.02);
+    }
+
+    .export-btn.csv {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .export-btn.csv:hover {
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        transform: translateY(-3px) scale(1.02);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 20px;
+        padding: 24px;
+        border: 1px solid rgba(130, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(130, 0, 0, 0.15);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .results-table {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(130, 0, 0, 0.1);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        padding: 24px;
+    }
+
+    .table-content {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .table-row {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.02), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .table-row:hover {
+        background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+        transform: translateX(4px);
+    }
+
+    .table-row:hover::before {
+        left: 100%;
+    }
+
+    .ranking-position {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-weight: bold;
+        color: white;
+        margin-right: 16px;
+    }
+
+    .ranking-position.first {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    }
+
+    .ranking-position.second {
+        background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        box-shadow: 0 4px 12px rgba(156, 163, 175, 0.4);
+    }
+
+    .ranking-position.third {
+        background: linear-gradient(135deg, #cd7f32 0%, #b97828 100%);
+        box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+    }
+
+    .ranking-position.other {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    }
+
+    .medal-icon {
+        margin-left: 12px;
+        font-size: 1.5rem;
+    }
+
+    .participant-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .participant-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #6b7280;
+        margin-right: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .table-row:hover .participant-avatar {
+        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .participant-details h4 {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+    }
+
+    .participant-details p {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .score-display {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .export-buttons {
+            justify-content: center;
+        }
+
+        .table-row:hover {
+            transform: none;
+        }
+
+        .participant-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .participant-avatar {
+            margin-right: 0;
+            margin-bottom: 8px;
+        }
+    }
+
+    /* Анимации появления */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 60px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .animate-fadeInUp {
+        animation: fadeInUp 0.8s ease-out;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <div class="mb-6">
-        <a href="{{ url_for('edit_olympiad', olympiad_id=olympiad.id) }}" class="text-primary hover:underline">&larr; Вернуться к редактированию олимпиады</a>
+<div class="mb-6 animate-fadeInUp">
+    <a href="{{ url_for('edit_olympiad', olympiad_id=olympiad.id) }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Вернуться к редактированию олимпиады
+    </a>
+</div>
+
+<!-- Героическая секция -->
+<div class="rankings-hero text-white p-8 md:p-12 mb-8 animate-fadeInUp">
+    <div class="relative z-10">
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+            <div class="mb-6 lg:mb-0">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4">📊 Результаты олимпиады</h1>
+                <h2 class="text-xl md:text-2xl font-medium text-white text-opacity-90">{{ olympiad.title }}</h2>
+            </div>
+            <div class="export-buttons">
+                <a
+                    href="{{ url_for('export_rankings_docx', olympiad_id=olympiad.id) }}"
+                    class="export-btn docx"
+                    title="Официальный документ МелГУ"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                    </svg>
+                    DOCX
+                </a>
+                <a
+                    href="{{ url_for('export_rankings_pdf', olympiad_id=olympiad.id) }}"
+                    class="export-btn pdf"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                    PDF
+                </a>
+                <a
+                    href="{{ url_for('export_rankings_excel', olympiad_id=olympiad.id) }}"
+                    class="export-btn excel"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Excel
+                </a>
+                <a
+                    href="{{ url_for('export_rankings_csv', olympiad_id=olympiad.id) }}"
+                    class="export-btn csv"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3-8c0-3-3-3s-3 0-3 3m6 0c0 3-3 3-3 3s-3 0-3-3m0 8c0-3 3-3 3-3s3 0 3-3m0 0V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="stats-grid animate-fadeInUp">
+    <div class="stat-card">
+        <div class="stat-value">{{ participations|length }}</div>
+        <div class="stat-label">Всего участников</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ participations|selectattr('status', 'equalto', 'completed')|list|length }}</div>
+        <div class="stat-label">Завершили</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ olympiad.start_time.strftime('%d.%m.%Y') }}</div>
+        <div class="stat-label">Дата проведения</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ ((olympiad.end_time - olympiad.start_time).total_seconds() / 3600)|round(1) }}</div>
+        <div class="stat-label">Часов отведено</div>
+    </div>
+</div>
+
+<!-- Информация об олимпиаде -->
+<div class="bg-white p-6 rounded-lg shadow-md mb-8 animate-fadeInUp">
+    <div class="flex flex-wrap gap-4 text-sm">
+        <div class="px-4 py-2 bg-gray-100 rounded-full">
+            <span class="font-medium">Дата начала:</span> {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
+        </div>
+        <div class="px-4 py-2 bg-gray-100 rounded-full">
+            <span class="font-medium">Дата окончания:</span> {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
+        </div>
+        <div class="px-4 py-2 bg-gray-100 rounded-full">
+            <span class="font-medium">Всего участников:</span> {{ participations|length }}
+        </div>
+        <div class="px-4 py-2 bg-gray-100 rounded-full">
+            <span class="font-medium">Завершили:</span> {{ participations|selectattr('status', 'equalto', 'completed')|list|length }}
+        </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Результаты олимпиады: {{ olympiad.title }}</h1>
-            <a
-                href="{{ url_for('export_rankings_pdf', olympiad_id=olympiad.id) }}"
-                class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 transition"
-            >
-                Экспорт в PDF
-            </a>
+    {% if olympiad.description %}
+        <div class="mt-4">
+            <h3 class="font-medium text-gray-700 mb-2">Описание олимпиады:</h3>
+            <p class="text-gray-600">{{ olympiad.description }}</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Таблица результатов -->
+{% if participations %}
+    <div class="results-table animate-fadeInUp">
+        <div class="table-header">
+            <h2 class="text-2xl font-bold">🏆 Рейтинг участников</h2>
         </div>
 
-        <div class="flex flex-wrap gap-4 mb-6 text-sm">
-            <div class="px-3 py-1 bg-gray-100 rounded-full">
-                <span class="font-medium">Дата начала:</span> {{ olympiad.start_time.strftime('%d.%m.%Y %H:%M') }}
-            </div>
-            <div class="px-3 py-1 bg-gray-100 rounded-full">
-                <span class="font-medium">Дата окончания:</span> {{ olympiad.end_time.strftime('%d.%m.%Y %H:%M') }}
-            </div>
-            <div class="px-3 py-1 bg-gray-100 rounded-full">
-                <span class="font-medium">Всего участников:</span> {{ participations|length }}
-            </div>
-            <div class="px-3 py-1 bg-gray-100 rounded-full">
-                <span class="font-medium">Завершили:</span> {{ participations|selectattr('status', 'equalto', 'completed')|list|length }}
+        <div class="table-content">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Участник</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Группа</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начало</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Завершение</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for p in participations %}
+                            {% if p.status == 'completed' %}
+                                {% set user = users[p.user_id] %}
+                                {% set duration = ((p.finish_time - p.start_time).total_seconds() / 60) if p.finish_time and p.start_time else None %}
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="ranking-position {% if loop.index == 1 %}first{% elif loop.index == 2 %}second{% elif loop.index == 3 %}third{% else %}other{% endif %}">
+                                                {{ loop.index }}
+                                            </div>
+                                            {% if loop.index <= 3 %}
+                                                <span class="medal-icon">
+                                                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="participant-info">
+                                            <div class="participant-avatar">
+                                                {{ user.full_name[0].upper() }}
+                                            </div>
+                                            <div class="participant-details">
+                                                <h4>{{ user.full_name }}</h4>
+                                                <p>{{ user.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium">
+                                            {{ user.study_group or 'Не указана' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="score-display">{{ p.total_points }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {% if p.start_time %}
+                                            {{ p.start_time.strftime('%d.%m.%Y %H:%M') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {% if p.finish_time %}
+                                            {{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {% if duration %}
+                                            {{ "%.1f"|format(duration) }} мин
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
+{% else %}
+    <div class="text-center p-12 bg-white rounded-lg shadow-md animate-fadeInUp">
+        <div class="text-gray-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-600 mb-2">Нет завершенных участий</h3>
+        <p class="text-gray-500">Участники еще не завершили олимпиаду</p>
+    </div>
+{% endif %}
+{% endblock %}
 
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ФИО</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Группа</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начало</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Завершение</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время (мин)</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for p in participations %}
-                        {% if p.status == 'completed' %}
-                            {% set user = users[p.user_id] %}
-                            {% set duration = ((p.finish_time - p.start_time).total_seconds() / 60) if p.finish_time and p.start_time else None %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ loop.index }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap font-medium">{{ user.full_name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ user.study_group }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap font-medium">{{ p.total_points }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    {% if p.start_time %}
-                                        {{ p.start_time.strftime('%d.%m.%Y %H:%M') }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    {% if p.finish_time %}
-                                        {{ p.finish_time.strftime('%d.%m.%Y %H:%M') }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    {% if duration %}
-                                        {{ "%.1f"|format(duration) }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Анимация появления элементов при прокрутке
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Наблюдение за элементами
+        document.querySelectorAll('.animate-fadeInUp').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            observer.observe(el);
+        });
+
+        // Анимация для счетчиков статистики
+        const statValues = document.querySelectorAll('.stat-value');
+        statValues.forEach(stat => {
+            const value = parseInt(stat.textContent);
+            if (!isNaN(value)) {
+                animateCounter(stat, 0, value, 1500);
+            }
+        });
+
+        // Добавляем интерактивность для строк таблицы
+        const tableRows = document.querySelectorAll('.table-row');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function() {
+                // Можно добавить дополнительную функциональность при клике
+                this.style.backgroundColor = '#fef2f2';
+                setTimeout(() => {
+                    this.style.backgroundColor = '';
+                }, 300);
+            });
+        });
+
+        // Эффекты при наведении на кнопки экспорта
+        const exportButtons = document.querySelectorAll('.export-btn');
+        exportButtons.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.02)';
+            });
+
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    });
+
+    function animateCounter(element, start, end, duration) {
+        const startTime = performance.now();
+
+        function updateCounter(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Easing function для плавности
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const current = Math.floor(easeOutQuart * (end - start) + start);
+
+            element.textContent = current;
+
+            if (progress < 1) {
+                requestAnimationFrame(updateCounter);
+            } else {
+                element.textContent = end;
+            }
+        }
+
+        requestAnimationFrame(updateCounter);
+    }
+
+    // Функция для создания эффекта конфетти при загрузке
+    window.addEventListener('load', function() {
+        const firstPlace = document.querySelector('.ranking-position.first');
+        if (firstPlace) {
+            setTimeout(() => {
+                createConfetti();
+            }, 1000);
+        }
+    });
+
+    function createConfetti() {
+        const colors = ['#fbbf24', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6'];
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = '50%';
+                confetti.style.pointerEvents = 'none';
+                confetti.style.zIndex = '9999';
+                confetti.style.left = Math.random() * window.innerWidth + 'px';
+                confetti.style.top = '-10px';
+                confetti.style.transition = 'all 3s ease-out';
+
+                document.body.appendChild(confetti);
+
+                requestAnimationFrame(() => {
+                    confetti.style.top = window.innerHeight + 10 + 'px';
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    confetti.style.opacity = '0';
+                });
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }, i * 50);
+        }
+    }
+</script>
+{% endblock %}
