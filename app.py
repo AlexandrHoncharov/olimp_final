@@ -500,16 +500,17 @@ def export_rankings_docx(olympiad_id):
 
     # Таблица с результатами
     # Определяем количество столбцов (только топ-10 или все, если меньше 10)
-    top_participants = participations[:10] if len(participations) > 10 else participations
+    top_participants = participations[:3] if len(participations) > 3 else participations
 
     if top_participants:
-        table = doc.add_table(rows=1, cols=4)
+        table = doc.add_table(rows=1, cols=5)  # Увеличиваем до 5 колонок
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.style = 'Table Grid'
 
         # Заголовки таблицы
         hdr_cells = table.rows[0].cells
-        headers = ['Место', 'ФИО студента', 'Группа', 'Количество баллов']
+        headers = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки',
+                   'Количество баллов']  # Добавляем направление подготовки
 
         for i, header in enumerate(headers):
             hdr_cells[i].text = header
@@ -526,12 +527,22 @@ def export_rankings_docx(olympiad_id):
             user = User.query.get(participation.user_id)
             row_cells = table.add_row().cells
 
+            # Получаем информацию о специальности
+            speciality_info = user.get_speciality_info()
+
+            # Формируем строку с кодом и названием специальности
+            if speciality_info:
+                speciality_text = f"{speciality_info['spec_code']} - {speciality_info['name']}"
+            else:
+                speciality_text = '-'
+
             # Данные строки
             row_data = [
                 str(i),
                 user.full_name,
                 user.study_group or '-',
-                str(participation.total_points)
+                speciality_text,
+                f"{participation.total_points:.1f}"  # Форматирование до 1 знака после запятой
             ]
 
             for j, data in enumerate(row_data):
@@ -541,14 +552,15 @@ def export_rankings_docx(olympiad_id):
                     for run in paragraph.runs:
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(14)
-                    # Центрирование для места и баллов, левое выравнивание для ФИО и группы
-                    if j in [0, 3]:  # Место и баллы
+                    # Центрирование для места и баллов, левое выравнивание для остальных
+                    if j in [0, 4]:  # Место и баллы
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    else:  # ФИО и группа
+                    else:  # ФИО, группа и направление
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         # Настройка ширины столбцов
-        for i, width in enumerate([Inches(1), Inches(3), Inches(1.5), Inches(1.5)]):
+        for i, width in enumerate(
+                [Inches(0.8), Inches(2.5), Inches(1.2), Inches(3.5), Inches(1.0)]):  # Делаем последний столбец уже
             for row in table.rows:
                 row.cells[i].width = width
 
