@@ -27,6 +27,7 @@ from docx.oxml.shared import qn
 
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import tempfile
+import requests
 
 # Инициализация приложения
 app = Flask(__name__)
@@ -46,14 +47,17 @@ login_manager.login_view = 'login'
 
 import json
 
+
 @app.template_filter('fromjson')
 def fromjson(value):
     return json.loads(value)
+
 
 # Фильтры для шаблонов
 @app.template_filter('tojson')
 def to_json(value):
     return json.dumps(value)
+
 
 # Функция для корректной обработки JSON-полей перед отправкой в шаблон
 def prepare_question_data(questions):
@@ -72,6 +76,7 @@ def prepare_question_data(questions):
             q.correct_answers_list = []
     return questions
 
+
 # Models
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,6 +84,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(200), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     study_group = db.Column(db.String(50), nullable=True)
+    speciality = db.Column(db.Text, nullable=True)  # JSON с информацией о специальности
     is_admin = db.Column(db.Boolean, default=False)
     participations = db.relationship('Participation', backref='user', lazy=True)
 
@@ -87,6 +93,15 @@ class User(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_speciality_info(self):
+        """Возвращает информацию о специальности пользователя"""
+        if self.speciality:
+            try:
+                return json.loads(self.speciality)
+            except:
+                return None
+        return None
 
 
 class Olympiad(db.Model):
@@ -161,10 +176,12 @@ class Answer(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.context_processor          # runs for every template render
+
+@app.context_processor  # runs for every template render
 def inject_now():
     # expose a callable, not a value, so you can still call now()
-    return {'now': datetime.utcnow}   # or datetime.now for local time
+    return {'now': datetime.utcnow}  # or datetime.now for local time
+
 
 # Routes
 @app.route('/')
@@ -198,6 +215,19 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/api/specialities', methods=['GET'])
+def get_specialities():
+    """API роут для получения списка специальностей"""
+    try:
+        response = requests.get('https://melsu.ru/api/specialities/list', timeout=10)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': 'Не удалось получить список специальностей'}), 500
+    except requests.RequestException:
+        return jsonify({'error': 'Ошибка соединения с сервером'}), 500
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -205,12 +235,39 @@ def register():
         password = request.form.get('password')
         full_name = request.form.get('full_name')
         study_group = request.form.get('study_group')
+        speciality_id = request.form.get('speciality_id')
 
         if User.query.filter_by(email=email).first():
             flash('Email уже зарегистрирован', 'error')
             return redirect(url_for('register'))
 
-        user = User(email=email, full_name=full_name, study_group=study_group)
+        # Получаем информацию о специальности
+        speciality_info = None
+        if speciality_id:
+            try:
+                response = requests.get('https://melsu.ru/api/specialities/list', timeout=10)
+                if response.status_code == 200:
+                    specialities = response.json()
+                    if speciality_id in specialities:
+                        spec = specialities[speciality_id]
+                        speciality_info = {
+                            'id': spec['id'],
+                            'spec_code': spec['spec_code'],
+                            'name': spec['name'],
+                            'department_name': spec['department_name'],
+                            'faculty_name': spec['faculty_name'],
+                            'faculty_acronym': spec['faculty_acronym'],
+                            'level': spec['level']
+                        }
+            except requests.RequestException:
+                flash('Не удалось сохранить информацию о специальности', 'warning')
+
+        user = User(
+            email=email,
+            full_name=full_name,
+            study_group=study_group,
+            speciality=json.dumps(speciality_info) if speciality_info else None
+        )
         user.set_password(password)
 
         db.session.add(user)
@@ -613,7 +670,7 @@ def export_rankings_excel(olympiad_id):
     ws.title = "Результаты"
 
     # Заголовки
-    headers = ['Место', 'ФИО', 'Группа', 'Баллы', 'Начало', 'Завершение', 'Время (мин)']
+    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы', 'Начало', 'Завершение', 'Время (мин)']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True, color="FFFFFF")
@@ -623,6 +680,9 @@ def export_rankings_excel(olympiad_id):
     # Заполняем данными
     for row, participation in enumerate(participations, 2):
         user = User.query.get(participation.user_id)
+        speciality_info = user.get_speciality_info()
+        speciality_name = speciality_info['name'] if speciality_info else '-'
+
         duration = None
         if participation.finish_time and participation.start_time:
             duration = (participation.finish_time - participation.start_time).total_seconds() / 60
@@ -631,6 +691,7 @@ def export_rankings_excel(olympiad_id):
             row - 1,  # Место
             user.full_name,
             user.study_group or '-',
+            speciality_name,
             participation.total_points,
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
             participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
@@ -704,11 +765,14 @@ def export_rankings_csv(olympiad_id):
     writer = csv.writer(output, delimiter=';')
 
     # Заголовки
-    writer.writerow(['Место', 'ФИО', 'Группа', 'Баллы', 'Начало', 'Завершение', 'Время (мин)'])
+    writer.writerow(['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы', 'Начало', 'Завершение', 'Время (мин)'])
 
     # Данные
     for i, participation in enumerate(participations, 1):
         user = User.query.get(participation.user_id)
+        speciality_info = user.get_speciality_info()
+        speciality_name = speciality_info['name'] if speciality_info else '-'
+
         duration = None
         if participation.finish_time and participation.start_time:
             duration = (participation.finish_time - participation.start_time).total_seconds() / 60
@@ -717,6 +781,7 @@ def export_rankings_csv(olympiad_id):
             i,
             user.full_name,
             user.study_group or '-',
+            speciality_name,
             participation.total_points,
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
             participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
@@ -761,7 +826,7 @@ def export_detailed_results(olympiad_id):
     ws.title = "Сводные результаты"
 
     # Формируем заголовки
-    headers = ['Место', 'ФИО', 'Группа', 'Итого баллов']
+    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Итого баллов']
     for block in blocks:
         headers.append(f'Блок {block.order}: {block.title}')
     headers.extend(['Начало', 'Завершение', 'Время'])
@@ -776,6 +841,9 @@ def export_detailed_results(olympiad_id):
     # Заполняем данными
     for row, participation in enumerate(participations, 2):
         user = User.query.get(participation.user_id)
+        speciality_info = user.get_speciality_info()
+        speciality_name = speciality_info['name'] if speciality_info else '-'
+
         duration = None
         if participation.finish_time and participation.start_time:
             duration = (participation.finish_time - participation.start_time).total_seconds() / 60
@@ -785,6 +853,7 @@ def export_detailed_results(olympiad_id):
             row - 1,  # Место
             user.full_name,
             user.study_group or '-',
+            speciality_name,
             participation.total_points
         ]
 
@@ -940,6 +1009,7 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({'success': True, 'message': 'Пользователь успешно удален'})
+
 
 @app.route('/admin/olympiad/create', methods=['POST'])
 @login_required

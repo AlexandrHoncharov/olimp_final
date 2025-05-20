@@ -12,15 +12,58 @@
     .auth-header {
         background: linear-gradient(135deg, #770002 0%, #990002 100%);
     }
-    .form-input {
+    .form-input, .form-select {
         transition: all 0.2s ease;
     }
-    .form-input:focus {
+    .form-input:focus, .form-select:focus {
         border-color: #770002;
         box-shadow: 0 0 0 3px rgba(119, 0, 2, 0.1);
     }
     .form-group {
         margin-bottom: 1.25rem;
+    }
+    .loading-spinner {
+        display: none;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #820000;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+        margin-left: 8px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .select-wrapper {
+        position: relative;
+    }
+    .select-wrapper::after {
+        content: '▼';
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+    .form-select {
+        appearance: none;
+        background-color: white;
+        padding-right: 40px;
+    }
+    .loading-message {
+        display: none;
+        color: #6b7280;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+    .error-message {
+        color: #dc2626;
+        font-size: 14px;
+        margin-top: 4px;
     }
 </style>
 {% endblock %}
@@ -34,7 +77,7 @@
         </div>
 
         <div class="p-8">
-            <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
+            <form method="POST" action="{{ url_for('register') }}" class="space-y-4" id="registrationForm">
                 <div class="form-group">
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <div class="relative">
@@ -91,6 +134,35 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="speciality_id" class="block text-sm font-medium text-gray-700 mb-1">
+                        Направление подготовки
+                        <span class="text-gray-500 text-xs">(необязательно)</span>
+                    </label>
+                    <div class="select-wrapper">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
+                            </svg>
+                        </div>
+                        <select
+                            id="speciality_id"
+                            name="speciality_id"
+                            class="form-select w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                            disabled>
+                            <option value="">Загрузка специальностей...</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <span class="loading-spinner" id="loadingSpinner"></span>
+                        </div>
+                    </div>
+                    <div id="loadingMessage" class="loading-message">
+                        <span class="loading-spinner inline-block mr-2"></span>
+                        Загружаем список специальностей...
+                    </div>
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+                </div>
+
+                <div class="form-group">
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -126,4 +198,109 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const specialitySelect = document.getElementById('speciality_id');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Загружаем специальности при загрузке страницы
+    loadSpecialities();
+
+    function loadSpecialities() {
+        showLoading(true);
+
+        fetch('/api/specialities')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError('Не удалось загрузить список специальностей: ' + data.error);
+                } else {
+                    populateSelect(data);
+                    showLoading(false);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                showError('Ошибка соединения при загрузке специальностей');
+                showLoading(false);
+            });
+    }
+
+    function populateSelect(specialitiesData) {
+        // Очищаем select
+        specialitySelect.innerHTML = '';
+
+        // Добавляем пустую опцию
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Выберите направление подготовки (необязательно)';
+        specialitySelect.appendChild(emptyOption);
+
+        // Сортируем специальности по коду
+        const sortedSpecialities = Object.entries(specialitiesData)
+            .sort(([,a], [,b]) => a.spec_code.localeCompare(b.spec_code));
+
+        // Добавляем все специальности
+        sortedSpecialities.forEach(([id, spec]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = `${spec.spec_code} - ${spec.name}`;
+
+            // Добавляем дополнительную информацию как data-атрибуты
+            option.dataset.department = spec.department_name;
+            option.dataset.faculty = spec.faculty_name;
+            option.dataset.level = spec.level;
+
+            specialitySelect.appendChild(option);
+        });
+
+        // Включаем select
+        specialitySelect.disabled = false;
+
+        console.log('Загружено специальностей:', sortedSpecialities.length);
+    }
+
+    function showLoading(show) {
+        if (show) {
+            loadingSpinner.style.display = 'inline-block';
+            loadingMessage.style.display = 'block';
+            specialitySelect.disabled = true;
+            errorMessage.style.display = 'none';
+        } else {
+            loadingSpinner.style.display = 'none';
+            loadingMessage.style.display = 'none';
+            specialitySelect.disabled = false;
+        }
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        loadingMessage.style.display = 'none';
+
+        // Показываем хотя бы пустой select
+        specialitySelect.innerHTML = '<option value="">Не удалось загрузить специальности</option>';
+        specialitySelect.disabled = false;
+    }
+
+    // Дополнительный обработчик для отображения дополнительной информации при выборе
+    specialitySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+
+        if (selectedOption.value && selectedOption.dataset.department) {
+            // Можно добавить отображение дополнительной информации
+            console.log('Выбрана специальность:', {
+                code: selectedOption.textContent.split(' - ')[0],
+                name: selectedOption.textContent.split(' - ')[1],
+                department: selectedOption.dataset.department,
+                faculty: selectedOption.dataset.faculty,
+                level: selectedOption.dataset.level
+            });
+        }
+    });
+});
+</script>
 {% endblock %}
