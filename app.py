@@ -651,6 +651,257 @@ def export_rankings_docx(olympiad_id):
     )
 
 
+from flask import request, jsonify
+import json
+import re
+
+
+@app.route('/admin/block/<int:block_id>/upload_questions', methods=['POST'])
+@login_required
+def upload_questions(block_id):
+    """
+    Загрузка вопросов для блока из файла
+    Поддерживаемые форматы:
+    1. Тесты:
+       "1. Название вопроса" затем варианты ответа, правильные ответы начинаются с 4-х пробелов
+    2. Сопоставление:
+       "1. Название вопроса" затем пары для сопоставления в формате "Вариант 1 | Ответ 1"
+    """
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    block = Block.query.get_or_404(block_id)
+
+    # Проверяем, что файл есть в запросе
+    if 'questions_file' not in request.files:
+        return jsonify({'success': False, 'message': 'Файл не найден в запросе'})
+
+    file = request.files['questions_file']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'Файл не выбран'})
+
+    # Читаем содержимое файла
+    try:
+        content = file.read().decode('utf-8')
+    except UnicodeDecodeError:
+        try:
+            # Пробуем другую кодировку, если UTF-8 не работает
+            file.seek(0)
+            content = file.read().decode('windows-1251')
+        except:
+            return jsonify({'success': False,
+                            'message': 'Не удалось прочитать файл. Проверьте кодировку (поддерживаются UTF-8 и Windows-1251)'})
+
+    # Определяем тип блока по содержимому
+    block_type = request.form.get('block_type')
+    if not block_type:
+        # Автоопределение типа блока по содержимому
+        if '|' in content:
+            block_type = 'matching'
+        else:
+            block_type = 'test'
+
+    # Обработка содержимого в зависимости от типа блока
+    questions_created = 0
+    try:
+        if block_type == 'test':
+            questions_created = parse_test_questions(content, block_id)
+        elif block_type == 'matching':
+            questions_created = parse_matching_questions(content, block_id)
+        else:
+            return jsonify({'success': False, 'message': f'Неизвестный тип блока: {block_type}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Ошибка при обработке файла: {str(e)}'})
+
+    # Обновляем равномерно баллы за все вопросы в блоке
+    update_question_points(block_id)
+
+    return jsonify({
+        'success': True,
+        'message': f'Успешно загружено {questions_created} вопросов в блок',
+        'questions_count': questions_created
+    })
+
+
+def parse_test_questions(content, block_id):
+    """Разбор содержимого файла с тестовыми вопросами"""
+    lines = content.splitlines()
+
+    questions = []
+    current_question = None
+    current_options = []
+    current_correct = []
+
+    for line in lines:
+        line = line.rstrip()
+        if not line:  # Пропускаем пустые строки
+            continue
+
+        # Новый вопрос начинается с номера и точки
+        if re.match(r'^\d+\.', line):
+            # Сохраняем предыдущий вопрос, если он есть
+            if current_question:
+                questions.append({
+                    'text': current_question,
+                    'options': current_options,
+                    'correct_answers': current_correct
+                })
+
+            # Начинаем новый вопрос
+            current_question = line.split('.', 1)[1].strip()
+            current_options = []
+            current_correct = []
+        elif line.startswith('    '):  # Правильный ответ (4 пробела в начале)
+            option = line.strip()
+            if option not in current_options:
+                current_options.append(option)
+            current_correct.append(option)
+        else:  # Обычный вариант ответа
+            option = line.strip()
+            if option and option not in current_options:
+                current_options.append(option)
+
+    # Добавляем последний вопрос
+    if current_question:
+        questions.append({
+            'text': current_question,
+            'options': current_options,
+            'correct_answers': current_correct
+        })
+
+    # Сохраняем вопросы в базу данных
+    questions_created = 0
+    for q_data in questions:
+        if not q_data['options'] or not q_data['correct_answers']:
+            continue  # Пропускаем некорректные вопросы
+
+        question = Question(
+            block_id=block_id,
+            question_type='test',
+            text=q_data['text'],
+            options=json.dumps(q_data['options']),
+            correct_answers=json.dumps(q_data['correct_answers']),
+            points=1.0  # Временное значение, будет обновлено позже
+        )
+        db.session.add(question)
+        questions_created += 1
+
+    db.session.commit()
+    return questions_created
+
+
+def parse_matching_questions(content, block_id):
+    """Разбор содержимого файла с вопросами на сопоставление"""
+    lines = content.splitlines()
+
+    questions = []
+    current_question = None
+    current_matches = []
+
+    for line in lines:
+        line = line.rstrip()
+        if not line:  # Пропускаем пустые строки
+            continue
+
+        # Новый вопрос начинается с номера и точки
+        if re.match(r'^\d+\.', line):
+            # Сохраняем предыдущий вопрос, если он есть
+            if current_question:
+                questions.append({
+                    'text': current_question,
+                    'matches': current_matches
+                })
+
+            # Начинаем новый вопрос
+            current_question = line.split('.', 1)[1].strip()
+            current_matches = []
+        elif '|' in line:  # Строка с парой для сопоставления
+            parts = line.split('|', 1)
+            if len(parts) == 2:
+                left = parts[0].strip()
+                right = parts[1].strip()
+                if left and right:
+                    current_matches.append({'left': left, 'right': right})
+
+    # Добавляем последний вопрос
+    if current_question:
+        questions.append({
+            'text': current_question,
+            'matches': current_matches
+        })
+
+    # Сохраняем вопросы в базу данных
+    questions_created = 0
+    for q_data in questions:
+        if not q_data['matches']:
+            continue  # Пропускаем некорректные вопросы
+
+        question = Question(
+            block_id=block_id,
+            question_type='matching',
+            text=q_data['text'],
+            matches=json.dumps(q_data['matches']),
+            points=1.0  # Временное значение, будет обновлено позже
+        )
+        db.session.add(question)
+        questions_created += 1
+
+    db.session.commit()
+    return questions_created
+
+
+def update_question_points(block_id):
+    """Обновление баллов за вопросы, чтобы их сумма равнялась max_points блока"""
+    block = Block.query.get(block_id)
+    questions = Question.query.filter_by(block_id=block_id).all()
+
+    if not questions:
+        return
+
+    # Распределяем баллы поровну между всеми вопросами
+    points_per_question = block.max_points / len(questions)
+
+    for question in questions:
+        question.points = points_per_question
+
+    db.session.commit()
+
+QUESTION_FILE_FORMAT = """
+Формат файла для тестовых вопросов:
+1. Название вопроса
+Вариант ответа 1
+Вариант ответа 2
+    Правильный вариант ответа (начинается с 4 пробелов)
+Вариант ответа 4
+
+2. Еще один вопрос
+Вариант ответа 1
+    Правильный вариант 2
+Вариант ответа 3
+
+Формат файла для вопросов на сопоставление:
+1. Название вопроса на сопоставление
+Левая часть 1 | Правая часть 1
+Левая часть 2 | Правая часть 2
+Левая часть 3 | Правая часть 3
+
+2. Еще один вопрос на сопоставление
+Понятие 1 | Определение 1
+Понятие 2 | Определение 2
+"""
+
+@app.route('/admin/block/<int:block_id>/file_format', methods=['GET'])
+@login_required
+def get_question_file_format(block_id):
+    """Возвращает образец формата файла для загрузки вопросов"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    return jsonify({
+        'success': True,
+        'format': QUESTION_FILE_FORMAT
+    })
+
 def _get_month_name(month_num):
     """Возвращает название месяца на русском языке"""
     months = {
@@ -660,6 +911,185 @@ def _get_month_name(month_num):
     }
     return months.get(month_num, '')
 
+
+@app.route('/admin/block/<int:block_id>/get_question', methods=['GET'])
+@login_required
+def get_question(block_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'У вас нет доступа к этой функции'}), 403
+
+    question_id = request.args.get('question_id')
+    if not question_id:
+        return jsonify({'success': False, 'message': 'Не указан ID вопроса'}), 400
+
+    question = Question.query.get_or_404(int(question_id))
+
+    # Проверяем, принадлежит ли вопрос указанному блоку
+    if question.block_id != block_id:
+        return jsonify({'success': False, 'message': 'Вопрос не принадлежит указанному блоку'}), 403
+
+    # Подготавливаем данные вопроса для отправки
+    question_data = {
+        'id': question.id,
+        'text': question.text,
+        'question_type': question.question_type,
+        'points': question.points
+    }
+
+    # Добавляем специфичные для типа вопроса данные
+    if question.question_type == 'test':
+        question_data['options'] = question.options
+        question_data['correct_answers'] = question.correct_answers
+
+        # Для удобства работы с данными в JavaScript
+        try:
+            question_data['options_list'] = json.loads(question.options) if question.options else []
+            question_data['correct_answers_list'] = json.loads(
+                question.correct_answers) if question.correct_answers else []
+        except json.JSONDecodeError:
+            question_data['options_list'] = []
+            question_data['correct_answers_list'] = []
+
+    elif question.question_type == 'matching':
+        question_data['matches'] = question.matches
+
+        # Для удобства работы с данными в JavaScript
+        try:
+            question_data['matches_list'] = json.loads(question.matches) if question.matches else []
+        except json.JSONDecodeError:
+            question_data['matches_list'] = []
+
+    return jsonify({
+        'success': True,
+        'question': question_data
+    })
+
+
+@app.route('/admin/block/<int:block_id>/update_question', methods=['POST'])
+@login_required
+def update_question(block_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'У вас нет доступа к этой функции'}), 403
+
+    question_id = request.form.get('question_id')
+    if not question_id:
+        return jsonify({'success': False, 'message': 'Не указан ID вопроса'}), 400
+
+    question = Question.query.get_or_404(int(question_id))
+
+    # Проверяем, принадлежит ли вопрос указанному блоку
+    if question.block_id != block_id:
+        return jsonify({'success': False, 'message': 'Вопрос не принадлежит указанному блоку'}), 403
+
+    # Обновляем общие поля
+    question.text = request.form.get('text', question.text)
+
+    # Обновляем специфичные для типа вопроса поля
+    if question.question_type == 'test':
+        options = request.form.getlist('options[]')
+        correct_answers = request.form.getlist('correct_answers[]')
+
+        if not options:
+            return jsonify({'success': False, 'message': 'Необходимо указать хотя бы два варианта ответа'}), 400
+
+        if len(options) < 2:
+            return jsonify({'success': False, 'message': 'Необходимо указать хотя бы два варианта ответа'}), 400
+
+        if not correct_answers:
+            return jsonify({'success': False, 'message': 'Необходимо указать хотя бы один правильный ответ'}), 400
+
+        # Убеждаемся, что все правильные ответы присутствуют в списке вариантов
+        for answer in correct_answers:
+            if answer not in options:
+                return jsonify({'success': False, 'message': 'Правильный ответ должен быть в списке вариантов'}), 400
+
+        question.options = json.dumps(options)
+        question.correct_answers = json.dumps(correct_answers)
+
+    elif question.question_type == 'matching':
+        left_items = request.form.getlist('left_items[]')
+        right_items = request.form.getlist('right_items[]')
+
+        if not left_items or not right_items:
+            return jsonify({'success': False, 'message': 'Необходимо указать хотя бы две пары для сопоставления'}), 400
+
+        if len(left_items) != len(right_items):
+            return jsonify(
+                {'success': False, 'message': 'Количество элементов в левой и правой колонках должно совпадать'}), 400
+
+        if len(left_items) < 2:
+            return jsonify({'success': False, 'message': 'Необходимо указать хотя бы две пары для сопоставления'}), 400
+
+        # Формируем пары
+        matches = []
+        for i in range(len(left_items)):
+            matches.append({
+                'left': left_items[i],
+                'right': right_items[i]
+            })
+
+        question.matches = json.dumps(matches)
+
+    # Сохраняем изменения
+    try:
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Вопрос успешно обновлен'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Ошибка при обновлении вопроса: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ошибка при обновлении вопроса: {str(e)}'}), 500
+
+
+@app.route('/admin/block/<int:block_id>/delete_question', methods=['POST'])
+@login_required
+def delete_question(block_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'У вас нет доступа к этой функции'}), 403
+
+    data = request.get_json()
+    if not data or 'question_id' not in data:
+        return jsonify({'success': False, 'message': 'Не указан ID вопроса'}), 400
+
+    question_id = data['question_id']
+    question = Question.query.get_or_404(int(question_id))
+
+    # Проверяем, принадлежит ли вопрос указанному блоку
+    if question.block_id != block_id:
+        return jsonify({'success': False, 'message': 'Вопрос не принадлежит указанному блоку'}), 403
+
+    # Удаляем вопрос
+    try:
+        db.session.delete(question)
+        db.session.commit()
+
+        # Пересчитываем баллы для оставшихся вопросов в блоке
+        recalculate_points_for_block(block_id)
+
+        return jsonify({'success': True, 'message': 'Вопрос успешно удален'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Ошибка при удалении вопроса: {str(e)}")
+        return jsonify({'success': False, 'message': f'Ошибка при удалении вопроса: {str(e)}'}), 500
+
+
+def recalculate_points_for_block(block_id):
+    """
+    Пересчитывает баллы для всех вопросов в блоке,
+    равномерно распределяя максимальное количество баллов блока.
+    """
+    block = Block.query.get_or_404(block_id)
+    questions = Question.query.filter_by(block_id=block_id).all()
+
+    if not questions:
+        return
+
+    # Равномерно распределяем баллы между всеми вопросами
+    points_per_question = block.max_points / len(questions)
+
+    for question in questions:
+        question.points = points_per_question
+
+    db.session.commit()
 
 @app.route('/admin/olympiad/<int:olympiad_id>/export_excel', methods=['GET'])
 @login_required
