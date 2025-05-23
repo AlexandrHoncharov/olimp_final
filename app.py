@@ -77,27 +77,107 @@ def prepare_question_data(questions):
     return questions
 
 
-# Functions for time coefficient calculation
+# Новые функции для расчета временного коэффициента
+def calculate_time_bonus(actual_time, max_time, base_points):
+    """
+    Расчет временного бонуса
+
+    Логика:
+    - Если выполнил быстрее 25% от времени - максимальный бонус (20% от базовых баллов)
+    - Если выполнил за 25-50% времени - хороший бонус (10% от базовых баллов)
+    - Если выполнил за 50-75% времени - небольшой бонус (5% от базовых баллов)
+    - Если выполнил за 75-100% времени - минимальный бонус (1% от базовых баллов)
+    - Если превысил время - нет бонуса
+    """
+
+    if actual_time <= 0 or max_time <= 0 or base_points <= 0:
+        return 0
+
+    # Рассчитываем процент использованного времени
+    time_percentage = (actual_time / max_time) * 100
+
+    # Определяем размер бонуса в зависимости от скорости выполнения
+    if time_percentage <= 25:
+        bonus_percentage = 20  # Максимальный бонус за очень быстрое выполнение
+    elif time_percentage <= 50:
+        bonus_percentage = 10  # Хороший бонус за быстрое выполнение
+    elif time_percentage <= 75:
+        bonus_percentage = 5  # Небольшой бонус за нормальное выполнение
+    elif time_percentage <= 100:
+        bonus_percentage = 1  # Минимальный бонус за выполнение в срок
+    else:
+        bonus_percentage = 0  # Нет бонуса за превышение времени
+
+    # Рассчитываем итоговый временной бонус
+    time_bonus = (base_points * bonus_percentage) / 100
+
+    return round(time_bonus, 2)
+
+
+def get_time_performance_category(actual_time, max_time):
+    """
+    Определяет категорию производительности по времени
+    """
+    if actual_time <= 0 or max_time <= 0:
+        return "unknown", "Время не определено"
+
+    time_percentage = (actual_time / max_time) * 100
+
+    if time_percentage <= 25:
+        return "excellent", "⚡ Молниеносно"
+    elif time_percentage <= 50:
+        return "very_good", "🚀 Очень быстро"
+    elif time_percentage <= 75:
+        return "good", "⏱️ Быстро"
+    elif time_percentage <= 100:
+        return "normal", "✅ В срок"
+    else:
+        return "overtime", "⏰ Превышение времени"
+
+
+# Добавляем функции в контекст шаблонов
+@app.context_processor
+def inject_time_functions():
+    return dict(
+        get_time_performance_category=get_time_performance_category,
+        min=min,
+        max=max
+    )
+
+
 def calculate_final_score(participation):
     """
     Рассчитывает итоговый балл с учетом времени выполнения
-    Формула: итоговый_балл = основные_баллы + (время_в_секундах / 1000)
+    Новая формула: быстрое выполнение = больше бонусных баллов
     """
     if not participation.start_time or not participation.finish_time:
         participation.final_score = participation.total_points
         participation.duration_seconds = None
+        participation.time_bonus = 0
+        return
+
+    # Получаем олимпиаду для расчета максимального времени
+    olympiad = Olympiad.query.get(participation.olympiad_id)
+    if not olympiad:
+        participation.final_score = participation.total_points
+        participation.time_bonus = 0
         return
 
     # Рассчитываем время выполнения в секундах
     duration = participation.finish_time - participation.start_time
     participation.duration_seconds = duration.total_seconds()
 
-    # Временной коэффициент: делим секунды на 1000
-    # Это даст небольшую добавку к баллам (например, за 30 минут = 1800 сек = +1.8 балла)
-    time_coefficient = participation.duration_seconds / 1000
+    # Максимальное время олимпиады в секундах
+    max_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
 
-    # Итоговый балл = основные баллы + временной коэффициент
-    participation.final_score = participation.total_points + time_coefficient
+    # Расчет временного бонуса
+    time_bonus = calculate_time_bonus(participation.duration_seconds, max_duration, participation.total_points)
+
+    # Сохраняем временной бонус отдельно для отображения
+    participation.time_bonus = time_bonus
+
+    # Итоговый балл = основные баллы + временной бонус
+    participation.final_score = participation.total_points + time_bonus
 
 
 def update_all_final_scores(olympiad_id):
@@ -113,6 +193,20 @@ def update_all_final_scores(olympiad_id):
         calculate_final_score(participation)
 
     db.session.commit()
+
+
+def recalculate_all_time_scores():
+    """
+    Пересчитывает временные коэффициенты для всех завершенных участий
+    """
+    completed_participations = Participation.query.filter_by(status='completed').all()
+
+    for participation in completed_participations:
+        if participation.start_time and participation.finish_time:
+            calculate_final_score(participation)
+
+    db.session.commit()
+    return len(completed_participations)
 
 
 # Models
@@ -197,6 +291,7 @@ class Participation(db.Model):
     total_points = db.Column(db.Float, default=0)  # Основные баллы за правильные ответы
     final_score = db.Column(db.Float, default=0)  # Итоговый балл с учетом времени
     duration_seconds = db.Column(db.Float, nullable=True)  # Время выполнения в секундах
+    time_bonus = db.Column(db.Float, default=0)  # Временной бонус отдельно
     status = db.Column(db.String(20), default='registered')  # 'registered', 'in_progress', 'completed'
     current_block = db.Column(db.Integer, nullable=True)
     answers = db.relationship('Answer', backref='participation', lazy=True, cascade="all, delete-orphan")
@@ -411,6 +506,27 @@ def admin_settings():
     return render_template('admin/settings.html')
 
 
+# Добавить роут для ручного пересчета временных коэффициентов
+@app.route('/admin/recalculate_time_scores', methods=['POST'])
+@login_required
+def recalculate_time_scores():
+    """Ручной пересчет временных коэффициентов"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        count = recalculate_all_time_scores()
+        return jsonify({
+            'success': True,
+            'message': f'Пересчитаны временные коэффициенты для {count} участий'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка при пересчете: {str(e)}'
+        }), 500
+
+
 # Маршрут для генерации DOCX документа с результатами
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -535,14 +651,14 @@ def export_rankings_docx(olympiad_id):
     top_participants = participations[:3] if len(participations) > 3 else participations
 
     if top_participants:
-        table = doc.add_table(rows=1, cols=6)  # Увеличиваем до 6 колонок для итогового балла
+        table = doc.add_table(rows=1, cols=7)  # Увеличиваем до 7 колонок для временного бонуса
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.style = 'Table Grid'
 
         # Заголовки таблицы
         hdr_cells = table.rows[0].cells
         headers = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки',
-                   'Баллы за задания', 'Итоговый балл']
+                   'Баллы за задания', 'Временной бонус', 'Итоговый балл']
 
         for i, header in enumerate(headers):
             hdr_cells[i].text = header
@@ -575,6 +691,7 @@ def export_rankings_docx(olympiad_id):
                 user.study_group or '-',
                 speciality_text,
                 f"{participation.total_points:.1f}",  # Баллы за задания
+                f"+{participation.time_bonus:.1f}" if participation.time_bonus else "+0.0",  # Временной бонус
                 f"{participation.final_score:.1f}"  # Итоговый балл с учетом времени
             ]
 
@@ -586,14 +703,14 @@ def export_rankings_docx(olympiad_id):
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(14)
                     # Центрирование для места и баллов, левое выравнивание для остальных
-                    if j in [0, 4, 5]:  # Место и баллы
+                    if j in [0, 4, 5, 6]:  # Место и баллы
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     else:  # ФИО, группа и направление
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         # Настройка ширины столбцов
         for i, width in enumerate(
-                [Inches(0.8), Inches(2.5), Inches(1.2), Inches(3.0), Inches(1.0), Inches(1.0)]):
+                [Inches(0.6), Inches(2.2), Inches(1.0), Inches(2.5), Inches(1.0), Inches(1.0), Inches(1.0)]):
             for row in table.rows:
                 row.cells[i].width = width
 
@@ -1153,12 +1270,15 @@ def export_rankings_excel(olympiad_id):
 
     # Заголовки с временной информацией
     headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания',
-               'Итоговый балл', 'Время (мин)', 'Начало', 'Завершение']
+               'Временной бонус', 'Итоговый балл', 'Время (мин)', 'Скорость', 'Начало', 'Завершение']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill(start_color="820000", end_color="820000", fill_type="solid")
         cell.alignment = Alignment(horizontal="center")
+
+    # Максимальное время олимпиады для расчета процентов
+    olympiad_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
 
     # Заполняем данными
     for row, participation in enumerate(participations, 2):
@@ -1167,8 +1287,24 @@ def export_rankings_excel(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
+        speed_category = 'Неизвестно'
         if participation.duration_seconds:
             duration = participation.duration_seconds / 60
+            time_percentage = (participation.duration_seconds / olympiad_duration) * 100
+
+            # Определяем категорию скорости
+            if time_percentage <= 25:
+                speed_category = '⚡ Молниеносно'
+            elif time_percentage <= 50:
+                speed_category = '🚀 Очень быстро'
+            elif time_percentage <= 75:
+                speed_category = '⏱️ Быстро'
+            elif time_percentage <= 100:
+                speed_category = '✅ В срок'
+            else:
+                speed_category = '⏰ Превышение времени'
+
+        time_bonus = participation.time_bonus if participation.time_bonus else 0
 
         data = [
             row - 1,  # Место
@@ -1176,8 +1312,10 @@ def export_rankings_excel(olympiad_id):
             user.study_group or '-',
             speciality_name,
             f"{participation.total_points:.2f}",  # Баллы за задания
+            f"+{time_bonus:.2f}",  # Временной бонус
             f"{participation.final_score:.2f}",  # Итоговый балл
             f"{duration:.1f}" if duration else '-',
+            speed_category,
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
             participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ]
@@ -1208,7 +1346,14 @@ def export_rankings_excel(olympiad_id):
         ['Дата окончания', olympiad.end_time.strftime('%d.%m.%Y %H:%M')],
         ['Всего участников', len(participations)],
         ['Дата экспорта', datetime.now().strftime('%d.%m.%Y %H:%M')],
-        ['Применен временной коэффициент', 'Да (время/1000)']
+        ['Применена система временных бонусов', 'Да'],
+        ['', ''],
+        ['Система временных бонусов:', ''],
+        ['≤25% времени', '+20% от базовых баллов'],
+        ['25-50% времени', '+10% от базовых баллов'],
+        ['50-75% времени', '+5% от базовых баллов'],
+        ['75-100% времени', '+1% от базовых баллов'],
+        ['>100% времени', 'Нет бонуса'],
     ]
 
     for row, (key, value) in enumerate(info_data, 1):
@@ -1254,7 +1399,10 @@ def export_rankings_csv(olympiad_id):
 
     # Заголовки с временной информацией
     writer.writerow(['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания',
-                     'Итоговый балл', 'Время (мин)', 'Начало', 'Завершение'])
+                     'Временной бонус', 'Итоговый балл', 'Время (мин)', 'Скорость', 'Начало', 'Завершение'])
+
+    # Максимальное время олимпиады
+    olympiad_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
 
     # Данные
     for i, participation in enumerate(participations, 1):
@@ -1263,8 +1411,23 @@ def export_rankings_csv(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
+        speed_category = 'Неизвестно'
         if participation.duration_seconds:
             duration = participation.duration_seconds / 60
+            time_percentage = (participation.duration_seconds / olympiad_duration) * 100
+
+            if time_percentage <= 25:
+                speed_category = 'Молниеносно'
+            elif time_percentage <= 50:
+                speed_category = 'Очень быстро'
+            elif time_percentage <= 75:
+                speed_category = 'Быстро'
+            elif time_percentage <= 100:
+                speed_category = 'В срок'
+            else:
+                speed_category = 'Превышение времени'
+
+        time_bonus = participation.time_bonus if participation.time_bonus else 0
 
         writer.writerow([
             i,
@@ -1272,8 +1435,10 @@ def export_rankings_csv(olympiad_id):
             user.study_group or '-',
             speciality_name,
             f"{participation.total_points:.2f}",
+            f"+{time_bonus:.2f}",
             f"{participation.final_score:.2f}",
             f"{duration:.1f}" if duration else '-',
+            speed_category,
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
             participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ])
@@ -1319,10 +1484,10 @@ def export_detailed_results(olympiad_id):
     ws.title = "Сводные результаты"
 
     # Формируем заголовки
-    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания', 'Итоговый балл']
+    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания', 'Временной бонус', 'Итоговый балл']
     for block in blocks:
         headers.append(f'Блок {block.order}: {block.title}')
-    headers.extend(['Время (мин)', 'Начало', 'Завершение'])
+    headers.extend(['Время (мин)', 'Скорость', 'Начало', 'Завершение'])
 
     # Записываем заголовки
     for col, header in enumerate(headers, 1):
@@ -1331,6 +1496,9 @@ def export_detailed_results(olympiad_id):
         cell.fill = PatternFill(start_color="820000", end_color="820000", fill_type="solid")
         cell.alignment = Alignment(horizontal="center")
 
+    # Максимальное время олимпиады
+    olympiad_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
+
     # Заполняем данными
     for row, participation in enumerate(participations, 2):
         user = User.query.get(participation.user_id)
@@ -1338,8 +1506,23 @@ def export_detailed_results(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
+        speed_category = 'Неизвестно'
         if participation.duration_seconds:
             duration = participation.duration_seconds / 60
+            time_percentage = (participation.duration_seconds / olympiad_duration) * 100
+
+            if time_percentage <= 25:
+                speed_category = 'Молниеносно'
+            elif time_percentage <= 50:
+                speed_category = 'Очень быстро'
+            elif time_percentage <= 75:
+                speed_category = 'Быстро'
+            elif time_percentage <= 100:
+                speed_category = 'В срок'
+            else:
+                speed_category = 'Превышение времени'
+
+        time_bonus = participation.time_bonus if participation.time_bonus else 0
 
         # Основные данные
         data = [
@@ -1348,6 +1531,7 @@ def export_detailed_results(olympiad_id):
             user.study_group or '-',
             speciality_name,
             f"{participation.total_points:.2f}",  # Баллы за задания
+            f"+{time_bonus:.2f}",  # Временной бонус
             f"{participation.final_score:.2f}"  # Итоговый балл
         ]
 
@@ -1374,9 +1558,10 @@ def export_detailed_results(olympiad_id):
                 else:
                     data.append("0.0")
 
-        # Время
+        # Время и статус
         data.extend([
             f"{duration:.1f}" if duration else '-',
+            speed_category,
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
             participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ])
@@ -2339,12 +2524,13 @@ if __name__ == '__main__':
         # Проверяем и добавляем новые столбцы, если их нет
         try:
             # Попробуем выполнить запрос к новым столбцам
-            db.session.execute('SELECT final_score, duration_seconds FROM participation LIMIT 1')
+            db.session.execute('SELECT final_score, duration_seconds, time_bonus FROM participation LIMIT 1')
         except:
             # Если столбцы не существуют, добавляем их
             try:
                 db.session.execute('ALTER TABLE participation ADD COLUMN final_score FLOAT DEFAULT 0')
                 db.session.execute('ALTER TABLE participation ADD COLUMN duration_seconds FLOAT DEFAULT NULL')
+                db.session.execute('ALTER TABLE participation ADD COLUMN time_bonus FLOAT DEFAULT 0')
                 db.session.commit()
                 print("Добавлены новые столбцы для временного коэффициента")
             except:

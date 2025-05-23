@@ -95,6 +95,20 @@
         z-index: 1;
     }
 
+    .stat-value.green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-value.purple {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
     .stat-label {
         color: #64748b;
         font-size: 1rem;
@@ -120,9 +134,32 @@
         transition: all 0.3s ease;
     }
 
+    .stat-icon.green {
+        background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%);
+        color: #059669;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+        color: #7c3aed;
+    }
+
     .stat-card:hover .stat-icon {
         transform: rotate(360deg) scale(1.1);
+    }
+
+    .stat-card:hover .stat-icon {
         background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+    }
+
+    .stat-card:hover .stat-icon.green {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+    }
+
+    .stat-card:hover .stat-icon.purple {
+        background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
         color: white;
     }
 
@@ -238,6 +275,31 @@
     @keyframes progress-shine {
         0% { left: -100%; }
         100% { left: 100%; }
+    }
+
+    /* Временная производительность */
+    .time-performance-card {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 2px solid #3b82f6;
+        border-radius: 20px;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .time-performance-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .time-performance-card:hover::before {
+        left: 100%;
     }
 
     /* Топ участников таблица */
@@ -475,53 +537,6 @@
         left: 100%;
     }
 
-    /* Адаптивность */
-    @media (max-width: 768px) {
-        .stat-value {
-            font-size: 2.5rem;
-        }
-
-        .stat-card {
-            padding: 24px;
-        }
-
-        .block-card {
-            padding: 20px;
-        }
-
-        .table-row:hover {
-            transform: none;
-        }
-    }
-
-    /* Дополнительные элементы */
-    .completion-badge {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 32px;
-        height: 32px;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 16px;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-        animation: pulse-green 2s infinite;
-    }
-
-    @keyframes pulse-green {
-        0%, 100% {
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-        }
-        50% {
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6);
-            transform: scale(1.1);
-        }
-    }
-
     /* Карточка поздравления */
     .congratulations-card {
         background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
@@ -548,6 +563,25 @@
     @keyframes rotate {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .stat-value {
+            font-size: 2.5rem;
+        }
+
+        .stat-card {
+            padding: 24px;
+        }
+
+        .block-card {
+            padding: 20px;
+        }
+
+        .table-row:hover {
+            transform: none;
+        }
     }
 </style>
 {% endblock %}
@@ -579,16 +613,41 @@
 
         <div class="flex items-center justify-center mb-8">
             <div class="text-center">
-                <div class="text-6xl md:text-7xl font-black mb-4 counter" id="main-score">{{ participation.total_points }}</div>
+                <div class="text-6xl md:text-7xl font-black mb-4 counter" id="main-score">{{ participation.final_score }}</div>
                 <div class="text-xl md:text-2xl font-medium text-white text-opacity-90">Итоговый балл</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Статистические карточки -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+<!-- Статистические карточки с временным бонусом -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <!-- Баллы за задания -->
     <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.1s">
+        <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="stat-value counter" id="base-points-counter">{{ participation.total_points }}</div>
+        <div class="stat-label">Баллы за задания</div>
+    </div>
+
+    <!-- Временной бонус -->
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.2s">
+        <div class="stat-icon green">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div class="stat-value green counter" id="time-bonus-counter">
+            +{{ participation.time_bonus if participation.time_bonus else 0 }}
+        </div>
+        <div class="stat-label">Временной бонус</div>
+    </div>
+
+    <!-- Место в рейтинге -->
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.3s">
         <div class="stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -598,32 +657,88 @@
         <div class="stat-label">Место в рейтинге</div>
     </div>
 
-    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.2s">
-        <div class="stat-icon">
+    <!-- Всего участников -->
+    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.4s">
+        <div class="stat-icon purple">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
             </svg>
         </div>
-        <div class="stat-value counter" id="participants-counter">{{ total_participants }}</div>
+        <div class="stat-value purple counter" id="participants-counter">{{ total_participants }}</div>
         <div class="stat-label">Всего участников</div>
     </div>
-
-    <div class="stat-card animate-slideInFromLeft" style="animation-delay: 0.3s">
-        <div class="stat-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-            </svg>
-        </div>
-        <div class="stat-value">
-            {% if participation.finish_time %}
-                {{ participation.finish_time.strftime('%H:%M') }}
-            {% else %}
-                N/A
-            {% endif %}
-        </div>
-        <div class="stat-label">Время завершения</div>
-    </div>
 </div>
+
+<!-- Информация о временной производительности -->
+{% if participation.duration_seconds %}
+    {% set olympiad_duration = (olympiad.end_time - olympiad.start_time).total_seconds() %}
+    {% set time_percentage = (participation.duration_seconds / olympiad_duration * 100)|round(1) %}
+    {% set time_category, time_label = get_time_performance_category(participation.duration_seconds, olympiad_duration) %}
+
+    <div class="mb-8 animate-slideInFromRight">
+        <div class="time-performance-card">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-blue-800">⏱️ Анализ временной производительности</h3>
+                <div class="text-2xl font-bold text-blue-600">{{ time_label }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-800">{{ (participation.duration_seconds / 60)|round(1) }} мин</div>
+                    <div class="text-sm text-gray-600">Время выполнения</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-800">{{ time_percentage }}%</div>
+                    <div class="text-sm text-gray-600">От отведенного времени</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">+{{ participation.time_bonus if participation.time_bonus else 0 }}</div>
+                    <div class="text-sm text-gray-600">Временной бонус</div>
+                </div>
+            </div>
+
+            <!-- Прогресс-бар времени -->
+            <div class="mt-6">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Использовано времени</span>
+                    <span>{{ time_percentage }}%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar
+                        {% if time_percentage <= 25 %}bg-gradient-to-r from-green-500 to-emerald-500
+                        {% elif time_percentage <= 50 %}bg-gradient-to-r from-blue-500 to-cyan-500
+                        {% elif time_percentage <= 75 %}bg-gradient-to-r from-yellow-500 to-orange-500
+                        {% elif time_percentage <= 100 %}bg-gradient-to-r from-orange-500 to-red-500
+                        {% else %}bg-gradient-to-r from-red-500 to-red-700{% endif %}"
+                         style="width: {{ min(time_percentage, 100) }}%"></div>
+                </div>
+            </div>
+
+            <!-- Объяснение системы бонусов -->
+            <div class="mt-4 p-4 bg-white rounded-lg border">
+                <h4 class="font-semibold text-gray-800 mb-2">Система временных бонусов:</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="text-center">
+                        <div class="font-bold text-green-600">≤25% времени</div>
+                        <div class="text-gray-600">+20% бонус</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold text-blue-600">25-50% времени</div>
+                        <div class="text-gray-600">+10% бонус</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold text-yellow-600">50-75% времени</div>
+                        <div class="text-gray-600">+5% бонус</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold text-orange-600">75-100% времени</div>
+                        <div class="text-gray-600">+1% бонус</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
 
 <!-- Достижения -->
 <div class="mb-8 animate-slideInFromRight">
@@ -667,6 +782,28 @@
                 </svg>
                 Топ-10 участник
             </div>
+        {% endif %}
+
+        <!-- Бонус за скорость -->
+        {% if participation.time_bonus and participation.time_bonus > 0 %}
+            {% if participation.duration_seconds and olympiad_duration %}
+                {% set time_perc = (participation.duration_seconds / olympiad_duration * 100) %}
+                {% if time_perc <= 25 %}
+                    <div class="achievement-badge excellent">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        ⚡ Скоростной лидер
+                    </div>
+                {% elif time_perc <= 50 %}
+                    <div class="achievement-badge good">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        🚀 Быстрое решение
+                    </div>
+                {% endif %}
+            {% endif %}
         {% endif %}
     </div>
 </div>
@@ -747,7 +884,9 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Место</th>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Участник</th>
-                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Баллы за задания</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Временной бонус</th>
+                    <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Итоговый балл</th>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Время завершения</th>
                 </tr>
             </thead>
@@ -774,7 +913,13 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-lg font-bold text-gray-900">{{ p.total_points }}</span>
+                            <span class="text-lg font-bold text-blue-600">{{ p.total_points }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-lg font-bold text-green-600">+{{ p.time_bonus if p.time_bonus else 0 }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-xl font-bold text-purple-600">{{ p.final_score }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {% if p.finish_time %}
@@ -820,7 +965,7 @@
         const counters = document.querySelectorAll('.counter');
 
         counters.forEach(counter => {
-            const target = parseInt(counter.textContent);
+            const target = parseFloat(counter.textContent.replace('+', ''));
             const duration = 2000; // 2 секунды
             const startTime = performance.now();
 
@@ -830,14 +975,23 @@
 
                 // Используем easing функцию для плавности
                 const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-                const currentValue = Math.floor(easeOutQuart * target);
+                const currentValue = easeOutQuart * target;
 
-                counter.textContent = currentValue;
+                // Для временного бонуса добавляем + в начале
+                if (counter.id === 'time-bonus-counter') {
+                    counter.textContent = '+' + currentValue.toFixed(1);
+                } else {
+                    counter.textContent = currentValue.toFixed(1);
+                }
 
                 if (progress < 1) {
                     requestAnimationFrame(updateCounter);
                 } else {
-                    counter.textContent = target;
+                    if (counter.id === 'time-bonus-counter') {
+                        counter.textContent = '+' + target.toFixed(1);
+                    } else {
+                        counter.textContent = target.toFixed(1);
+                    }
                     counter.classList.add('animate');
                     setTimeout(() => {
                         counter.classList.remove('animate');
@@ -890,7 +1044,7 @@
     });
 
     // Конфетти эффект для высоких результатов
-    {% if participation.total_points >= 80 %}
+    {% if participation.final_score >= 80 %}
     setTimeout(() => {
         createConfetti();
     }, 1000);
