@@ -77,6 +77,44 @@ def prepare_question_data(questions):
     return questions
 
 
+# Functions for time coefficient calculation
+def calculate_final_score(participation):
+    """
+    Рассчитывает итоговый балл с учетом времени выполнения
+    Формула: итоговый_балл = основные_баллы + (время_в_секундах / 1000)
+    """
+    if not participation.start_time or not participation.finish_time:
+        participation.final_score = participation.total_points
+        participation.duration_seconds = None
+        return
+
+    # Рассчитываем время выполнения в секундах
+    duration = participation.finish_time - participation.start_time
+    participation.duration_seconds = duration.total_seconds()
+
+    # Временной коэффициент: делим секунды на 1000
+    # Это даст небольшую добавку к баллам (например, за 30 минут = 1800 сек = +1.8 балла)
+    time_coefficient = participation.duration_seconds / 1000
+
+    # Итоговый балл = основные баллы + временной коэффициент
+    participation.final_score = participation.total_points + time_coefficient
+
+
+def update_all_final_scores(olympiad_id):
+    """
+    Обновляет итоговые баллы для всех завершенных участников олимпиады
+    """
+    participations = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).all()
+
+    for participation in participations:
+        calculate_final_score(participation)
+
+    db.session.commit()
+
+
 # Models
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -156,7 +194,9 @@ class Participation(db.Model):
     olympiad_id = db.Column(db.Integer, db.ForeignKey('olympiad.id'), nullable=False)
     start_time = db.Column(db.DateTime, nullable=True)
     finish_time = db.Column(db.DateTime, nullable=True)
-    total_points = db.Column(db.Float, default=0)
+    total_points = db.Column(db.Float, default=0)  # Основные баллы за правильные ответы
+    final_score = db.Column(db.Float, default=0)  # Итоговый балл с учетом времени
+    duration_seconds = db.Column(db.Float, nullable=True)  # Время выполнения в секундах
     status = db.Column(db.String(20), default='registered')  # 'registered', 'in_progress', 'completed'
     current_block = db.Column(db.Integer, nullable=True)
     answers = db.relationship('Answer', backref='participation', lazy=True, cascade="all, delete-orphan")
@@ -368,21 +408,10 @@ def admin_settings():
         flash('У вас нет доступа к этой странице', 'error')
         return redirect(url_for('index'))
 
-    return render_template('admin/settings.html', stats=stats)
+    return render_template('admin/settings.html')
 
 
 # Маршрут для генерации DOCX документа с результатами
-# Добавьте эти импорты в начало файла app.py
-import io
-import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils.dataframe import dataframe_to_rows
-import csv
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
@@ -397,11 +426,14 @@ def export_rankings_docx(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем всех участников с результатами
+    # Обновляем итоговые баллы перед экспортом
+    update_all_final_scores(olympiad_id)
+
+    # Получаем всех участников с результатами, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Создаем новый документ
     doc = Document()
@@ -503,14 +535,14 @@ def export_rankings_docx(olympiad_id):
     top_participants = participations[:3] if len(participations) > 3 else participations
 
     if top_participants:
-        table = doc.add_table(rows=1, cols=5)  # Увеличиваем до 5 колонок
+        table = doc.add_table(rows=1, cols=6)  # Увеличиваем до 6 колонок для итогового балла
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.style = 'Table Grid'
 
         # Заголовки таблицы
         hdr_cells = table.rows[0].cells
         headers = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки',
-                   'Количество баллов']  # Добавляем направление подготовки
+                   'Баллы за задания', 'Итоговый балл']
 
         for i, header in enumerate(headers):
             hdr_cells[i].text = header
@@ -542,7 +574,8 @@ def export_rankings_docx(olympiad_id):
                 user.full_name,
                 user.study_group or '-',
                 speciality_text,
-                f"{participation.total_points:.1f}"  # Форматирование до 1 знака после запятой
+                f"{participation.total_points:.1f}",  # Баллы за задания
+                f"{participation.final_score:.1f}"  # Итоговый балл с учетом времени
             ]
 
             for j, data in enumerate(row_data):
@@ -553,14 +586,14 @@ def export_rankings_docx(olympiad_id):
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(14)
                     # Центрирование для места и баллов, левое выравнивание для остальных
-                    if j in [0, 4]:  # Место и баллы
+                    if j in [0, 4, 5]:  # Место и баллы
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     else:  # ФИО, группа и направление
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         # Настройка ширины столбцов
         for i, width in enumerate(
-                [Inches(0.8), Inches(2.5), Inches(1.2), Inches(3.5), Inches(1.0)]):  # Делаем последний столбец уже
+                [Inches(0.8), Inches(2.5), Inches(1.2), Inches(3.0), Inches(1.0), Inches(1.0)]):
             for row in table.rows:
                 row.cells[i].width = width
 
@@ -866,6 +899,7 @@ def update_question_points(block_id):
 
     db.session.commit()
 
+
 QUESTION_FILE_FORMAT = """
 Формат файла для тестовых вопросов:
 1. Название вопроса
@@ -890,6 +924,7 @@ QUESTION_FILE_FORMAT = """
 Понятие 2 | Определение 2
 """
 
+
 @app.route('/admin/block/<int:block_id>/file_format', methods=['GET'])
 @login_required
 def get_question_file_format(block_id):
@@ -901,6 +936,7 @@ def get_question_file_format(block_id):
         'success': True,
         'format': QUESTION_FILE_FORMAT
     })
+
 
 def _get_month_name(month_num):
     """Возвращает название месяца на русском языке"""
@@ -1091,6 +1127,7 @@ def recalculate_points_for_block(block_id):
 
     db.session.commit()
 
+
 @app.route('/admin/olympiad/<int:olympiad_id>/export_excel', methods=['GET'])
 @login_required
 def export_rankings_excel(olympiad_id):
@@ -1100,19 +1137,23 @@ def export_rankings_excel(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем всех участников с результатами
+    # Обновляем итоговые баллы перед экспортом
+    update_all_final_scores(olympiad_id)
+
+    # Получаем всех участников с результатами, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Создаем workbook
     wb = Workbook()
     ws = wb.active
     ws.title = "Результаты"
 
-    # Заголовки
-    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы', 'Начало', 'Завершение', 'Время (мин)']
+    # Заголовки с временной информацией
+    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания',
+               'Итоговый балл', 'Время (мин)', 'Начало', 'Завершение']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True, color="FFFFFF")
@@ -1126,18 +1167,19 @@ def export_rankings_excel(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
-        if participation.finish_time and participation.start_time:
-            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+        if participation.duration_seconds:
+            duration = participation.duration_seconds / 60
 
         data = [
             row - 1,  # Место
             user.full_name,
             user.study_group or '-',
             speciality_name,
-            participation.total_points,
+            f"{participation.total_points:.2f}",  # Баллы за задания
+            f"{participation.final_score:.2f}",  # Итоговый балл
+            f"{duration:.1f}" if duration else '-',
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
-            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
-            f"{duration:.1f}" if duration else '-'
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ]
 
         for col, value in enumerate(data, 1):
@@ -1165,7 +1207,8 @@ def export_rankings_excel(olympiad_id):
         ['Дата начала', olympiad.start_time.strftime('%d.%m.%Y %H:%M')],
         ['Дата окончания', olympiad.end_time.strftime('%d.%m.%Y %H:%M')],
         ['Всего участников', len(participations)],
-        ['Дата экспорта', datetime.now().strftime('%d.%m.%Y %H:%M')]
+        ['Дата экспорта', datetime.now().strftime('%d.%m.%Y %H:%M')],
+        ['Применен временной коэффициент', 'Да (время/1000)']
     ]
 
     for row, (key, value) in enumerate(info_data, 1):
@@ -1177,7 +1220,7 @@ def export_rankings_excel(olympiad_id):
     wb.save(output)
     output.seek(0)
 
-    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    filename = f'results_with_time_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
 
     return send_file(
         output,
@@ -1196,18 +1239,22 @@ def export_rankings_csv(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем всех участников с результатами
+    # Обновляем итоговые баллы перед экспортом
+    update_all_final_scores(olympiad_id)
+
+    # Получаем всех участников с результатами, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Создаем CSV в памяти
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
 
-    # Заголовки
-    writer.writerow(['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы', 'Начало', 'Завершение', 'Время (мин)'])
+    # Заголовки с временной информацией
+    writer.writerow(['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания',
+                     'Итоговый балл', 'Время (мин)', 'Начало', 'Завершение'])
 
     # Данные
     for i, participation in enumerate(participations, 1):
@@ -1216,22 +1263,23 @@ def export_rankings_csv(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
-        if participation.finish_time and participation.start_time:
-            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+        if participation.duration_seconds:
+            duration = participation.duration_seconds / 60
 
         writer.writerow([
             i,
             user.full_name,
             user.study_group or '-',
             speciality_name,
-            participation.total_points,
+            f"{participation.total_points:.2f}",
+            f"{participation.final_score:.2f}",
+            f"{duration:.1f}" if duration else '-',
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
-            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
-            f"{duration:.1f}" if duration else '-'
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ])
 
     output.seek(0)
-    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
+    filename = f'results_with_time_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
 
     return send_file(
         io.BytesIO(output.getvalue().encode('utf-8-sig')),
@@ -1251,14 +1299,17 @@ def export_detailed_results(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
+    # Обновляем итоговые баллы перед экспортом
+    update_all_final_scores(olympiad_id)
+
     # Получаем все блоки олимпиады
     blocks = Block.query.filter_by(olympiad_id=olympiad_id).order_by(Block.order).all()
 
-    # Получаем всех участников
+    # Получаем всех участников, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Создаем workbook с детальным анализом
     wb = Workbook()
@@ -1268,10 +1319,10 @@ def export_detailed_results(olympiad_id):
     ws.title = "Сводные результаты"
 
     # Формируем заголовки
-    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Итого баллов']
+    headers = ['Место', 'ФИО', 'Группа', 'Специальность', 'Баллы за задания', 'Итоговый балл']
     for block in blocks:
         headers.append(f'Блок {block.order}: {block.title}')
-    headers.extend(['Начало', 'Завершение', 'Время'])
+    headers.extend(['Время (мин)', 'Начало', 'Завершение'])
 
     # Записываем заголовки
     for col, header in enumerate(headers, 1):
@@ -1287,8 +1338,8 @@ def export_detailed_results(olympiad_id):
         speciality_name = speciality_info['name'] if speciality_info else '-'
 
         duration = None
-        if participation.finish_time and participation.start_time:
-            duration = (participation.finish_time - participation.start_time).total_seconds() / 60
+        if participation.duration_seconds:
+            duration = participation.duration_seconds / 60
 
         # Основные данные
         data = [
@@ -1296,7 +1347,8 @@ def export_detailed_results(olympiad_id):
             user.full_name,
             user.study_group or '-',
             speciality_name,
-            participation.total_points
+            f"{participation.total_points:.2f}",  # Баллы за задания
+            f"{participation.final_score:.2f}"  # Итоговый балл
         ]
 
         # Баллы по блокам
@@ -1324,9 +1376,9 @@ def export_detailed_results(olympiad_id):
 
         # Время
         data.extend([
+            f"{duration:.1f}" if duration else '-',
             participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else '-',
-            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-',
-            f"{duration:.1f}" if duration else '-'
+            participation.finish_time.strftime('%d.%m.%Y %H:%M') if participation.finish_time else '-'
         ])
 
         for col, value in enumerate(data, 1):
@@ -1391,7 +1443,7 @@ def export_detailed_results(olympiad_id):
     wb.save(output)
     output.seek(0)
 
-    filename = f'detailed_results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    filename = f'detailed_results_with_time_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
 
     return send_file(
         output,
@@ -1920,13 +1972,14 @@ def get_ranking(olympiad_id):
     completed_participations = Participation.query.filter(
         Participation.olympiad_id == olympiad_id,
         Participation.status == 'completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Если участник еще не завершил олимпиаду, добавляем в список и для него
     if participation.status != 'completed' and participation not in completed_participations:
         completed_participations.append(participation)
-        # Пересортируем список
-        completed_participations.sort(key=lambda p: p.total_points, reverse=True)
+        # Пересортируем список - для незавершенных используем total_points
+        completed_participations.sort(key=lambda p: p.final_score if p.status == 'completed' else p.total_points,
+                                      reverse=True)
 
     # Находим место текущего пользователя
     user_rank = 0
@@ -1934,13 +1987,16 @@ def get_ranking(olympiad_id):
     skip_ranks = 0
 
     for i, p in enumerate(completed_participations):
+        # Получаем баллы для сравнения
+        current_points = p.final_score if p.status == 'completed' else p.total_points
+
         # Если у участников одинаковое количество баллов, они делят место
-        if prev_points is not None and p.total_points == prev_points:
+        if prev_points is not None and current_points == prev_points:
             skip_ranks += 1
         else:
             skip_ranks = 0
 
-        prev_points = p.total_points
+        prev_points = current_points
 
         if p.id == participation.id:
             user_rank = i + 1 - skip_ranks
@@ -1962,13 +2018,16 @@ def get_ranking(olympiad_id):
     # Количество участников должно быть не менее 1 (сам пользователь)
     total_participants = max(1, len(all_participations))
 
+    # Используем итоговый балл для завершенных участий, иначе обычный
+    display_points = participation.final_score if participation.status == 'completed' else participation.total_points
+
     response_data = {
         'success': True,
         'rank_position': user_rank,
         'rank_percentage': round(rank_percentage, 1),
         'block_points': round(block_points, 1),
         'block_max_points': round(block_max_points, 1),
-        'total_points': round(participation.total_points, 1),
+        'total_points': round(display_points, 1),
         'total_participants': total_participants
     }
 
@@ -2016,8 +2075,7 @@ def submit_block(olympiad_id):
 
     user_points = sum(answer.points_earned for answer in block_answers)
 
-    # Сохраняем баллы за блок для отображения в модальном окне
-    # Создаем запись с данными текущего блока (или обновляем существующую)
+    # Сохраняем баллы за блок
     block_result = BlockResult.query.filter_by(
         participation_id=participation.id,
         block_id=current_block.id
@@ -2042,6 +2100,10 @@ def submit_block(olympiad_id):
         # Недостаточно баллов, завершаем олимпиаду
         participation.status = 'completed'
         participation.finish_time = datetime.utcnow()
+
+        # Рассчитываем итоговый балл с учетом времени
+        calculate_final_score(participation)
+
         db.session.commit()
 
         return jsonify({
@@ -2066,6 +2128,10 @@ def submit_block(olympiad_id):
         # Это был последний блок, завершаем олимпиаду
         participation.status = 'completed'
         participation.finish_time = datetime.utcnow()
+
+        # Рассчитываем итоговый балл с учетом времени
+        calculate_final_score(participation)
+
         db.session.commit()
 
         return jsonify({
@@ -2114,11 +2180,14 @@ def olympiad_results(olympiad_id):
         flash('Вы еще не завершили эту олимпиаду', 'error')
         return redirect(url_for('view_olympiad', olympiad_id=olympiad_id))
 
-    # Получаем рейтинг
+    # Обновляем итоговые баллы для всех участников
+    update_all_final_scores(olympiad_id)
+
+    # Получаем рейтинг на основе итогового балла
     rankings = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     user_rank = None
     for i, p in enumerate(rankings, 1):
@@ -2182,11 +2251,14 @@ def admin_rankings(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем все завершенные участия
+    # Обновляем итоговые баллы перед отображением
+    update_all_final_scores(olympiad_id)
+
+    # Получаем все завершенные участия, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Получаем информацию о пользователях
     user_ids = [p.user_id for p in participations]
@@ -2209,11 +2281,14 @@ def export_rankings_pdf(olympiad_id):
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Получаем все завершенные участия
+    # Обновляем итоговые баллы перед экспортом
+    update_all_final_scores(olympiad_id)
+
+    # Получаем все завершенные участия, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
         olympiad_id=olympiad_id,
         status='completed'
-    ).order_by(Participation.total_points.desc()).all()
+    ).order_by(Participation.final_score.desc()).all()
 
     # Получаем информацию о пользователях
     user_ids = [p.user_id for p in participations]
@@ -2242,9 +2317,39 @@ def export_rankings_pdf(olympiad_id):
     )
 
 
+# Добавляем роут для принудительного пересчета временных коэффициентов
+@app.route('/admin/olympiad/<int:olympiad_id>/recalculate_scores', methods=['POST'])
+@login_required
+def recalculate_scores(olympiad_id):
+    """Принудительный пересчет итоговых баллов с временным коэффициентом"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        update_all_final_scores(olympiad_id)
+        return jsonify({'success': True, 'message': 'Итоговые баллы успешно пересчитаны'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Ошибка при пересчете: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        # Проверяем и добавляем новые столбцы, если их нет
+        try:
+            # Попробуем выполнить запрос к новым столбцам
+            db.session.execute('SELECT final_score, duration_seconds FROM participation LIMIT 1')
+        except:
+            # Если столбцы не существуют, добавляем их
+            try:
+                db.session.execute('ALTER TABLE participation ADD COLUMN final_score FLOAT DEFAULT 0')
+                db.session.execute('ALTER TABLE participation ADD COLUMN duration_seconds FLOAT DEFAULT NULL')
+                db.session.commit()
+                print("Добавлены новые столбцы для временного коэффициента")
+            except:
+                print("Столбцы уже существуют или произошла ошибка при добавлении")
+
         # Создаем администратора, если его нет
         admin = User.query.filter_by(email='admin@example.com').first()
         if not admin:
@@ -2256,5 +2361,16 @@ if __name__ == '__main__':
             admin.set_password('admin')
             db.session.add(admin)
             db.session.commit()
+
+        # Пересчитываем итоговые баллы для всех существующих завершенных участий
+        try:
+            completed_participations = Participation.query.filter_by(status='completed').all()
+            for participation in completed_participations:
+                if participation.final_score == 0:  # Если еще не рассчитан
+                    calculate_final_score(participation)
+            db.session.commit()
+            print(f"Пересчитаны итоговые баллы для {len(completed_participations)} участий")
+        except Exception as e:
+            print(f"Ошибка при пересчете существующих баллов: {e}")
 
     app.run(debug=True)
