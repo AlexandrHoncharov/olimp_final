@@ -48,6 +48,12 @@ login_manager.login_view = 'login'
 import json
 
 
+# Функция для получения текущего локального времени
+def get_current_time():
+    """Возвращает текущее локальное время"""
+    return datetime.now()
+
+
 @app.template_filter('fromjson')
 def fromjson(value):
     return json.loads(value)
@@ -264,7 +270,7 @@ class BlockResult(db.Model):
     participation_id = db.Column(db.Integer, db.ForeignKey('participation.id'), nullable=False)
     block_id = db.Column(db.Integer, db.ForeignKey('block.id'), nullable=False)
     points_earned = db.Column(db.Float, default=0)
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, default=get_current_time)
 
     participation = db.relationship('Participation', backref='block_results')
     block = db.relationship('Block', backref='results')
@@ -304,7 +310,7 @@ class Answer(db.Model):
     answer_data = db.Column(db.Text, nullable=False)  # JSON строка для ответа
     is_correct = db.Column(db.Boolean, default=False)
     points_earned = db.Column(db.Float, default=0)
-    answered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    answered_at = db.Column(db.DateTime, default=get_current_time)
 
 
 @login_manager.user_loader
@@ -314,8 +320,8 @@ def load_user(user_id):
 
 @app.context_processor  # runs for every template render
 def inject_now():
-    # expose a callable, not a value, so you can still call now()
-    return {'now': datetime.utcnow}  # or datetime.now for local time
+    # ИСПРАВЛЕНО: используем локальное время вместо UTC
+    return {'now': get_current_time}
 
 
 # Routes
@@ -325,7 +331,8 @@ def index():
         if current_user.is_admin:
             olympiads = Olympiad.query.all()
         else:
-            current_time = datetime.utcnow()
+            # ИСПРАВЛЕНО: используем локальное время
+            current_time = get_current_time()
             olympiads = Olympiad.query.filter(
                 Olympiad.end_time > current_time
             ).all()
@@ -467,7 +474,7 @@ def admin_analytics():
     completed_participations = Participation.query.filter_by(status='completed').count()
 
     # Статистика по олимпиадам
-    current_time = datetime.utcnow()
+    current_time = get_current_time()
     active_olympiads = Olympiad.query.filter(
         Olympiad.start_time <= current_time,
         Olympiad.end_time > current_time
@@ -1698,6 +1705,8 @@ def create_olympiad():
 
     title = request.form.get('title')
     description = request.form.get('description')
+
+    # ИСПРАВЛЕНО: парсим время как локальное
     start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
     end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
 
@@ -1748,6 +1757,8 @@ def update_olympiad(olympiad_id):
 
     olympiad.title = request.form.get('title')
     olympiad.description = request.form.get('description')
+
+    # ИСПРАВЛЕНО: парсим время как локальное
     olympiad.start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
     olympiad.end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
 
@@ -1877,8 +1888,8 @@ def add_question(block_id):
 def view_olympiad(olympiad_id):
     olympiad = Olympiad.query.get_or_404(olympiad_id)
 
-    # Проверяем, может ли пользователь просматривать эту олимпиаду
-    current_time = datetime.utcnow()
+    # ИСПРАВЛЕНО: используем локальное время для проверки доступности
+    current_time = get_current_time()
     if not current_user.is_admin and olympiad.end_time < current_time:
         flash('Олимпиада завершена', 'error')
         return redirect(url_for('index'))
@@ -1938,8 +1949,8 @@ def start_olympiad(olympiad_id):
     if participation.status == 'completed':
         return jsonify({'success': False, 'message': 'Вы уже завершили эту олимпиаду'})
 
-    # Проверяем, наступило ли время начала олимпиады
-    current_time = datetime.utcnow()
+    # ИСПРАВЛЕНО: используем локальное время для проверки времени начала
+    current_time = get_current_time()
     if current_time < olympiad.start_time:
         return jsonify({
             'success': False,
@@ -2077,7 +2088,7 @@ def submit_answer(olympiad_id):
         existing_answer.answer_data = json.dumps(answer_data)
         existing_answer.is_correct = is_correct
         existing_answer.points_earned = points_earned
-        existing_answer.answered_at = datetime.utcnow()
+        existing_answer.answered_at = get_current_time()
     else:
         # Создаем новый ответ
         answer = Answer(
@@ -2271,12 +2282,12 @@ def submit_block(olympiad_id):
             participation_id=participation.id,
             block_id=current_block.id,
             points_earned=user_points,
-            completed_at=datetime.utcnow()
+            completed_at=get_current_time()
         )
         db.session.add(block_result)
     else:
         block_result.points_earned = user_points
-        block_result.completed_at = datetime.utcnow()
+        block_result.completed_at = get_current_time()
 
     percentage_correct = (user_points / total_points_possible) * 100 if total_points_possible > 0 else 0
 
@@ -2284,7 +2295,7 @@ def submit_block(olympiad_id):
     if percentage_correct < current_block.threshold_percentage:
         # Недостаточно баллов, завершаем олимпиаду
         participation.status = 'completed'
-        participation.finish_time = datetime.utcnow()
+        participation.finish_time = get_current_time()
 
         # Рассчитываем итоговый балл с учетом времени
         calculate_final_score(participation)
@@ -2312,7 +2323,7 @@ def submit_block(olympiad_id):
     if not next_block:
         # Это был последний блок, завершаем олимпиаду
         participation.status = 'completed'
-        participation.finish_time = datetime.utcnow()
+        participation.finish_time = get_current_time()
 
         # Рассчитываем итоговый балл с учетом времени
         calculate_final_score(participation)
@@ -2547,6 +2558,7 @@ if __name__ == '__main__':
             admin.set_password('admin')
             db.session.add(admin)
             db.session.commit()
+            print("Создан администратор: admin@example.com / admin")
 
         # Пересчитываем итоговые баллы для всех существующих завершенных участий
         try:
