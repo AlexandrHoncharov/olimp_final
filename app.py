@@ -26,7 +26,9 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.shared import qn
-
+from PIL import Image, ImageDraw, ImageFont
+import textwrap
+import base64
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import tempfile
 import requests
@@ -85,6 +87,552 @@ def prepare_question_data(questions):
     return questions
 
 
+def create_certificate_background(width=3508, height=2480):
+    """Создает фон сертификата (A4 в альбомной ориентации, 300 DPI)"""
+    # Создаем изображение с белым фоном
+    img = Image.new('RGB', (width, height), 'white')
+    draw = ImageDraw.Draw(img)
+
+    # Рамка сертификата
+    border_width = 40
+    border_color = '#820000'
+
+    # Внешняя рамка
+    draw.rectangle([0, 0, width - 1, height - 1], outline=border_color, width=border_width)
+
+    # Внутренняя декоративная рамка
+    inner_margin = 80
+    draw.rectangle([inner_margin, inner_margin, width - inner_margin, height - inner_margin],
+                   outline='#B8860B', width=8)
+
+    # Декоративные углы
+    corner_size = 150
+    corner_color = '#FFD700'
+
+    # Верхние углы
+    draw.polygon([(inner_margin, inner_margin),
+                  (inner_margin + corner_size, inner_margin),
+                  (inner_margin, inner_margin + corner_size)],
+                 fill=corner_color)
+    draw.polygon([(width - inner_margin, inner_margin),
+                  (width - inner_margin - corner_size, inner_margin),
+                  (width - inner_margin, inner_margin + corner_size)],
+                 fill=corner_color)
+
+    # Нижние углы
+    draw.polygon([(inner_margin, height - inner_margin),
+                  (inner_margin + corner_size, height - inner_margin),
+                  (inner_margin, height - inner_margin - corner_size)],
+                 fill=corner_color)
+    draw.polygon([(width - inner_margin, height - inner_margin),
+                  (width - inner_margin - corner_size, height - inner_margin),
+                  (width - inner_margin, height - inner_margin - corner_size)],
+                 fill=corner_color)
+
+    return img
+
+
+def resize_signature_with_aspect_ratio(img, max_width, max_height):
+    """
+    Изменяет размер изображения подписи с сохранением пропорций
+
+    Args:
+        img: PIL Image объект
+        max_width: максимальная ширина
+        max_height: максимальная высота
+
+    Returns:
+        PIL Image: изображение с новым размером
+    """
+    original_width, original_height = img.size
+
+    # Вычисляем коэффициенты масштабирования для ширины и высоты
+    width_ratio = max_width / original_width
+    height_ratio = max_height / original_height
+
+    # Используем меньший коэффициент для сохранения пропорций
+    scale_ratio = min(width_ratio, height_ratio)
+
+    # Вычисляем новые размеры
+    new_width = int(original_width * scale_ratio)
+    new_height = int(original_height * scale_ratio)
+
+    # Изменяем размер с высоким качеством
+    return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+def get_font(size, bold=False):
+    """Получает шрифт нужного размера"""
+    try:
+        if bold:
+            return ImageFont.truetype("arial.ttf", size)
+        else:
+            return ImageFont.truetype("arial.ttf", size)
+    except:
+        try:
+            if bold:
+                return ImageFont.truetype("/System/Library/Fonts/Arial Bold.ttf", size)
+            else:
+                return ImageFont.truetype("/System/Library/Fonts/Arial.ttf", size)
+        except:
+            return ImageFont.load_default()
+
+
+def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
+    """Добавляет подписи членов жюри на сертификат"""
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
+
+    # Позиции для подписей (внизу сертификата)
+    signature_y = height - 400
+    signature_width = 350  # Увеличиваем ширину с 300 до 350
+    signature_height = 150
+
+    # Данные членов жюри (из изображения)
+    jury_members = [
+        {"name": "Мохнатко Ирина Николаевна", "position": "к.т.н., доцент, зав. кафедрой «Гражданская безопасность»",
+         "file": "1.jpg"},
+        {"name": "Малюта Сергей Иванович", "position": "к.т.н., доцент кафедры «Гражданская безопасность»",
+         "file": "2.jpg"},
+        {"name": "Мазилин Сергей Дмитриевич", "position": "к.т.н., доцент кафедры «Гражданская безопасность»",
+         "file": "3.jpg"}
+    ]
+
+    # Расчет позиций для размещения подписей (увеличиваем расстояние между подписями)
+    spacing_between_signatures = 200  # Увеличиваем расстояние с 100 до 200 пикселей
+    total_width = len(jury_members) * signature_width + (len(jury_members) - 1) * spacing_between_signatures
+    start_x = (width - total_width) // 2
+
+    font_name = get_font(32, bold=True)
+    font_position = get_font(24)
+
+    for i, member in enumerate(jury_members):
+        x = start_x + i * (signature_width + spacing_between_signatures)
+
+        # Пытаемся загрузить изображение подписи
+        try:
+            signature_path = os.path.join(signatures_folder, member["file"])
+            if os.path.exists(signature_path):
+                signature_img = Image.open(signature_path)
+
+                # Масштабируем подпись с сохранением пропорций
+                signature_img = resize_signature_with_aspect_ratio(
+                    signature_img,
+                    max_width=signature_width - 50,
+                    max_height=signature_height - 40
+                )
+
+                # Центрируем подпись в выделенной области
+                signature_area_width = signature_width - 50
+                signature_area_height = signature_height - 80
+
+                # Вычисляем позицию для центрирования
+                sig_x = x + 25 + (signature_area_width - signature_img.width) // 2
+                sig_y = signature_y - 100 + (signature_area_height - signature_img.height) // 2
+
+                # Вставляем подпись
+                img.paste(signature_img, (sig_x, sig_y), signature_img if signature_img.mode == 'RGBA' else None)
+        except Exception as e:
+            print(f"Не удалось загрузить подпись {member['file']}: {e}")
+            # Рисуем прямоугольник для подписи (обновляем координаты)
+            draw.rectangle([x + 25, signature_y - 100, x + signature_width - 25, signature_y - 20],
+                           outline='#CCCCCC', width=2)
+            draw.text((x + signature_width // 2, signature_y - 60), "(подпись)",
+                      font=font_position, fill='#666666', anchor="mm")
+
+        # Добавляем линию для подписи
+        draw.line([x, signature_y, x + signature_width, signature_y], fill='#000000', width=3)
+
+        # Добавляем имя и должность
+        # Разбиваем длинный текст на строки (увеличиваем лимиты для большей ширины)
+        name_lines = textwrap.wrap(member["name"], width=30)  # Увеличено с 25 до 30
+        position_lines = textwrap.wrap(member["position"], width=35)  # Увеличено с 30 до 35
+
+        current_y = signature_y + 20
+        for line in name_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_name)
+            text_width = bbox[2] - bbox[0]
+            draw.text((x + signature_width // 2 - text_width // 2, current_y), line,
+                      font=font_name, fill='#000000')
+            current_y += 45  # Увеличен интервал с 40 до 45
+
+        current_y += 15  # Увеличен отступ с 10 до 15
+        for line in position_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_position)
+            text_width = bbox[2] - bbox[0]
+            draw.text((x + signature_width // 2 - text_width // 2, current_y), line,
+                      font=font_position, fill='#000000')
+            current_y += 35  # Увеличен интервал с 30 до 35
+
+    return img
+
+
+def generate_participation_certificate(user_name, olympiad_title, date_str, speciality=None):
+    """Генерирует сертификат участия"""
+    img = create_certificate_background()
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
+
+    # Заголовок университета
+    university_lines = [
+        "ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ",
+        "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»",
+        "Технический факультет",
+        "кафедра «Гражданская безопасность»"
+    ]
+
+    font_header = get_font(48, bold=True)
+    font_subheader = get_font(40, bold=True)
+    font_small_header = get_font(36, bold=True)
+
+    y = 200
+    for i, line in enumerate(university_lines):
+        if i < 2:
+            current_font = font_header
+        elif i == 2:
+            current_font = font_subheader
+        else:
+            current_font = font_small_header
+
+        bbox = draw.textbbox((0, 0), line, font=current_font)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill='#000000')
+        y += 70
+
+    # Заголовок сертификата
+    y += 100
+    certificate_title = "СЕРТИФИКАТ УЧАСТНИКА"
+    font_title = get_font(80, bold=True)
+    bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), certificate_title, font=font_title, fill='#820000')
+
+    # Основной текст
+    y += 200
+    font_main = get_font(48)
+    font_name = get_font(56, bold=True)
+
+    # "Настоящим подтверждается, что"
+    confirm_text = "Настоящим подтверждается, что"
+    bbox = draw.textbbox((0, 0), confirm_text, font=font_main)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), confirm_text, font=font_main, fill='#000000')
+
+    # Имя участника
+    y += 120
+    bbox = draw.textbbox((0, 0), user_name, font=font_name)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#820000')
+
+    # Подчеркивание имени
+    line_start = width // 2 - text_width // 2 - 50
+    line_end = width // 2 + text_width // 2 + 50
+    draw.line([line_start, y + 70, line_end, y + 70], fill='#820000', width=4)
+
+    # Специальность (если указана)
+    if speciality:
+        y += 100
+        speciality_text = f"направление подготовки: {speciality}"
+        # Разбиваем длинный текст специальности
+        speciality_lines = textwrap.wrap(speciality_text, width=60)
+        for line in speciality_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_main)
+            text_width = bbox[2] - bbox[0]
+            draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#000000')
+            y += 60
+
+    # Текст об участии в олимпиаде
+    y += 80
+    participation_lines = [
+        "принял(а) участие в олимпиаде",
+        f'"{olympiad_title}"'
+    ]
+
+    for line in participation_lines:
+        if line.startswith('"'):
+            current_font = font_name
+            color = '#820000'
+        else:
+            current_font = font_main
+            color = '#000000'
+
+        bbox = draw.textbbox((0, 0), line, font=current_font)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
+        y += 80
+
+    # Дата
+    y += 100
+    date_text = f"«___» _____________ {date_str} г."
+    bbox = draw.textbbox((0, 0), date_text, font=font_main)
+    text_width = bbox[2] - bbox[0]
+    draw.text((200, y), date_text, font=font_main, fill='#000000')
+
+    # Добавляем подписи
+    img = add_signatures_to_certificate(img)
+
+    return img
+
+
+def generate_winner_certificate(user_name, olympiad_title, date_str, place=1, score=None, speciality=None):
+    """Генерирует сертификат победителя"""
+    img = create_certificate_background()
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
+
+    # Заголовок университета
+    university_lines = [
+        "ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ",
+        "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»",
+        "Технический факультет",
+        "кафедра «Гражданская безопасность»"
+    ]
+
+    font_header = get_font(48, bold=True)
+    font_subheader = get_font(40, bold=True)
+    font_small_header = get_font(36, bold=True)
+
+    y = 180
+    for i, line in enumerate(university_lines):
+        if i < 2:
+            current_font = font_header
+        elif i == 2:
+            current_font = font_subheader
+        else:
+            current_font = font_small_header
+
+        bbox = draw.textbbox((0, 0), line, font=current_font)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill='#000000')
+        y += 60
+
+    # Заголовок сертификата
+    y += 80
+    if place == 1:
+        certificate_title = "ДИПЛОМ ПОБЕДИТЕЛЯ"
+        title_color = '#FFD700'  # Золотой
+    elif place == 2:
+        certificate_title = "ДИПЛОМ ПРИЗЁРА"
+        title_color = '#C0C0C0'  # Серебро
+    elif place == 3:
+        certificate_title = "ДИПЛОМ ПРИЗЁРА"
+        title_color = '#CD7F32'  # Бронза
+    else:
+        certificate_title = "ДИПЛОМ ПРИЗЁРА"
+        title_color = '#820000'
+
+    font_title = get_font(80, bold=True)
+    bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), certificate_title, font=font_title, fill=title_color)
+
+    # Место
+    y += 120
+    if place == 1:
+        place_text = "I МЕСТО"
+    elif place == 2:
+        place_text = "II МЕСТО"
+    elif place == 3:
+        place_text = "III МЕСТО"
+    else:
+        place_text = f"{place} МЕСТО"
+
+    font_place = get_font(60, bold=True)
+    bbox = draw.textbbox((0, 0), place_text, font=font_place)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), place_text, font=font_place, fill=title_color)
+
+    # Основной текст
+    y += 150
+    font_main = get_font(48)
+    font_name = get_font(56, bold=True)
+
+    # "Награждается"
+    award_text = "Награждается"
+    bbox = draw.textbbox((0, 0), award_text, font=font_main)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), award_text, font=font_main, fill='#000000')
+
+    # Имя участника
+    y += 100
+    bbox = draw.textbbox((0, 0), user_name, font=font_name)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#820000')
+
+    # Подчеркивание имени
+    line_start = width // 2 - text_width // 2 - 50
+    line_end = width // 2 + text_width // 2 + 50
+    draw.line([line_start, y + 70, line_end, y + 70], fill='#820000', width=4)
+
+    # Специальность (если указана)
+    if speciality:
+        y += 100
+        speciality_text = f"направление подготовки: {speciality}"
+        speciality_lines = textwrap.wrap(speciality_text, width=60)
+        for line in speciality_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_main)
+            text_width = bbox[2] - bbox[0]
+            draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#000000')
+            y += 60
+
+    # Текст о победе в олимпиаде
+    y += 80
+    victory_lines = [
+        f"занявшему {place_text} в олимпиаде",
+        f'"{olympiad_title}"'
+    ]
+
+    # Добавляем результат, если есть
+    if score is not None:
+        victory_lines.append(f"Результат: {score:.1f} баллов")
+
+    for line in victory_lines:
+        if line.startswith('"') or line.startswith('Результат:'):
+            current_font = font_name if line.startswith('"') else font_main
+            color = '#820000'
+        else:
+            current_font = font_main
+            color = '#000000'
+
+        bbox = draw.textbbox((0, 0), line, font=current_font)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
+        y += 80
+
+    # Дата
+    y += 100
+    date_text = f"«___» _____________ {date_str} г."
+    bbox = draw.textbbox((0, 0), date_text, font=font_main)
+    text_width = bbox[2] - bbox[0]
+    draw.text((200, y), date_text, font=font_main, fill='#000000')
+
+    # Добавляем подписи
+    img = add_signatures_to_certificate(img)
+
+    return img
+
+# Добавьте эти роуты в app.py
+
+@app.route('/olympiad/<int:olympiad_id>/certificate/participation')
+@login_required
+def download_participation_certificate(olympiad_id):
+    """Скачивание сертификата участника"""
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Проверяем участие пользователя
+    participation = Participation.query.filter_by(
+        user_id=current_user.id,
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).first()
+
+    if not participation:
+        flash('Вы не завершили эту олимпиаду', 'error')
+        return redirect(url_for('view_olympiad', olympiad_id=olympiad_id))
+
+    # Получаем информацию о специальности
+    speciality_info = current_user.get_speciality_info()
+    speciality = speciality_info['name'] if speciality_info else None
+
+    # Генерируем сертификат
+    try:
+        certificate_img = generate_participation_certificate(
+            user_name=current_user.full_name,
+            olympiad_title=olympiad.title,
+            date_str=datetime.now().year,
+            speciality=speciality
+        )
+
+        # Сохраняем в память
+        img_io = BytesIO()
+        certificate_img.save(img_io, 'PNG', quality=95, dpi=(300, 300))
+        img_io.seek(0)
+
+        filename = f'certificate_participation_{current_user.full_name}_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.png'
+        filename = secure_filename(filename)
+
+        return send_file(
+            img_io,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='image/png'
+        )
+
+    except Exception as e:
+        flash(f'Ошибка при создании сертификата: {str(e)}', 'error')
+        return redirect(url_for('olympiad_results', olympiad_id=olympiad_id))
+
+
+@app.route('/olympiad/<int:olympiad_id>/certificate/winner')
+@login_required
+def download_winner_certificate(olympiad_id):
+    """Скачивание диплома победителя/призёра"""
+    olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+    # Проверяем участие пользователя
+    participation = Participation.query.filter_by(
+        user_id=current_user.id,
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).first()
+
+    if not participation:
+        flash('Вы не завершили эту олимпиаду', 'error')
+        return redirect(url_for('view_olympiad', olympiad_id=olympiad_id))
+
+    # Обновляем итоговые баллы
+    update_all_final_scores(olympiad_id)
+
+    # Определяем место пользователя
+    rankings = Participation.query.filter_by(
+        olympiad_id=olympiad_id,
+        status='completed'
+    ).order_by(Participation.final_score.desc()).all()
+
+    user_place = None
+    for i, p in enumerate(rankings, 1):
+        if p.id == participation.id:
+            user_place = i
+            break
+
+    # Проверяем, является ли пользователь призёром (топ-3)
+    if user_place is None or user_place > 3:
+        flash('Диплом победителя/призёра доступен только для участников, занявших 1-3 место', 'error')
+        return redirect(url_for('olympiad_results', olympiad_id=olympiad_id))
+
+    # Получаем информацию о специальности
+    speciality_info = current_user.get_speciality_info()
+    speciality = speciality_info['name'] if speciality_info else None
+
+    # Генерируем диплом
+    try:
+        certificate_img = generate_winner_certificate(
+            user_name=current_user.full_name,
+            olympiad_title=olympiad.title,
+            date_str=datetime.now().year,
+            place=user_place,
+            score=participation.final_score,
+            speciality=speciality
+        )
+
+        # Сохраняем в память
+        img_io = BytesIO()
+        certificate_img.save(img_io, 'PNG', quality=95, dpi=(300, 300))
+        img_io.seek(0)
+
+        place_name = {1: 'winner', 2: 'second', 3: 'third'}.get(user_place, 'prize')
+        filename = f'diploma_{place_name}_{current_user.full_name}_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.png'
+        filename = secure_filename(filename)
+
+        return send_file(
+            img_io,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='image/png'
+        )
+
+    except Exception as e:
+        flash(f'Ошибка при создании диплома: {str(e)}', 'error')
+        return redirect(url_for('olympiad_results', olympiad_id=olympiad_id))
 # Новые функции для расчета временного коэффициента
 def calculate_time_bonus(actual_time, max_time, base_points):
     """
@@ -2539,7 +3087,11 @@ def recalculate_scores(olympiad_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
+        signatures_folder = 'static/signatures'
+        if not os.path.exists(signatures_folder):
+            os.makedirs(signatures_folder)
+            print(f"Создана папка для подписей: {signatures_folder}")
+            print("Поместите файлы подписей (1.jpg, 2.jpg, 3.jpg) в папку static/signatures/")
         # Проверяем и добавляем новые столбцы, если их нет
         try:
             # Попробуем выполнить запрос к новым столбцам
