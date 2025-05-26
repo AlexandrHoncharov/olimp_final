@@ -839,7 +839,7 @@
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                     <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                 </svg>
-                <span class="text-xl font-bold text-gray-700">Готовы завершить блок?</span>
+                <span class="text-xl font-bold text-gray-700">Управление прохождением</span>
             </div>
             <div class="text-lg">
                 <span class="font-medium">Отвечено:</span>
@@ -848,16 +848,77 @@
                 <span class="text-2xl font-bold text-gray-700">{{ questions|length }}</span>
             </div>
         </div>
-        <button
-            id="submit-block-button"
-            class="btn-action px-10 py-5 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl flex items-center text-lg {% if user_answers|length < questions|length %}opacity-50 cursor-not-allowed{% else %}pulse-slow{% endif %}"
-            {% if user_answers|length < questions|length %}disabled{% endif %}
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
-            </svg>
-            Завершить блок
-        </button>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <!-- Кнопка досрочного завершения олимпиады -->
+            <button
+                id="finish-early-button"
+                class="btn-action px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-2xl flex items-center text-lg"
+                onclick="showEarlyFinishConfirmation()"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414L7 8.586 5.707 7.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                Завершить досрочно
+            </button>
+
+            <!-- Кнопка завершения блока -->
+            <button
+                id="submit-block-button"
+                class="btn-action px-10 py-5 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl flex items-center text-lg {% if user_answers|length < questions|length %}opacity-50 cursor-not-allowed{% else %}pulse-slow{% endif %}"
+                {% if user_answers|length < questions|length %}disabled{% endif %}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+                </svg>
+                Завершить блок
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения досрочного завершения -->
+<div id="early-finish-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 animate-fadeInUp">
+        <div class="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-6 flex justify-between items-center text-white rounded-t-3xl">
+            <h3 class="text-2xl font-bold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Досрочное завершение
+            </h3>
+            <button onclick="closeEarlyFinishModal()" class="text-white hover:text-gray-200 text-3xl transition-colors duration-200">&times;</button>
+        </div>
+        <div class="p-8">
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h4 class="text-xl font-bold text-gray-800 mb-4">Вы уверены, что хотите завершить олимпиаду досрочно?</h4>
+                <div class="space-y-3 text-left bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p class="text-yellow-800"><strong>Внимание:</strong></p>
+                    <ul class="text-yellow-700 space-y-2">
+                        <li>• Вы не получите временной бонус за быстрое выполнение</li>
+                        <li>• Будут засчитаны только баллы за выполненные задания</li>
+                        <li>• Вернуться к прохождению будет невозможно</li>
+                        <li>• Незавершенные блоки не будут засчитаны</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                    onclick="closeEarlyFinishModal()"
+                    class="px-8 py-3 bg-gray-500 text-white font-bold rounded-2xl hover:bg-gray-600 transition-all duration-300"
+                >
+                    Продолжить олимпиаду
+                </button>
+                <button
+                    onclick="finishOlympiadEarly()"
+                    class="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300"
+                >
+                    Завершить досрочно
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1327,6 +1388,50 @@
         });
     }
 
+    // Функции для досрочного завершения
+    function showEarlyFinishConfirmation() {
+        const modal = document.getElementById('early-finish-modal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEarlyFinishModal() {
+        const modal = document.getElementById('early-finish-modal');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function finishOlympiadEarly() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+
+        button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Завершение...';
+        button.disabled = true;
+
+        axios.post('{{ url_for("finish_olympiad_early", olympiad_id=olympiad.id) }}', {}, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.data.success) {
+                showMessage(response.data.message, 'info');
+                setTimeout(() => {
+                    window.location.href = response.data.redirect;
+                }, 2000);
+            } else {
+                showMessage(response.data.message || 'Ошибка при завершении олимпиады', 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+
     // Функция для отладки значений рейтинга
     function debugRanking(data) {
         console.log("=== ОТЛАДКА РЕЙТИНГА ===");
@@ -1424,6 +1529,21 @@
         }
     }
 
+    // Закрытие модального окна при нажатии ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const earlyModal = document.getElementById('early-finish-modal');
+            const rankingModal = document.getElementById('ranking-modal');
+
+            if (earlyModal && earlyModal.style.display !== 'none') {
+                closeEarlyFinishModal();
+            }
+            if (rankingModal && rankingModal.style.display !== 'none') {
+                closeRankingModal();
+            }
+        }
+    });
+
     // Предупреждение о закрытии страницы
     window.addEventListener('beforeunload', function(e) {
         const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
@@ -1438,5 +1558,8 @@
     // Глобальные функции
     window.closeRankingModal = closeRankingModal;
     window.continueAfterRanking = continueAfterRanking;
+    window.showEarlyFinishConfirmation = showEarlyFinishConfirmation;
+    window.closeEarlyFinishModal = closeEarlyFinishModal;
+    window.finishOlympiadEarly = finishOlympiadEarly;
 </script>
 {% endblock %}

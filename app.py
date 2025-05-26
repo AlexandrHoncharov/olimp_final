@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import os
+import zipfile
 import json
 from docx.shared import Inches, Pt, RGBColor
 import pdfkit
@@ -13,6 +14,7 @@ import uuid
 from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
 import pandas as pd
 from openpyxl import Workbook
@@ -151,10 +153,11 @@ def inject_time_functions():
     )
 
 
-def calculate_final_score(participation):
+def calculate_final_score(participation, early_finish=False):
     """
     Рассчитывает итоговый балл с учетом времени выполнения
     Новая формула: быстрое выполнение = больше бонусных баллов
+    early_finish - если True, временной бонус не начисляется
     """
     if not participation.start_time or not participation.finish_time:
         participation.final_score = participation.total_points
@@ -172,6 +175,12 @@ def calculate_final_score(participation):
     # Рассчитываем время выполнения в секундах
     duration = participation.finish_time - participation.start_time
     participation.duration_seconds = duration.total_seconds()
+
+    # При досрочном завершении временной бонус не начисляется
+    if early_finish:
+        participation.time_bonus = 0
+        participation.final_score = participation.total_points
+        return
 
     # Максимальное время олимпиады в секундах
     max_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
@@ -542,270 +551,234 @@ from docx.oxml.ns import qn
 @app.route('/admin/olympiad/<int:olympiad_id>/export_docx', methods=['GET'])
 @login_required
 def export_rankings_docx(olympiad_id):
-    """Экспорт результатов в формате DOCX с официальным оформлением МелГУ"""
+    # Проверка прав администратора
     if not current_user.is_admin:
         flash('У вас нет доступа к этой странице', 'error')
         return redirect(url_for('index'))
 
     olympiad = Olympiad.query.get_or_404(olympiad_id)
-
-    # Обновляем итоговые баллы перед экспортом
     update_all_final_scores(olympiad_id)
-
-    # Получаем всех участников с результатами, сортируем по итоговому баллу
     participations = Participation.query.filter_by(
-        olympiad_id=olympiad_id,
-        status='completed'
+        olympiad_id=olympiad_id, status='completed'
     ).order_by(Participation.final_score.desc()).all()
+    blocks = Block.query.filter_by(
+        olympiad_id=olympiad_id
+    ).order_by(Block.order).all()
 
-    # Создаем новый документ
-    doc = Document()
-
-    # Настройка стилей документа
-    style = doc.styles['Normal']
-    font = style.font
-    font.name = 'Times New Roman'
-    font.size = Pt(14)
-
-    # Заголовок организации
-    header1 = doc.add_paragraph()
-    header1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run1 = header1.add_run('ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ')
-    run1.font.name = 'Times New Roman'
-    run1.font.size = Pt(14)
-    run1.font.bold = True
-
-    header2 = doc.add_paragraph()
-    header2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run2 = header2.add_run('МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ')
-    run2.font.name = 'Times New Roman'
-    run2.font.size = Pt(14)
-    run2.font.bold = True
-
-    # Пустая строка
-    doc.add_paragraph()
-
-    # Факультет и кафедра
-    faculty = doc.add_paragraph()
-    faculty.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run3 = faculty.add_run('Технический факультет')
-    run3.font.name = 'Times New Roman'
-    run3.font.size = Pt(14)
-    run3.font.bold = True
-
-    department = doc.add_paragraph()
-    department.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run4 = department.add_run('кафедра «Гражданская безопасность»')
-    run4.font.name = 'Times New Roman'
-    run4.font.size = Pt(14)
-    run4.font.bold = True
-
-    # 5 пустых строк
-    for _ in range(5):
-        doc.add_paragraph()
-
-    # Заголовок результатов
-    results_title = doc.add_paragraph()
-    results_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run5 = results_title.add_run('РЕЗУЛЬТАТЫ ПОБЕДИТЕЛЕЙ')
-    run5.font.name = 'Times New Roman'
-    run5.font.size = Pt(14)
-    run5.font.bold = True
-
-    # Пустая строка
-    doc.add_paragraph()
-
-    # Название олимпиады
-    olympiad_title = doc.add_paragraph()
-    olympiad_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run6 = olympiad_title.add_run('предметной студенческой Олимпиады')
-    run6.font.name = 'Times New Roman'
-    run6.font.size = Pt(14)
-    run6.font.bold = True
-
-    discipline1 = doc.add_paragraph()
-    discipline1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run7 = discipline1.add_run('по дисциплине')
-    run7.font.name = 'Times New Roman'
-    run7.font.size = Pt(14)
-    run7.font.bold = True
-
-    # Используем название олимпиады из системы
-    discipline2 = doc.add_paragraph()
-    discipline2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run8 = discipline2.add_run(f'«{olympiad.title}»')
-    run8.font.name = 'Times New Roman'
-    run8.font.size = Pt(14)
-    run8.font.bold = True
-
-    # Пустая строка
-    doc.add_paragraph()
-
-    # Дата проведения
-    date_conducted = doc.add_paragraph()
-    date_conducted.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run9 = date_conducted.add_run(
-        f'проведенной «{olympiad.start_time.day}» {_get_month_name(olympiad.start_time.month)} {olympiad.start_time.year} г.')
-    run9.font.name = 'Times New Roman'
-    run9.font.size = Pt(14)
-    run9.font.bold = True
-
-    # Пустая строка
-    doc.add_paragraph()
-
-    # Таблица с результатами
-    # Определяем количество столбцов (только топ-10 или все, если меньше 10)
-    top_participants = participations[:3] if len(participations) > 3 else participations
-
-    if top_participants:
-        table = doc.add_table(rows=1, cols=7)  # Увеличиваем до 7 колонок для временного бонуса
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table.style = 'Table Grid'
-
-        # Заголовки таблицы
-        hdr_cells = table.rows[0].cells
-        headers = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки',
-                   'Баллы за задания', 'Временной бонус', 'Итоговый балл']
-
-        for i, header in enumerate(headers):
-            hdr_cells[i].text = header
-            # Форматирование заголовков
-            for paragraph in hdr_cells[i].paragraphs:
-                for run in paragraph.runs:
-                    run.font.name = 'Times New Roman'
-                    run.font.size = Pt(14)
-                    run.font.bold = True
-                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        # Заполнение данными
-        for i, participation in enumerate(top_participants, 1):
-            user = User.query.get(participation.user_id)
-            row_cells = table.add_row().cells
-
-            # Получаем информацию о специальности
-            speciality_info = user.get_speciality_info()
-
-            # Формируем строку с кодом и названием специальности
-            if speciality_info:
-                speciality_text = f"{speciality_info['spec_code']} - {speciality_info['name']}"
-            else:
-                speciality_text = '-'
-
-            # Данные строки
-            row_data = [
-                str(i),
-                user.full_name,
-                user.study_group or '-',
-                speciality_text,
-                f"{participation.total_points:.1f}",  # Баллы за задания
-                f"+{participation.time_bonus:.1f}" if participation.time_bonus else "+0.0",  # Временной бонус
-                f"{participation.final_score:.1f}"  # Итоговый балл с учетом времени
-            ]
-
-            for j, data in enumerate(row_data):
-                row_cells[j].text = data
-                # Форматирование ячеек
-                for paragraph in row_cells[j].paragraphs:
-                    for run in paragraph.runs:
-                        run.font.name = 'Times New Roman'
-                        run.font.size = Pt(14)
-                    # Центрирование для места и баллов, левое выравнивание для остальных
-                    if j in [0, 4, 5, 6]:  # Место и баллы
-                        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    else:  # ФИО, группа и направление
-                        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-        # Настройка ширины столбцов
-        for i, width in enumerate(
-                [Inches(0.6), Inches(2.2), Inches(1.0), Inches(2.5), Inches(1.0), Inches(1.0), Inches(1.0)]):
-            for row in table.rows:
-                row.cells[i].width = width
-
-    # 4 пустые строки
-    for _ in range(4):
-        doc.add_paragraph()
-
-    # Дата подписания
-    signature_date = doc.add_paragraph()
-    signature_date.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    run10 = signature_date.add_run(f'«___»____________ {datetime.now().year} г.')
-    run10.font.name = 'Times New Roman'
-    run10.font.size = Pt(14)
-
-    # Пустая строка
-    doc.add_paragraph()
-
-    # Таблица для подписей жюри
-    jury_title = doc.add_paragraph()
-    jury_title.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    run11 = jury_title.add_run('Члены жюри:')
-    run11.font.name = 'Times New Roman'
-    run11.font.size = Pt(14)
-    run11.font.bold = True
-
-    doc.add_paragraph()
-
-    # Создаем таблицу для подписей (3 строки по 4 столбца: пустой, подпись, пустой, ФИО)
-    jury_table = doc.add_table(rows=3, cols=4)
-    jury_table.style = None  # Убираем границы
-
-    # Устанавливаем ширину столбцов
-    for i, width in enumerate([Inches(1), Inches(1.5), Inches(1), Inches(3.5)]):
-        for row in jury_table.rows:
-            row.cells[i].width = width
-
-    jury_signatures = [
-        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)'],
-        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)'],
-        ['', '(подпись)', '', '(инициалы, фамилия уч. степень, должность)']
-    ]
-
-    for row_idx, row_data in enumerate(jury_signatures):
-        # Добавляем пустые строки для подписей
-        for _ in range(3):
+    zip_io = BytesIO()
+    with zipfile.ZipFile(zip_io, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Документы по этапам
+        for block in blocks:
+            doc = Document()
+            font = doc.styles['Normal'].font
+            font.name = 'Times New Roman';
+            font.size = Pt(14)
+            # Шапка
+            for line in [
+                'ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ',
+                'ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»',
+                'Технический факультет',
+                'кафедра «Гражданская безопасность»'
+            ]:
+                p = doc.add_paragraph();
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r = p.add_run(line);
+                r.font.name = 'Times New Roman';
+                r.font.size = Pt(14);
+                r.bold = True
+            for _ in range(5): doc.add_paragraph()
+            # Заголовок этапа
+            p = doc.add_paragraph();
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(f'ЭТАП {block.order}: {block.title}')
+            r.font.name = 'Times New Roman';
+            r.font.size = Pt(14);
+            r.bold = True
             doc.add_paragraph()
-
-        row = jury_table.rows[row_idx]
-
-        for col_idx, cell_text in enumerate(row_data):
-            cell = row.cells[col_idx]
-
-            if cell_text:  # Если ячейка не пустая (столбцы 1 и 3 - подпись и ФИО)
-                # Добавляем текст
-                cell.text = cell_text
-
-                # Форматируем текст
-                for paragraph in cell.paragraphs:
-                    for run in paragraph.runs:
-                        run.font.name = 'Times New Roman'
-                        run.font.size = Pt(14)
-                    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-                # Добавляем верхнее подчеркивание (границу)
-                tc = cell._tc
-                tcPr = tc.get_or_add_tcPr()
-                tcBorders = OxmlElement('w:tcBorders')
-                top_border = OxmlElement('w:top')
-                top_border.set(qn('w:val'), 'single')
-                top_border.set(qn('w:sz'), '4')
-                top_border.set(qn('w:space'), '0')
-                top_border.set(qn('w:color'), '000000')
-                tcBorders.append(top_border)
-                tcPr.append(tcBorders)
-
-    # Сохраняем документ в память
-    doc_io = BytesIO()
-    doc.save(doc_io)
-    doc_io.seek(0)
-
-    filename = f'results_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.docx'
-
-    return send_file(
-        doc_io,
-        as_attachment=True,
-        download_name=filename,
-        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    )
+            # Унифицированная таблица
+            thr = block.max_points * (block.threshold_percentage / 100)
+            rows = []
+            for part in participations:
+                br = BlockResult.query.filter_by(participation_id=part.id, block_id=block.id).first()
+                if br and br.points_earned >= thr:
+                    rows.append((part, br.points_earned))
+            table = doc.add_table(rows=1, cols=5)
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER;
+            table.style = 'Table Grid'
+            hdr = table.rows[0].cells
+            cols = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки', 'Баллы']
+            for i, h in enumerate(cols):
+                hdr[i].text = h;
+                hdr[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER;
+                hdr[i].paragraphs[0].runs[0].bold = True
+            for idx, (pt, pts) in enumerate(sorted(rows, key=lambda x: x[1], reverse=True), 1):
+                usr = User.query.get(pt.user_id);
+                spec = usr.get_speciality_info();
+                spec = spec['name'] if spec else '-'
+                row = table.add_row().cells
+                vals = [str(idx), usr.full_name, usr.study_group or '-', spec, f"{pts:.1f}"]
+                for j, c in enumerate(row): c.text = vals[j]; c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Подписи
+            for _ in range(4): doc.add_paragraph()
+            p = doc.add_paragraph();
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT;
+            p.add_run(f'«___»____________ {datetime.now().year} г.').font.name = 'Times New Roman';
+            p.runs[0].font.size = Pt(14)
+            p = doc.add_paragraph();
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT;
+            p.add_run('Члены жюри:').font.name = 'Times New Roman';
+            p.runs[0].font.size = Pt(14);
+            p.runs[0].bold = True
+            doc.add_paragraph()
+            jt = doc.add_table(rows=3, cols=4);
+            jt.style = None
+            widths = [Inches(1), Inches(1.5), Inches(1), Inches(3.5)]
+            for ci, w in enumerate(widths):
+                for rw in jt.rows: rw.cells[ci].width = w
+            sigs = [['', '(подпись)', '', '(иниц., фам., степень, должность)']] * 3
+            for ri, data in enumerate(sigs):
+                rw = jt.rows[ri]
+                for ci, txt in enumerate(data):
+                    cell = rw.cells[ci]
+                    if txt: cell.text = txt; cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            bio = BytesIO();
+            doc.save(bio);
+            bio.seek(0)
+            zipf.writestr(f'etap_{block.order}.docx', bio.getvalue())
+            # Документ ТОП-3
+        doc = Document()
+        font = doc.styles['Normal'].font
+        font.name = 'Times New Roman';
+        font.size = Pt(14)
+        for line in [
+            'ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ',
+            'ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»',
+            'Технический факультет',
+            'кафедра «Гражданская безопасность»'
+        ]:
+            p = doc.add_paragraph();
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(line);
+            r.font.name = 'Times New Roman';
+            r.font.size = Pt(14);
+            r.bold = True
+        for _ in range(5): doc.add_paragraph()
+        # Унифицированная таблица для ТОП-3
+        table = doc.add_table(rows=1, cols=5)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER;
+        table.style = 'Table Grid'
+        hdr = table.rows[0].cells
+        cols = ['Место', 'ФИО студента', 'Группа', 'Направление подготовки', 'Итоговый балл']
+        for i, h in enumerate(cols): hdr[i].text = h; hdr[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER;
+        hdr[i].paragraphs[0].runs[0].bold = True
+        for idx, part in enumerate(participations[:3], 1):
+            usr = User.query.get(part.user_id)
+            spec = usr.get_speciality_info();
+            spec = spec['name'] if spec else '-'
+            row = table.add_row().cells
+            vals = [str(idx), usr.full_name, usr.study_group or '-', spec, f"{part.final_score:.1f}"]
+            for j, c in enumerate(row): c.text = vals[j]; c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Подписи
+        for _ in range(4): doc.add_paragraph()
+        p = doc.add_paragraph();
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        r = p.add_run(f'«___»____________ {datetime.now().year} г.');
+        r.font.name = 'Times New Roman';
+        r.font.size = Pt(14)
+        p = doc.add_paragraph();
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        r = p.add_run('Члены жюри:');
+        r.font.name = 'Times New Roman';
+        r.font.size = Pt(14);
+        r.bold = True
+        doc.add_paragraph()
+        jt = doc.add_table(rows=3, cols=4);
+        jt.style = None
+        widths = [Inches(1), Inches(1.5), Inches(1), Inches(3.5)]
+        for ci, w in enumerate(widths):
+            for rw in jt.rows: rw.cells[ci].width = w
+        sigs = [['', '(подпись)', '', '(иниц., фам., степень, должность)']] * 3
+        for ri, rowdata in enumerate(sigs):
+            rw = jt.rows[ri]
+            for ci, txt in enumerate(rowdata):
+                cell = rw.cells[ci]
+                if txt: cell.text = txt; cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        bio = BytesIO();
+        doc.save(bio);
+        bio.seek(0)
+        zipf.writestr('top3.docx', bio.getvalue())
+        # Документ всех участников
+        doc = Document()
+        font = doc.styles['Normal'].font
+        font.name = 'Times New Roman';
+        font.size = Pt(14)
+        for line in [
+            'ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ',
+            'ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»',
+            'Технический факультет',
+            'кафедра «Гражданская безопасность»'
+        ]:
+            p = doc.add_paragraph();
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(line);
+            r.font.name = 'Times New Roman';
+            r.font.size = Pt(14);
+            r.bold = True
+        for _ in range(5): doc.add_paragraph()
+        p = doc.add_paragraph();
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run('СПИСОК ВСЕХ УЧАСТНИКОВ');
+        r.font.name = 'Times New Roman';
+        r.font.size = Pt(14);
+        r.bold = True
+        doc.add_paragraph()
+        tbl = doc.add_table(rows=1, cols=5);
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER;
+        tbl.style = 'Table Grid'
+        hdr = tbl.rows[0].cells;
+        cols = ['Место', 'ФИО', 'Группа', 'Направление подготовки', 'Итоговый балл']
+        for i, c in enumerate(cols): hdr[i].text = c; hdr[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER;
+        hdr[i].paragraphs[0].runs[0].bold = True
+        for idx, part in enumerate(participations, 1):
+            usr = User.query.get(part.user_id);
+            spec = usr.get_speciality_info();
+            spec = spec['name'] if spec else '-'
+            row = tbl.add_row().cells;
+            vals = [str(idx), usr.full_name, usr.study_group or '-', spec, f"{part.final_score:.1f}"]
+            for j, c in enumerate(row): c.text = vals[j]; c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Подписи
+        for _ in range(4): doc.add_paragraph()
+        p = doc.add_paragraph();
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        r = p.add_run(f'«___»____________ {datetime.now().year} г.')
+        r.font.name = 'Times New Roman';
+        r.font.size = Pt(14)
+        p = doc.add_paragraph();
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        r = p.add_run('Члены жюри:')
+        r.font.name = 'Times New Roman';
+        r.font.size = Pt(14);
+        r.bold = True
+        doc.add_paragraph()
+        jt = doc.add_table(rows=3, cols=4);
+        jt.style = None
+        widths = [Inches(1), Inches(1.5), Inches(1), Inches(3.5)]
+        for ci, w in enumerate(widths):
+            for rw in jt.rows: rw.cells[ci].width = w
+        sigs = [['', '(подпись)', '', '(иниц., фам., степень, должность)']] * 3
+        for ri, rowdata in enumerate(sigs):
+            rw = jt.rows[ri]
+            for ci, txt in enumerate(rowdata):
+                cell = rw.cells[ci]
+                if txt: cell.text = txt; cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        bio = BytesIO();
+        doc.save(bio);
+        bio.seek(0)
+        zipf.writestr('all_participants.docx', bio.getvalue())
+    zip_io.seek(0)
+    return send_file(zip_io, as_attachment=True,
+                     download_name=f'stages_{olympiad.title}_{datetime.now().strftime("%Y%m%d_%H%M")}.zip',
+                     mimetype='application/zip')
 
 
 from flask import request, jsonify
@@ -2466,6 +2439,41 @@ def admin_rankings(olympiad_id):
         participations=participations,
         users=users
     )
+
+@app.route('/olympiad/<int:olympiad_id>/finish_early', methods=['POST'])
+@login_required
+def finish_olympiad_early(olympiad_id):
+    """Досрочное завершение олимпиады без временного бонуса"""
+    # Проверяем участие пользователя
+    participation = Participation.query.filter_by(
+        user_id=current_user.id,
+        olympiad_id=olympiad_id,
+        status='in_progress'
+    ).first()
+
+    if not participation:
+        return jsonify({'success': False, 'message': 'Вы не участвуете в этой олимпиаде'}), 403
+
+    # Завершаем олимпиаду досрочно
+    participation.status = 'completed'
+    participation.finish_time = get_current_time()
+
+    # При досрочном завершении временной бонус НЕ начисляется
+    participation.time_bonus = 0
+    participation.final_score = participation.total_points
+
+    # Если есть duration_seconds, оставляем его для статистики
+    if participation.start_time and participation.finish_time:
+        duration = participation.finish_time - participation.start_time
+        participation.duration_seconds = duration.total_seconds()
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Олимпиада завершена досрочно. Временной бонус не начислен.',
+        'redirect': url_for('olympiad_results', olympiad_id=olympiad_id)
+    })
 
 
 @app.route('/admin/olympiad/<int:olympiad_id>/export_pdf', methods=['GET'])

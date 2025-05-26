@@ -295,6 +295,55 @@
             max-height: 95vh;
         }
     }
+
+    /* Стили для подсказки полноэкранного режима */
+    kbd {
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+        color: #374151;
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        padding: 2px 4px;
+        white-space: nowrap;
+    }
+
+    .fullscreen-tip {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fullscreen-tip::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .fullscreen-tip:hover::before {
+        left: 100%;
+    }
+
+    .fullscreen-icon {
+        animation: fullscreen-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fullscreen-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
 </style>
 {% endblock %}
 
@@ -368,9 +417,10 @@
                     <button
                         onclick="startOlympiad()"
                         class="action-button px-6 py-3 bg-[#820000] text-white font-medium rounded-md hover:bg-opacity-90 transition shadow-md"
+                        id="start-olympiad-btn"
                     >
                         <span class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 fullscreen-icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                             </svg>
                             Начать олимпиаду
@@ -423,6 +473,22 @@
                 </a>
             {% endif %}
         </div>
+
+        <!-- Информация о полноэкранном режиме -->
+        {% if participation and participation.status == 'registered' %}
+        <div class="fullscreen-tip" id="fullscreen-tip">
+            <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500 mr-3 flex-shrink-0 mt-0.5 fullscreen-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                    <strong class="text-blue-800">Полноэкранный режим:</strong>
+                    <span class="text-blue-700">При начале олимпиады будет предложен переход в полноэкранный режим для лучшей концентрации.
+                    Вы можете выйти из него в любое время нажав клавишу <kbd>ESC</kbd>.</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -453,7 +519,7 @@
 
 <!-- Модальное окно с PDF просмотрщиком (в стиле брендбука МелГУ) -->
 {% if olympiad.welcome_pdf %}
-<div id="pdf-modal" class="pdf-modal">
+<div id="pdf-modal" class="pdf-modal" style="display: none;">
     <div class="pdf-modal-content">
         <div class="pdf-modal-header">
             <div class="pdf-modal-title">
@@ -553,24 +619,105 @@
     }
 
     function startOlympiad() {
-        axios.post('{{ url_for("start_olympiad", olympiad_id=olympiad.id) }}')
-            .then(function(response) {
-                if (response.data.success) {
-                    if (response.data.redirect) {
-                        window.location.href = response.data.redirect;
+        // Сначала запрашиваем полноэкранный режим
+        requestFullscreen().then(() => {
+            // После успешного входа в полноэкранный режим запускаем олимпиаду
+            axios.post('{{ url_for("start_olympiad", olympiad_id=olympiad.id) }}')
+                .then(function(response) {
+                    if (response.data.success) {
+                        if (response.data.redirect) {
+                            showMessage('Олимпиада начата! Переход в полноэкранный режим...', 'success');
+                            setTimeout(() => {
+                                window.location.href = response.data.redirect;
+                            }, 1500);
+                        } else {
+                            showMessage('Олимпиада успешно начата!');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        }
                     } else {
-                        showMessage('Олимпиада успешно начата!');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
+                        showMessage(response.data.message || 'Ошибка при начале олимпиады', 'error');
+                        // В случае ошибки выходим из полноэкранного режима
+                        exitFullscreen();
                     }
-                } else {
-                    showMessage(response.data.message || 'Ошибка при начале олимпиады', 'error');
-                }
-            })
-            .catch(function(error) {
-                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
-            });
+                })
+                .catch(function(error) {
+                    showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                    // В случае ошибки выходим из полноэкранного режима
+                    exitFullscreen();
+                });
+        }).catch(() => {
+            // Если пользователь отклонил полноэкранный режим, все равно запускаем олимпиаду
+            showMessage('Полноэкранный режим отклонен. Олимпиада будет запущена в обычном режиме.', 'warning');
+
+            axios.post('{{ url_for("start_olympiad", olympiad_id=olympiad.id) }}')
+                .then(function(response) {
+                    if (response.data.success) {
+                        if (response.data.redirect) {
+                            window.location.href = response.data.redirect;
+                        } else {
+                            showMessage('Олимпиада успешно начата!');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        }
+                    } else {
+                        showMessage(response.data.message || 'Ошибка при начале олимпиады', 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                });
+        });
+    }
+
+    // Функция для входа в полноэкранный режим
+    function requestFullscreen() {
+        return new Promise((resolve, reject) => {
+            const element = document.documentElement;
+
+            if (element.requestFullscreen) {
+                element.requestFullscreen().then(resolve).catch(reject);
+            } else if (element.mozRequestFullScreen) { // Firefox
+                element.mozRequestFullScreen().then(resolve).catch(reject);
+            } else if (element.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                element.webkitRequestFullscreen().then(resolve).catch(reject);
+            } else if (element.msRequestFullscreen) { // IE/Edge
+                element.msRequestFullscreen().then(resolve).catch(reject);
+            } else {
+                reject(new Error('Полноэкранный режим не поддерживается'));
+            }
+        });
+    }
+
+    // Функция для выхода из полноэкранного режима
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) { // Firefox
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { // Chrome, Safari, Opera
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE/Edge
+            document.msExitFullscreen();
+        }
+    }
+
+    // Добавляем обработчик для выхода из полноэкранного режима
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    function handleFullscreenChange() {
+        if (!document.fullscreenElement &&
+            !document.webkitFullscreenElement &&
+            !document.mozFullScreenElement &&
+            !document.msFullscreenElement) {
+            // Пользователь вышел из полноэкранного режима
+            console.log('Вышли из полноэкранного режима');
+        }
     }
 
     {% if olympiad.welcome_pdf %}
@@ -744,4 +891,5 @@
     });
     {% endif %}
 </script>
+
 {% endblock %}
