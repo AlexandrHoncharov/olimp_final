@@ -69,8 +69,8 @@ def to_json(value):
     return json.dumps(value)
 
 
-# Функция для корректной обработки JSON-полей перед отправкой в шаблон
 def prepare_question_data(questions):
+    """Обновленная функция для корректной обработки JSON-полей перед отправкой в шаблон"""
     for q in questions:
         if q.question_type == 'test' and q.options:
             q.options_list = json.loads(q.options)
@@ -79,10 +79,25 @@ def prepare_question_data(questions):
             else:
                 q.correct_answers_list = []
         elif q.question_type == 'matching' and q.matches:
-            q.matches_list = json.loads(q.matches)
+            matches_data = json.loads(q.matches)
+
+            # Проверяем новый или старый формат
+            if isinstance(matches_data, dict) and 'left_items' in matches_data:
+                # Новый формат
+                q.matches_data = matches_data
+                q.matches_list = []  # Для обратной совместимости с шаблонами
+            else:
+                # Старый формат - конвертируем
+                q.matches_list = matches_data
+                q.matches_data = {
+                    'left_items': [match['left'] for match in matches_data],
+                    'right_items': [match['right'] for match in matches_data],
+                    'correct_matches': {match['left']: match['right'] for match in matches_data}
+                }
         else:
             q.options_list = []
             q.matches_list = []
+            q.matches_data = {}
             q.correct_answers_list = []
     return questions
 
@@ -1469,12 +1484,14 @@ def parse_test_questions(content, block_id):
 
 
 def parse_matching_questions(content, block_id):
-    """Разбор содержимого файла с вопросами на сопоставление"""
+    """Разбор содержимого файла с вопросами на сопоставление (обновленная версия)"""
     lines = content.splitlines()
 
     questions = []
     current_question = None
-    current_matches = []
+    current_left_items = []
+    current_right_items = []
+    current_correct_matches = {}
 
     for line in lines:
         line = line.rstrip()
@@ -1487,38 +1504,64 @@ def parse_matching_questions(content, block_id):
             if current_question:
                 questions.append({
                     'text': current_question,
-                    'matches': current_matches
+                    'left_items': current_left_items,
+                    'right_items': current_right_items,
+                    'correct_matches': current_correct_matches
                 })
 
             # Начинаем новый вопрос
             current_question = line.split('.', 1)[1].strip()
-            current_matches = []
+            current_left_items = []
+            current_right_items = []
+            current_correct_matches = {}
         elif '|' in line:  # Строка с парой для сопоставления
             parts = line.split('|', 1)
             if len(parts) == 2:
                 left = parts[0].strip()
                 right = parts[1].strip()
                 if left and right:
-                    current_matches.append({'left': left, 'right': right})
+                    # Добавляем в левые элементы, если еще нет
+                    if left not in current_left_items:
+                        current_left_items.append(left)
+
+                    # Добавляем в правые элементы, если еще нет
+                    if right not in current_right_items:
+                        current_right_items.append(right)
+
+                    # Запоминаем правильное соответствие
+                    current_correct_matches[left] = right
+        elif line.startswith('R:'):  # Дополнительные правые элементы (отвлекающие)
+            right_item = line[2:].strip()
+            if right_item and right_item not in current_right_items:
+                current_right_items.append(right_item)
 
     # Добавляем последний вопрос
     if current_question:
         questions.append({
             'text': current_question,
-            'matches': current_matches
+            'left_items': current_left_items,
+            'right_items': current_right_items,
+            'correct_matches': current_correct_matches
         })
 
     # Сохраняем вопросы в базу данных
     questions_created = 0
     for q_data in questions:
-        if not q_data['matches']:
+        if not q_data['left_items'] or not q_data['right_items'] or not q_data['correct_matches']:
             continue  # Пропускаем некорректные вопросы
+
+        # Создаем новую структуру данных
+        matches_data = {
+            'left_items': q_data['left_items'],
+            'right_items': q_data['right_items'],
+            'correct_matches': q_data['correct_matches']
+        }
 
         question = Question(
             block_id=block_id,
             question_type='matching',
             text=q_data['text'],
-            matches=json.dumps(q_data['matches']),
+            matches=json.dumps(matches_data),
             points=1.0  # Временное значение, будет обновлено позже
         )
         db.session.add(question)
@@ -2382,19 +2425,26 @@ def add_question(block_id):
     elif question_type == 'matching':
         left_items = request.form.getlist('left_items[]')
         right_items = request.form.getlist('right_items[]')
-        matches = []
+        correct_matches_data = {}
 
-        for i in range(len(left_items)):
-            matches.append({
-                'left': left_items[i],
-                'right': right_items[i]
-            })
+        # Получаем соответствия из формы
+        for i, left_item in enumerate(left_items):
+            match_key = f'match_{i}'
+            if match_key in request.form:
+                correct_matches_data[left_item] = request.form[match_key]
+
+        # Создаем новую структуру данных
+        matches_data = {
+            'left_items': left_items,
+            'right_items': right_items,
+            'correct_matches': correct_matches_data
+        }
 
         question = Question(
             block_id=block_id,
             question_type=question_type,
             text=text,
-            matches=json.dumps(matches),
+            matches=json.dumps(matches_data),
             points=points_per_question
         )
 
@@ -2582,21 +2632,33 @@ def submit_answer(olympiad_id):
             points_earned = question.points
 
     elif question.question_type == 'matching':
-        matches = json.loads(question.matches)
-        correct_matches = {match['left']: match['right'] for match in matches}
+        matches_data = json.loads(question.matches)
+
+        # Обновленная логика для новой структуры данных
+        if 'correct_matches' in matches_data:
+            # Новый формат
+            correct_matches = matches_data['correct_matches']
+            left_items = matches_data['left_items']
+        else:
+            # Старый формат (для обратной совместимости)
+            correct_matches = {match['left']: match['right'] for match in matches_data}
+            left_items = [match['left'] for match in matches_data]
 
         user_correct_count = 0
-        for pair in answer_data:
-            if pair['left'] in correct_matches and correct_matches[pair['left']] == pair['right']:
-                user_correct_count += 1
+        user_matches = {pair['left']: pair['right'] for pair in answer_data}
 
-        # Если все пары совпали
-        if user_correct_count == len(matches):
+        for left_item in left_items:
+            if left_item in user_matches and left_item in correct_matches:
+                if user_matches[left_item] == correct_matches[left_item]:
+                    user_correct_count += 1
+
+        # Если все левые элементы правильно сопоставлены
+        if user_correct_count == len(left_items):
             is_correct = True
             points_earned = question.points
         else:
             # Частичные баллы за частично правильные ответы
-            points_earned = (user_correct_count / len(matches)) * question.points
+            points_earned = (user_correct_count / len(left_items)) * question.points
 
     # Проверяем, есть ли уже ответ на этот вопрос
     existing_answer = Answer.query.filter_by(
@@ -2610,6 +2672,9 @@ def submit_answer(olympiad_id):
         existing_answer.is_correct = is_correct
         existing_answer.points_earned = points_earned
         existing_answer.answered_at = get_current_time()
+
+        # Обновляем общий балл пользователя
+        participation.total_points = participation.total_points - existing_answer.points_earned + points_earned
     else:
         # Создаем новый ответ
         answer = Answer(
@@ -2621,10 +2686,7 @@ def submit_answer(olympiad_id):
         )
         db.session.add(answer)
 
-    # Обновляем общий балл пользователя
-    if existing_answer:
-        participation.total_points = participation.total_points - existing_answer.points_earned + points_earned
-    else:
+        # Обновляем общий балл пользователя
         participation.total_points += points_earned
 
     db.session.commit()

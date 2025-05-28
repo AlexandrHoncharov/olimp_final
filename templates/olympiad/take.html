@@ -162,100 +162,137 @@
         pointer-events: none;
     }
 
-    /* Drag and drop с улучшениями */
-    .draggable {
-        cursor: grab;
-        user-select: none;
-        padding: 16px 20px;
-        margin-bottom: 12px;
+    /* Обновленные стили для сопоставления */
+    .matching-grid {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 20px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    .matching-column {
         background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
         border: 2px solid #e5e7eb;
         border-radius: 16px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        min-height: 300px;
     }
 
-    .draggable::before {
+    .matching-column.left {
+        border-color: #3b82f6;
+        background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    }
+
+    .matching-column.right {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    }
+
+    .matching-column h4 {
+        margin: 0 0 16px 0;
+        font-weight: 600;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .matching-column.left h4 {
+        color: #1d4ed8;
+    }
+
+    .matching-column.right h4 {
+        color: #059669;
+    }
+
+    .matching-item {
+        margin-bottom: 12px;
+        padding: 16px 20px;
+        background: white;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .matching-item::before {
         content: '';
         position: absolute;
         top: 0;
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.1), transparent);
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
         transition: left 0.5s ease;
     }
 
-    .draggable:hover {
-        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+    .matching-item:hover::before {
+        left: 100%;
+    }
+
+    .matching-item:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         border-color: #cbd5e1;
     }
 
-    .draggable:hover::before {
-        left: 100%;
+    .matching-item.left-item {
+        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+        font-weight: 600;
+        color: #1e40af;
+        border-left: 4px solid #3b82f6;
     }
 
-    .draggable.dragging {
-        opacity: 0.9;
-        background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    .matching-item.right-item {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        color: #374151;
+        cursor: grab;
+    }
+
+    .matching-item.right-item:active {
         cursor: grabbing;
+    }
+
+    .matching-item.dragging {
+        opacity: 0.8;
         transform: rotate(2deg) scale(1.05);
         box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2);
         border-color: #3b82f6;
         z-index: 1000;
     }
 
-    /* Стили для пар сопоставления */
-    .matched-pair {
+    .matching-item.drop-zone {
+        border-style: dashed;
+        border-color: #10b981;
+        background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+    }
+
+    .matching-item.drop-zone.drag-over {
+        border-color: #059669;
+        background: linear-gradient(135deg, #a7f3d0 0%, #d1fae5 100%);
+        transform: scale(1.02);
+    }
+
+    .matching-connector {
         display: flex;
         align-items: center;
-        margin-bottom: 16px;
-        border-radius: 16px;
-        overflow: hidden;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
+        justify-content: center;
+        padding: 20px 0;
     }
 
-    .matched-pair:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .matched-pair .left-item {
-        flex: 1;
-        min-width: 0;
-        padding: 16px 20px;
-        background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
-        border: none;
-        font-weight: 600;
-        color: #374151;
-    }
-
-    .matched-pair .right-item {
-        flex: 1;
-        min-width: 0;
-        padding: 0;
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-        border: none;
-    }
-
-    .matched-pair .connector {
-        padding: 0 16px;
+    .connector-icon {
+        width: 32px;
+        height: 32px;
         color: #6b7280;
-        display: flex;
-        align-items: center;
-        background: linear-gradient(135deg, #f1f5f9 0%, #f3f4f6 100%);
-    }
-
-    .connector-arrow {
-        width: 28px;
-        height: 28px;
-        color: #820000;
+        background: white;
+        border-radius: 50%;
+        padding: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     /* Улучшенные checkbox и radio */
@@ -613,13 +650,17 @@
             margin-bottom: 20px;
         }
 
-        .matched-pair {
-            flex-direction: column;
+        .matching-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
         }
 
-        .matched-pair .connector {
+        .matching-connector {
+            padding: 10px 0;
+        }
+
+        .connector-icon {
             transform: rotate(90deg);
-            padding: 8px 0;
         }
 
         .stats-box {
@@ -661,6 +702,30 @@
             opacity: 0.8;
             transform: scale(1.05);
         }
+    }
+
+    /* Индикатор успешного сопоставления */
+    .match-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%) !important;
+        border-color: #10b981 !important;
+        border-style: solid !important;
+    }
+
+    .match-success::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 20px;
+        height: 20px;
+        background: #10b981;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
     }
 </style>
 {% endblock %}
@@ -773,35 +838,59 @@
                     </div>
                 {% elif question.question_type == 'matching' %}
                     <div class="matching-container" id="matching-container-{{ question.id }}">
-                        {% if question.matches_list %}
-                            <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+                        {% if question.matches_data or question.matches_list %}
+                            <!-- Скрытые данные для JavaScript -->
+                            {% if question.matches_data %}
+                                <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_data|tojson }}">
+                            {% else %}
+                                <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+                            {% endif %}
 
                             <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p class="text-blue-800 text-sm font-medium">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                                     </svg>
-                                    Перетащите элементы из правой колонки к соответствующим элементам в левой
+                                    Перетащите элементы из правой колонки к соответствующим элементам в левой колонке
                                 </p>
                             </div>
 
-                            <div class="reorder-container" id="matches-list-{{ question.id }}">
-                                {% for match in question.matches_list %}
-                                    <div class="matched-pair" id="pair-{{ loop.index }}-{{ question.id }}">
-                                        <div class="left-item" data-left="{{ match.left }}">{{ match.left }}</div>
-                                        <div class="connector">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="connector-arrow" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div class="right-item" id="right-container-{{ loop.index }}-{{ question.id }}">
-                                            <!-- Сюда будут помещены перемешанные ответы -->
-                                        </div>
+                            <div class="matching-grid" id="matching-grid-{{ question.id }}">
+                                <!-- Левая колонка -->
+                                <div class="matching-column left">
+                                    <h4>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        Элементы для сопоставления
+                                    </h4>
+                                    <div id="left-items-{{ question.id }}">
+                                        <!-- Заполняется через JavaScript -->
                                     </div>
-                                {% endfor %}
+                                </div>
+
+                                <!-- Соединительная колонка -->
+                                <div class="matching-connector">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="connector-icon" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+
+                                <!-- Правая колонка -->
+                                <div class="matching-column right">
+                                    <h4>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                                        </svg>
+                                        Варианты ответов
+                                    </h4>
+                                    <div id="right-items-{{ question.id }}">
+                                        <!-- Заполняется через JavaScript -->
+                                    </div>
+                                </div>
                             </div>
                         {% else %}
-                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить пары соответствия</p>
+                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить элементы сопоставления</p>
                         {% endif %}
                     </div>
                 {% endif %}
@@ -1108,39 +1197,84 @@
 
                 if (matchesDataElement) {
                     try {
-                        // Получаем данные о парах и перемешиваем правые элементы
                         let matchesData = JSON.parse(matchesDataElement.value);
-                        let rightItems = matchesData.map(match => match.right);
+                        console.log("Original matching data:", matchesData);
+
+                        // Проверяем формат данных
+                        let leftItems, rightItems, correctMatches;
+
+                        if (matchesData && typeof matchesData === 'object' && matchesData.left_items) {
+                            // Новый формат с неравным сопоставлением
+                            leftItems = matchesData.left_items;
+                            rightItems = matchesData.right_items;
+                            correctMatches = matchesData.correct_matches;
+                            console.log("New format detected:", { leftItems, rightItems, correctMatches });
+                        } else if (Array.isArray(matchesData)) {
+                            // Старый формат - массив пар
+                            leftItems = matchesData.map(match => match.left);
+                            rightItems = matchesData.map(match => match.right);
+                            correctMatches = {};
+                            matchesData.forEach(match => {
+                                correctMatches[match.left] = match.right;
+                            });
+                            console.log("Old format detected and converted:", { leftItems, rightItems, correctMatches });
+                        } else {
+                            throw new Error("Unknown data format");
+                        }
+
+                        // Создаем уникальные массивы (убираем дубликаты)
+                        leftItems = [...new Set(leftItems)];
+                        rightItems = [...new Set(rightItems)];
+
+                        // Заполняем левую колонку
+                        const leftContainer = document.getElementById(`left-items-${questionId}`);
+                        leftContainer.innerHTML = '';
+
+                        leftItems.forEach((leftItem, index) => {
+                            const leftElement = document.createElement('div');
+                            leftElement.className = 'matching-item left-item drop-zone';
+                            leftElement.textContent = leftItem;
+                            leftElement.dataset.leftItem = leftItem;
+                            leftElement.dataset.questionId = questionId;
+                            leftElement.id = `left-item-${index}-${questionId}`;
+
+                            // Добавляем обработчики для drop zone
+                            leftElement.addEventListener('dragover', handleDragOver);
+                            leftElement.addEventListener('dragleave', handleDragLeave);
+                            leftElement.addEventListener('drop', handleDrop);
+
+                            leftContainer.appendChild(leftElement);
+                        });
 
                         // Перемешиваем правые элементы
-                        shuffleArray(rightItems);
+                        const shuffledRightItems = [...rightItems];
+                        shuffleArray(shuffledRightItems);
 
-                        // Заполняем правые контейнеры перемешанными элементами
-                        matchesData.forEach((match, index) => {
-                            const rightContainer = document.getElementById(`right-container-${index+1}-${questionId}`);
-                            if (rightContainer) {
-                                const dragItem = document.createElement('div');
-                                dragItem.className = 'draggable reorder-item';
-                                dragItem.draggable = true;
-                                dragItem.dataset.value = rightItems[index];
-                                dragItem.dataset.position = index + 1;
-                                dragItem.dataset.questionId = questionId;
-                                dragItem.innerText = rightItems[index];
-                                rightContainer.appendChild(dragItem);
+                        // Заполняем правую колонку перемешанными элементами
+                        const rightContainer = document.getElementById(`right-items-${questionId}`);
+                        rightContainer.innerHTML = '';
 
-                                // Добавляем события для перетаскивания
-                                dragItem.addEventListener('dragstart', handleDragStart);
-                                dragItem.addEventListener('dragend', handleDragEnd);
-                            }
+                        shuffledRightItems.forEach((rightItem, index) => {
+                            const rightElement = document.createElement('div');
+                            rightElement.className = 'matching-item right-item';
+                            rightElement.textContent = rightItem;
+                            rightElement.dataset.rightItem = rightItem;
+                            rightElement.dataset.questionId = questionId;
+                            rightElement.draggable = true;
+                            rightElement.id = `right-item-${index}-${questionId}`;
+
+                            // Добавляем обработчики для перетаскивания
+                            rightElement.addEventListener('dragstart', handleDragStart);
+                            rightElement.addEventListener('dragend', handleDragEnd);
+
+                            rightContainer.appendChild(rightElement);
                         });
 
-                        // Добавляем события для области сброса
-                        const rightContainers = document.querySelectorAll(`[id^="right-container-"][id$="-${questionId}"]`);
-                        rightContainers.forEach(container => {
-                            container.addEventListener('dragover', handleDragOver);
-                            container.addEventListener('dragleave', handleDragLeave);
-                            container.addEventListener('drop', handleDrop);
-                        });
+                        // Восстанавливаем сохраненные ответы если они есть
+                        const savedAnswers = getSavedMatchingAnswers(questionId);
+                        if (savedAnswers && savedAnswers.length > 0) {
+                            restoreMatchingAnswers(questionId, savedAnswers);
+                        }
 
                     } catch (error) {
                         console.error('Error initializing matching question:', error);
@@ -1152,6 +1286,8 @@
         // Функции для обработки drag and drop
         function handleDragStart(e) {
             this.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', this.dataset.rightItem);
+            e.dataTransfer.setData('application/x-question-id', this.dataset.questionId);
         }
 
         function handleDragEnd(e) {
@@ -1175,19 +1311,32 @@
             e.preventDefault();
             this.classList.remove('drag-over');
 
-            const draggable = document.querySelector('.dragging');
-            if (!draggable) return;
+            const rightItemValue = e.dataTransfer.getData('text/plain');
+            const questionId = e.dataTransfer.getData('application/x-question-id');
 
-            // Получаем текущий элемент в этом контейнере
-            const currentItem = this.querySelector('.draggable');
-            if (currentItem) {
-                // Получаем контейнер перетаскиваемого элемента
-                const sourceContainer = draggable.parentElement;
+            if (!rightItemValue || !questionId) return;
 
-                // Обмениваем элементы местами
-                sourceContainer.appendChild(currentItem);
-                this.appendChild(draggable);
+            // Находим перетаскиваемый элемент
+            const draggedElement = document.querySelector(`.right-item[data-right-item="${rightItemValue}"][data-question-id="${questionId}"]`);
+            if (!draggedElement) return;
+
+            // Проверяем, есть ли уже элемент в этой зоне сброса
+            const existingItem = this.querySelector('.right-item');
+            if (existingItem) {
+                // Если элемент уже есть, возвращаем его в правую колонку
+                const rightContainer = document.getElementById(`right-items-${questionId}`);
+                rightContainer.appendChild(existingItem);
             }
+
+            // Перемещаем новый элемент в зону сброса
+            this.appendChild(draggedElement);
+
+            // Добавляем визуальную индикацию успешного размещения
+            this.classList.add('match-success');
+            draggedElement.classList.add('match-success');
+
+            // Отмечаем кнопку ответа как требующую обновления
+            highlightAnswerButton(questionId);
         }
 
         // Функция для отправки ответа
@@ -1199,22 +1348,24 @@
             if (questionType === 'matching') {
                 // Собираем данные для вопроса на сопоставление
                 answerData = [];
-                const pairs = questionContainer.querySelectorAll('.matched-pair');
+                const leftItems = questionContainer.querySelectorAll('.left-item');
 
-                pairs.forEach(pair => {
-                    const leftItem = pair.querySelector('.left-item').dataset.left;
-                    const rightItem = pair.querySelector('.draggable');
+                leftItems.forEach(leftItem => {
+                    const leftValue = leftItem.dataset.leftItem;
+                    const rightElement = leftItem.querySelector('.right-item');
 
-                    if (rightItem) {
+                    if (rightElement) {
+                        const rightValue = rightElement.dataset.rightItem;
                         answerData.push({
-                            left: leftItem,
-                            right: rightItem.dataset.value
+                            left: leftValue,
+                            right: rightValue
                         });
                     }
                 });
 
-                // Проверяем, что все пары есть
-                if (answerData.length < pairs.length) {
+                // Проверяем, что все левые элементы имеют соответствия
+                const totalLeftItems = questionContainer.querySelectorAll('.left-item').length;
+                if (answerData.length < totalLeftItems) {
                     showMessage('Пожалуйста, завершите все сопоставления', 'error');
                     return;
                 }
@@ -1257,6 +1408,11 @@
                     button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Сохранить ответ';
                     button.disabled = false;
                     button.className = button.className.replace('from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]', 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800');
+
+                    // Сохраняем ответы в локальном хранилище для восстановления
+                    if (questionType === 'matching') {
+                        saveMatchingAnswers(questionId, answerData);
+                    }
 
                     // Показываем сообщение
                     showMessage('Ответ успешно сохранен!');
@@ -1346,6 +1502,47 @@
                 [array[i], array[j]] = [array[j], array[i]];
             }
             return array;
+        }
+
+        // Функции для сохранения/восстановления ответов сопоставления
+        function saveMatchingAnswers(questionId, answers) {
+            const key = `matching_answers_${questionId}`;
+            const answersData = { answers: answers, timestamp: Date.now() };
+            sessionStorage.setItem(key, JSON.stringify(answersData));
+        }
+
+        function getSavedMatchingAnswers(questionId) {
+            const key = `matching_answers_${questionId}`;
+            const savedData = sessionStorage.getItem(key);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    // Проверяем, что данные не старше 1 часа
+                    if (Date.now() - parsed.timestamp < 3600000) {
+                        return parsed.answers;
+                    }
+                } catch (error) {
+                    console.error('Error parsing saved matching answers:', error);
+                }
+                sessionStorage.removeItem(key);
+            }
+            return null;
+        }
+
+        function restoreMatchingAnswers(questionId, savedAnswers) {
+            savedAnswers.forEach(match => {
+                // Находим левый элемент
+                const leftElement = document.querySelector(`[data-left-item="${match.left}"][data-question-id="${questionId}"]`);
+                // Находим правый элемент
+                const rightElement = document.querySelector(`[data-right-item="${match.right}"][data-question-id="${questionId}"]`);
+
+                if (leftElement && rightElement) {
+                    // Перемещаем правый элемент к левому
+                    leftElement.appendChild(rightElement);
+                    leftElement.classList.add('match-success');
+                    rightElement.classList.add('match-success');
+                }
+            });
         }
     });
 
@@ -1529,7 +1726,40 @@
         }
     }
 
-    // Закрытие модального окна при нажатии ESC
+    // Функция отображения сообщений
+    function showMessage(message, type = 'success') {
+        let notificationContainer = document.getElementById('notification-container');
+
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.className = 'fixed top-4 right-4 z-50 max-w-md';
+            document.body.appendChild(notificationContainer);
+        }
+
+        const notification = document.createElement('div');
+        const bgClass = type === 'success' ? 'bg-green-50 border-l-4 border-green-500 text-green-700' :
+                       type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700' :
+                       'bg-red-50 border-l-4 border-red-500 text-red-700';
+
+        notification.className = `rounded-lg shadow-md p-4 mb-3 ${bgClass}`;
+        notification.innerHTML = `
+            <div class="flex justify-between">
+                <p>${message}</p>
+                <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            </div>
+        `;
+
+        notificationContainer.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Закрытие модальных окон при нажатии ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             const earlyModal = document.getElementById('early-finish-modal');
@@ -1544,6 +1774,20 @@
         }
     });
 
+    // Закрытие модальных окон при клике вне их
+    document.addEventListener('click', function(e) {
+        const earlyModal = document.getElementById('early-finish-modal');
+        const rankingModal = document.getElementById('ranking-modal');
+
+        if (earlyModal && earlyModal.style.display === 'flex' && e.target === earlyModal) {
+            closeEarlyFinishModal();
+        }
+
+        if (rankingModal && rankingModal.style.display === 'flex' && e.target === rankingModal) {
+            closeRankingModal();
+        }
+    });
+
     // Предупреждение о закрытии страницы
     window.addEventListener('beforeunload', function(e) {
         const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
@@ -1555,11 +1799,35 @@
         }
     });
 
-    // Глобальные функции
+    // Автосохранение прогресса каждые 30 секунд
+    setInterval(function() {
+        const matchingQuestions = document.querySelectorAll('.matching-container');
+        matchingQuestions.forEach(container => {
+            const questionId = container.closest('[data-question-id]').dataset.questionId;
+            const leftItems = container.querySelectorAll('.left-item');
+            const currentMatches = [];
+
+            leftItems.forEach(leftItem => {
+                const leftValue = leftItem.dataset.leftItem;
+                const rightElement = leftItem.querySelector('.right-item');
+                if (rightElement) {
+                    const rightValue = rightElement.dataset.rightItem;
+                    currentMatches.push({ left: leftValue, right: rightValue });
+                }
+            });
+
+            if (currentMatches.length > 0) {
+                saveMatchingAnswers(questionId, currentMatches);
+            }
+        });
+    }, 30000);
+
+    // Глобальные функции для использования в HTML
     window.closeRankingModal = closeRankingModal;
     window.continueAfterRanking = continueAfterRanking;
     window.showEarlyFinishConfirmation = showEarlyFinishConfirmation;
     window.closeEarlyFinishModal = closeEarlyFinishModal;
     window.finishOlympiadEarly = finishOlympiadEarly;
+    window.showMessage = showMessage;
 </script>
 {% endblock %}

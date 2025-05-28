@@ -81,7 +81,6 @@
 
                         <div class="p-4">
                             {% if question.question_type == 'test' %}
-                                <!-- Используем Python для обработки JSON в бэкенде -->
                                 {% if question.options_list %}
                                     <div class="mb-2">
                                         <div class="text-sm font-medium">Варианты ответов:</div>
@@ -105,9 +104,43 @@
                                     <p class="text-red-500">Ошибка: не удалось загрузить варианты ответов</p>
                                 {% endif %}
                             {% elif question.question_type == 'matching' %}
-                                {% if question.matches_list %}
+                                {% if question.matches_data %}
+                                    <!-- Новый формат отображения -->
                                     <div class="mb-2">
-                                        <div class="text-sm font-medium">Пары для сопоставления:</div>
+                                        <div class="text-sm font-medium mb-3">Элементы для сопоставления:</div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                            <div>
+                                                <div class="font-medium text-sm mb-2 text-blue-700">Левая колонка ({{ question.matches_data.left_items|length }} элементов):</div>
+                                                {% for left_item in question.matches_data.left_items %}
+                                                    <div class="p-2 bg-blue-50 rounded mb-1 border border-blue-200">{{ left_item }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-sm mb-2 text-green-700">Правая колонка ({{ question.matches_data.right_items|length }} элементов):</div>
+                                                {% for right_item in question.matches_data.right_items %}
+                                                    <div class="p-2 bg-green-50 rounded mb-1 border border-green-200">{{ right_item }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 p-3 bg-gray-50 rounded-lg border">
+                                            <div class="font-medium text-sm mb-2 text-gray-700">Правильные соответствия:</div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {% for left_item, right_item in question.matches_data.correct_matches.items() %}
+                                                    <div class="text-sm text-gray-700 bg-white p-2 rounded border flex items-center">
+                                                        <span class="font-medium text-blue-700">{{ left_item }}</span>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                        </svg>
+                                                        <span class="font-medium text-green-700">{{ right_item }}</span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% elif question.matches_list %}
+                                    <!-- Старый формат отображения для обратной совместимости -->
+                                    <div class="mb-2">
+                                        <div class="text-sm font-medium">Пары для сопоставления (старый формат):</div>
                                         <div class="grid grid-cols-2 gap-2 mt-2">
                                             <div class="font-medium">Левая колонка</div>
                                             <div class="font-medium">Правая колонка</div>
@@ -119,7 +152,7 @@
                                         </div>
                                     </div>
                                 {% else %}
-                                    <p class="text-red-500">Ошибка: не удалось загрузить пары соответствия</p>
+                                    <p class="text-red-500">Ошибка: не удалось загрузить элементы сопоставления</p>
                                 {% endif %}
                             {% endif %}
                         </div>
@@ -174,14 +207,17 @@
 2. Следующий вопрос
 ...и так далее</pre>
 
-                            <h4 class="text-sm font-semibold text-blue-700 mt-3 mb-2">Формат файла для вопросов на сопоставление:</h4>
+                            <h4 class="text-sm font-semibold text-blue-700 mt-3 mb-2">Формат файла для вопросов на сопоставление (обновленный):</h4>
                             <pre class="text-xs text-blue-800 whitespace-pre-wrap">1. Текст вопроса на сопоставление
 Левый элемент 1 | Правый элемент 1
 Левый элемент 2 | Правый элемент 2
-Левый элемент 3 | Правый элемент 3
+R: Дополнительный правый элемент 3
+R: Дополнительный правый элемент 4
 
 2. Следующий вопрос
-...и так далее</pre>
+...и так далее
+
+Примечание: Строки с "R:" добавляют элементы только в правую колонку (отвлекающие варианты)</pre>
                         </div>
                     </div>
                 </form>
@@ -287,99 +323,148 @@
         </div>
     </div>
 
-    <!-- Модальное окно для добавления вопроса на сопоставление -->
+    <!-- Модальное окно для добавления вопроса на сопоставление (обновленное) -->
     <div id="matching-question-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
-            <div class="border-b px-6 py-3 flex justify-between items-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="border-b px-6 py-3 flex justify-between items-center sticky top-0 bg-white">
                 <h3 class="text-lg font-medium">Добавление вопроса на сопоставление</h3>
                 <button onclick="closeQuestionModal('matching')" class="text-gray-400 hover:text-gray-500">&times;</button>
             </div>
             <div class="p-6">
                 <form id="add-matching-question-form">
                     <input type="hidden" name="question_type" value="matching">
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
                             <label for="matching_text" class="block text-sm font-medium text-gray-700 mb-1">Текст вопроса</label>
                             <textarea id="matching_text" name="text" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                         </div>
 
-                        <div id="matching-pairs-container">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Пары для сопоставления</label>
-
-                            <div class="flex mb-2">
-                                <div class="flex-1 font-medium text-sm text-center">Левая колонка</div>
-                                <div class="flex-1 font-medium text-sm text-center">Правая колонка</div>
-                                <div class="w-10"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Левая колонка -->
+                            <div id="left-items-container" class="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                                <label class="block text-sm font-medium text-blue-700 mb-3">Левая колонка (элементы для сопоставления)</label>
+                                <div id="left-items-list">
+                                    <div class="left-item-input flex mb-3">
+                                        <input
+                                            type="text"
+                                            name="left_items[]"
+                                            placeholder="Элемент для сопоставления"
+                                            required
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                        >
+                                        <select name="match_0" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 match-select min-w-[120px]">
+                                            <option value="">Выберите соответствие</option>
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onclick="removeLeftItem(this)"
+                                            class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-left-button"
+                                            disabled
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div class="left-item-input flex mb-3">
+                                        <input
+                                            type="text"
+                                            name="left_items[]"
+                                            placeholder="Элемент для сопоставления"
+                                            required
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                        >
+                                        <select name="match_1" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 match-select min-w-[120px]">
+                                            <option value="">Выберите соответствие</option>
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onclick="removeLeftItem(this)"
+                                            class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-left-button"
+                                            disabled
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="addLeftItem()"
+                                    class="mt-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                >
+                                    + Добавить элемент
+                                </button>
                             </div>
 
-                            <div id="pairs-list">
-                                <div class="pair-item flex mb-2">
-                                    <input
-                                        type="text"
-                                        name="left_items[]"
-                                        placeholder="Левый элемент"
-                                        required
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
-                                    >
-                                    <input
-                                        type="text"
-                                        name="right_items[]"
-                                        placeholder="Правый элемент"
-                                        required
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    >
-                                    <button
-                                        type="button"
-                                        onclick="removePair(this)"
-                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
-                                        disabled
-                                    >
-                                        ✕
-                                    </button>
+                            <!-- Правая колонка -->
+                            <div id="right-items-container" class="border border-green-200 rounded-lg p-4 bg-green-50">
+                                <label class="block text-sm font-medium text-green-700 mb-3">Правая колонка (варианты ответов)</label>
+                                <div id="right-items-list">
+                                    <div class="right-item-input flex mb-3">
+                                        <input
+                                            type="text"
+                                            name="right_items[]"
+                                            placeholder="Вариант ответа"
+                                            required
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                        >
+                                        <button
+                                            type="button"
+                                            onclick="removeRightItem(this)"
+                                            class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-right-button"
+                                            disabled
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div class="right-item-input flex mb-3">
+                                        <input
+                                            type="text"
+                                            name="right_items[]"
+                                            placeholder="Вариант ответа"
+                                            required
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+                                        >
+                                        <button
+                                            type="button"
+                                            onclick="removeRightItem(this)"
+                                            class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-right-button"
+                                            disabled
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="pair-item flex mb-2">
-                                    <input
-                                        type="text"
-                                        name="left_items[]"
-                                        placeholder="Левый элемент"
-                                        required
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
-                                    >
-                                    <input
-                                        type="text"
-                                        name="right_items[]"
-                                        placeholder="Правый элемент"
-                                        required
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    >
-                                    <button
-                                        type="button"
-                                        onclick="removePair(this)"
-                                        class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
-                                        disabled
-                                    >
-                                        ✕
-                                    </button>
+                                <button
+                                    type="button"
+                                    onclick="addRightItem()"
+                                    class="mt-1 px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                >
+                                    + Добавить вариант
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <div class="flex">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="text-sm text-yellow-800">
+                                    <strong>Обратите внимание:</strong> Теперь вы можете создавать вопросы с неравным количеством элементов в колонках.
+                                    Например, 2 элемента слева и 4 справа. Дополнительные элементы справа будут отвлекающими вариантами.
+                                    Для каждого элемента слева обязательно выберите соответствующий элемент справа.
                                 </div>
                             </div>
-
-                            <button
-                                type="button"
-                                onclick="addPair()"
-                                class="mt-1 px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                            >
-                                + Добавить пару
-                            </button>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg sticky bottom-0">
                 <button onclick="closeQuestionModal('matching')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
                 <button onclick="submitQuestionForm('matching')" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Добавить</button>
             </div>
         </div>
     </div>
+
     <!-- Модальное окно для подтверждения удаления вопроса -->
     <div id="delete-question-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -446,8 +531,8 @@
 
     <!-- Модальное окно для редактирования вопроса на сопоставление -->
     <div id="edit-matching-question-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
-            <div class="border-b px-6 py-3 flex justify-between items-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="border-b px-6 py-3 flex justify-between items-center sticky top-0 bg-white">
                 <h3 class="text-lg font-medium">Редактирование вопроса на сопоставление</h3>
                 <button onclick="closeEditQuestionModal('matching')" class="text-gray-400 hover:text-gray-500">&times;</button>
             </div>
@@ -455,37 +540,47 @@
                 <form id="edit-matching-question-form">
                     <input type="hidden" id="edit-matching-question-id" name="question_id" value="">
                     <input type="hidden" name="question_type" value="matching">
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
                             <label for="edit_matching_text" class="block text-sm font-medium text-gray-700 mb-1">Текст вопроса</label>
                             <textarea id="edit_matching_text" name="text" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
                         </div>
 
-                        <div id="edit-matching-pairs-container">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Пары для сопоставления</label>
-
-                            <div class="flex mb-2">
-                                <div class="flex-1 font-medium text-sm text-center">Левая колонка</div>
-                                <div class="flex-1 font-medium text-sm text-center">Правая колонка</div>
-                                <div class="w-10"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Левая колонка редактирования -->
+                            <div id="edit-left-items-container" class="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                                <label class="block text-sm font-medium text-blue-700 mb-3">Левая колонка (элементы для сопоставления)</label>
+                                <div id="edit-left-items-list">
+                                    <!-- Элементы будут добавлены динамически через JavaScript -->
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="addEditLeftItem()"
+                                    class="mt-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                >
+                                    + Добавить элемент
+                                </button>
                             </div>
 
-                            <div id="edit-pairs-list">
-                                <!-- Пары будут добавлены динамически через JavaScript -->
+                            <!-- Правая колонка редактирования -->
+                            <div id="edit-right-items-container" class="border border-green-200 rounded-lg p-4 bg-green-50">
+                                <label class="block text-sm font-medium text-green-700 mb-3">Правая колонка (варианты ответов)</label>
+                                <div id="edit-right-items-list">
+                                    <!-- Элементы будут добавлены динамически через JavaScript -->
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="addEditRightItem()"
+                                    class="mt-1 px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                >
+                                    + Добавить вариант
+                                </button>
                             </div>
-
-                            <button
-                                type="button"
-                                onclick="addEditPair()"
-                                class="mt-1 px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                            >
-                                + Добавить пару
-                            </button>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg">
+            <div class="bg-gray-50 px-6 py-3 flex justify-end rounded-b-lg sticky bottom-0">
                 <button onclick="closeEditQuestionModal('matching')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 mr-2">Отмена</button>
                 <button onclick="updateQuestionForm('matching')" class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90">Сохранить</button>
             </div>
@@ -496,6 +591,12 @@
 
 {% block scripts %}
 <script>
+    // Переменные для отслеживания индексов
+    let leftItemIndex = 2; // Начинаем с 2, так как уже есть 2 элемента
+    let rightItemIndex = 2;
+    let editLeftItemIndex = 0;
+    let editRightItemIndex = 0;
+
     // Функции для работы с модальными окнами
     function showAddQuestionModal(type) {
         const modalId = type === 'test' ? 'test-question-modal' : 'matching-question-modal';
@@ -504,6 +605,11 @@
         if (modal) {
             modal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
+
+            if (type === 'matching') {
+                updateMatchSelects();
+                updateRemoveButtons();
+            }
         }
     }
 
@@ -514,6 +620,177 @@
         if (modal) {
             modal.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
+
+            // Сброс формы
+            if (type === 'matching') {
+                resetMatchingForm();
+            }
+        }
+    }
+
+    function resetMatchingForm() {
+        // Сброс левых элементов
+        const leftItemsList = document.getElementById('left-items-list');
+        leftItemsList.innerHTML = `
+            <div class="left-item-input flex mb-3">
+                <input type="text" name="left_items[]" placeholder="Элемент для сопоставления" required class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2">
+                <select name="match_0" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 match-select min-w-[120px]">
+                    <option value="">Выберите соответствие</option>
+                </select>
+                <button type="button" onclick="removeLeftItem(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-left-button" disabled>✕</button>
+            </div>
+            <div class="left-item-input flex mb-3">
+                <input type="text" name="left_items[]" placeholder="Элемент для сопоставления" required class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2">
+                <select name="match_1" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 match-select min-w-[120px]">
+                    <option value="">Выберите соответствие</option>
+                </select>
+                <button type="button" onclick="removeLeftItem(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-left-button" disabled>✕</button>
+            </div>
+        `;
+
+        // Сброс правых элементов
+        const rightItemsList = document.getElementById('right-items-list');
+        rightItemsList.innerHTML = `
+            <div class="right-item-input flex mb-3">
+                <input type="text" name="right_items[]" placeholder="Вариант ответа" required class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2">
+                <button type="button" onclick="removeRightItem(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-right-button" disabled>✕</button>
+            </div>
+            <div class="right-item-input flex mb-3">
+                <input type="text" name="right_items[]" placeholder="Вариант ответа" required class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2">
+                <button type="button" onclick="removeRightItem(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-right-button" disabled>✕</button>
+            </div>
+        `;
+
+        // Сброс индексов
+        leftItemIndex = 2;
+        rightItemIndex = 2;
+
+        // Очистка текста вопроса
+        document.getElementById('matching_text').value = '';
+    }
+
+    // Функции для работы с левыми элементами
+    function addLeftItem() {
+        const leftItemsList = document.getElementById('left-items-list');
+        const newLeftItem = document.createElement('div');
+        newLeftItem.className = 'left-item-input flex mb-3';
+        newLeftItem.innerHTML = `
+            <input
+                type="text"
+                name="left_items[]"
+                placeholder="Элемент для сопоставления"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+            >
+            <select name="match_${leftItemIndex}" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 match-select min-w-[120px]">
+                <option value="">Выберите соответствие</option>
+            </select>
+            <button
+                type="button"
+                onclick="removeLeftItem(this)"
+                class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-left-button"
+            >
+                ✕
+            </button>
+        `;
+
+        leftItemsList.appendChild(newLeftItem);
+        leftItemIndex++;
+        updateMatchSelects();
+        updateRemoveButtons();
+    }
+
+    function removeLeftItem(button) {
+        const leftItem = button.closest('.left-item-input');
+        leftItem.remove();
+        updateMatchSelects();
+        updateRemoveButtons();
+    }
+
+    // Функции для работы с правыми элементами
+    function addRightItem() {
+        const rightItemsList = document.getElementById('right-items-list');
+        const newRightItem = document.createElement('div');
+        newRightItem.className = 'right-item-input flex mb-3';
+        newRightItem.innerHTML = `
+            <input
+                type="text"
+                name="right_items[]"
+                placeholder="Вариант ответа"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+            >
+            <button
+                type="button"
+                onclick="removeRightItem(this)"
+                class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-right-button"
+            >
+                ✕
+            </button>
+        `;
+
+        rightItemsList.appendChild(newRightItem);
+        rightItemIndex++;
+        updateMatchSelects();
+        updateRemoveButtons();
+    }
+
+    function removeRightItem(button) {
+        const rightItem = button.closest('.right-item-input');
+        rightItem.remove();
+        updateMatchSelects();
+        updateRemoveButtons();
+    }
+
+    // Обновление селектов соответствий
+    function updateMatchSelects() {
+        const rightInputs = document.querySelectorAll('#right-items-list input[name="right_items[]"]');
+        const matchSelects = document.querySelectorAll('.match-select');
+
+        matchSelects.forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Выберите соответствие</option>';
+
+            rightInputs.forEach((input, index) => {
+                if (input.value.trim()) {
+                    const option = document.createElement('option');
+                    option.value = input.value.trim();
+                    option.textContent = input.value.trim();
+                    if (option.value === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+        });
+
+        // Добавляем обработчики изменений для правых элементов
+        rightInputs.forEach(input => {
+            input.removeEventListener('input', updateMatchSelects);
+            input.addEventListener('input', updateMatchSelects);
+        });
+    }
+
+    // Обновление состояния кнопок удаления
+    function updateRemoveButtons() {
+        const leftItems = document.querySelectorAll('#left-items-list .left-item-input');
+        const rightItems = document.querySelectorAll('#right-items-list .right-item-input');
+
+        const leftRemoveButtons = document.querySelectorAll('.remove-left-button');
+        const rightRemoveButtons = document.querySelectorAll('.remove-right-button');
+
+        // Для левых элементов - минимум 1
+        if (leftItems.length <= 1) {
+            leftRemoveButtons.forEach(button => button.disabled = true);
+        } else {
+            leftRemoveButtons.forEach(button => button.disabled = false);
+        }
+
+        // Для правых элементов - минимум 1
+        if (rightItems.length <= 1) {
+            rightRemoveButtons.forEach(button => button.disabled = true);
+        } else {
+            rightRemoveButtons.forEach(button => button.disabled = false);
         }
     }
 
@@ -548,7 +825,7 @@
         `;
 
         optionsList.appendChild(newOption);
-        updateRemoveButtons('options-list');
+        updateRemoveTestButtons('options-list');
 
         // Синхронизируем значения для правильных ответов
         syncCorrectAnswers();
@@ -557,7 +834,7 @@
     function removeOption(button) {
         const optionItem = button.closest('.option-item');
         optionItem.remove();
-        updateRemoveButtons('options-list');
+        updateRemoveTestButtons('options-list');
 
         // Синхронизируем значения для правильных ответов
         syncCorrectAnswers();
@@ -578,43 +855,114 @@
         });
     }
 
-    // Функции для работы с вопросами на сопоставление
-    function addPair() {
-        const pairsList = document.getElementById('pairs-list');
-        const newPair = document.createElement('div');
-        newPair.className = 'pair-item flex mb-2';
-        newPair.innerHTML = `
-            <input
-                type="text"
-                name="left_items[]"
-                placeholder="Левый элемент"
-                required
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
-            >
-            <input
-                type="text"
-                name="right_items[]"
-                placeholder="Правый элемент"
-                required
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-            <button
-                type="button"
-                onclick="removePair(this)"
-                class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
-            >
-                ✕
-            </button>
-        `;
+    // Общие функции
+    function updateRemoveTestButtons(listId) {
+        const items = document.querySelectorAll(`#${listId} > div`);
+        const removeButtons = document.querySelectorAll(`#${listId} .remove-button`);
 
-        pairsList.appendChild(newPair);
-        updateRemoveButtons('pairs-list');
+        // Если элементов меньше 3, отключаем кнопки удаления
+        if (items.length <= 2) {
+            removeButtons.forEach(button => {
+                button.disabled = true;
+            });
+        } else {
+            removeButtons.forEach(button => {
+                button.disabled = false;
+            });
+        }
     }
 
-    function removePair(button) {
-        const pairItem = button.closest('.pair-item');
-        pairItem.remove();
-        updateRemoveButtons('pairs-list');
+    function submitQuestionForm(type) {
+        if (type === 'test') {
+            const form = document.getElementById('add-test-question-form');
+            if (!form) return;
+
+            const formData = new FormData(form);
+
+            // Дополнительная проверка для тестового вопроса
+            const correctAnswers = formData.getAll('correct_answers[]');
+            if (correctAnswers.length === 0) {
+                document.getElementById('error-message').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('error-message').classList.add('hidden');
+            }
+
+            // Отображаем индикатор загрузки
+            const submitBtn = event.target;
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Добавление...';
+            submitBtn.disabled = true;
+
+            axios.post('{{ url_for("add_question", block_id=block.id) }}', formData)
+                .then(function(response) {
+                    if (response.data.success) {
+                        showMessage('Вопрос успешно добавлен!');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showMessage(response.data.message || 'Ошибка при добавлении вопроса', 'error');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(function(error) {
+                    showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+
+        } else if (type === 'matching') {
+            const form = document.getElementById('add-matching-question-form');
+            if (!form) return;
+
+            const formData = new FormData(form);
+
+            // Проверяем, что все левые элементы имеют соответствия
+            const leftItems = document.querySelectorAll('#left-items-list input[name="left_items[]"]');
+            const matchSelects = document.querySelectorAll('.match-select');
+
+            let hasErrors = false;
+            leftItems.forEach((input, index) => {
+                if (input.value.trim() && matchSelects[index] && !matchSelects[index].value) {
+                    hasErrors = true;
+                    matchSelects[index].classList.add('border-red-500');
+                } else if (matchSelects[index]) {
+                    matchSelects[index].classList.remove('border-red-500');
+                }
+            });
+
+            if (hasErrors) {
+                showMessage('Пожалуйста, выберите соответствие для всех элементов левой колонки', 'error');
+                return;
+            }
+
+            // Отображаем индикатор загрузки
+            const submitBtn = event.target;
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Добавление...';
+            submitBtn.disabled = true;
+
+            axios.post('{{ url_for("add_question", block_id=block.id) }}', formData)
+                .then(function(response) {
+                    if (response.data.success) {
+                        showMessage('Вопрос успешно добавлен!');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showMessage(response.data.message || 'Ошибка при добавлении вопроса', 'error');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(function(error) {
+                    showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+        }
     }
 
     // Функции для пакетной загрузки
@@ -657,7 +1005,7 @@
         axios.post('{{ url_for("upload_questions", block_id=block.id) }}', formData)
             .then(function(response) {
                 if (response.data.success) {
-                    const addedCount = response.data.added_questions || 0;
+                    const addedCount = response.data.questions_count || 0;
                     showMessage(`Успешно загружено ${addedCount} вопросов!`);
                     setTimeout(() => {
                         window.location.reload();
@@ -679,102 +1027,6 @@
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             });
-    }
-
-    // Общие функции
-    function updateRemoveButtons(listId) {
-        const items = document.querySelectorAll(`#${listId} > div`);
-        const removeButtons = document.querySelectorAll(`#${listId} .remove-button`);
-
-        // Если элементов меньше 3, отключаем кнопки удаления
-        if (items.length <= 2) {
-            removeButtons.forEach(button => {
-                button.disabled = true;
-            });
-        } else {
-            removeButtons.forEach(button => {
-                button.disabled = false;
-            });
-        }
-    }
-
-    function submitQuestionForm(type) {
-        const formId = type === 'test' ? 'add-test-question-form' : 'add-matching-question-form';
-        const form = document.getElementById(formId);
-
-        if (!form) return;
-
-        const formData = new FormData(form);
-
-        // Дополнительная проверка для тестового вопроса
-        if (type === 'test') {
-            const correctAnswers = formData.getAll('correct_answers[]');
-            if (correctAnswers.length === 0) {
-                document.getElementById('error-message').classList.remove('hidden');
-                return;
-            } else {
-                document.getElementById('error-message').classList.add('hidden');
-            }
-        }
-
-        // Отображаем индикатор загрузки
-        const submitBtn = event.target;
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Добавление...';
-        submitBtn.disabled = true;
-
-        axios.post('{{ url_for("add_question", block_id=block.id) }}', formData)
-            .then(function(response) {
-                if (response.data.success) {
-                    showMessage('Вопрос успешно добавлен!');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    showMessage(response.data.message || 'Ошибка при добавлении вопроса', 'error');
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                }
-            })
-            .catch(function(error) {
-                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-            });
-    }
-
-    // Вспомогательная функция для отображения сообщений
-    function showMessage(message, type = 'success') {
-        // Проверяем, существует ли контейнер для уведомлений
-        let notificationContainer = document.getElementById('notification-container');
-
-        if (!notificationContainer) {
-            // Создаем контейнер если его нет
-            notificationContainer = document.createElement('div');
-            notificationContainer.id = 'notification-container';
-            notificationContainer.className = 'fixed top-4 right-4 z-50 max-w-md';
-            document.body.appendChild(notificationContainer);
-        }
-
-        // Создаем уведомление
-        const notification = document.createElement('div');
-        notification.className = `rounded-lg shadow-md p-4 mb-3 ${type === 'success' ? 'bg-green-50 border-l-4 border-green-500 text-green-700' : 'bg-red-50 border-l-4 border-red-500 text-red-700'}`;
-        notification.innerHTML = `
-            <div class="flex justify-between">
-                <p>${message}</p>
-                <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">&times;</button>
-            </div>
-        `;
-
-        // Добавляем уведомление в контейнер
-        notificationContainer.appendChild(notification);
-
-        // Автоматически удаляем через 5 секунд
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 5000);
     }
 
     // Функции для редактирования вопросов
@@ -824,7 +1076,7 @@
         }
 
         // Обновляем кнопки удаления
-        updateRemoveButtons('edit-options-list');
+        updateRemoveTestButtons('edit-options-list');
 
         // Показываем модальное окно
         const modal = document.getElementById('edit-test-question-modal');
@@ -839,22 +1091,59 @@
         document.getElementById('edit-matching-question-id').value = question.id;
         document.getElementById('edit_matching_text').value = question.text;
 
-        // Очищаем существующие пары
-        const pairsList = document.getElementById('edit-pairs-list');
-        pairsList.innerHTML = '';
+        // Очищаем существующие элементы
+        const leftItemsList = document.getElementById('edit-left-items-list');
+        const rightItemsList = document.getElementById('edit-right-items-list');
+        leftItemsList.innerHTML = '';
+        rightItemsList.innerHTML = '';
 
-        // Добавляем пары из вопроса
+        // Сброс индексов для редактирования
+        editLeftItemIndex = 0;
+        editRightItemIndex = 0;
+
         try {
-            const matches = question.matches_list || JSON.parse(question.matches);
-            matches.forEach(match => {
-                addEditPairItem(match.left, match.right);
-            });
+            // Проверяем новый или старый формат
+            if (question.matches_data && typeof question.matches_data === 'object' && question.matches_data.left_items) {
+                // Новый формат
+                const matchesData = question.matches_data;
+
+                // Добавляем правые элементы сначала
+                matchesData.right_items.forEach(rightItem => {
+                    addEditRightItemWithValue(rightItem);
+                });
+
+                // Добавляем левые элементы с соответствиями
+                matchesData.left_items.forEach(leftItem => {
+                    const matchValue = matchesData.correct_matches[leftItem] || '';
+                    addEditLeftItemWithValue(leftItem, matchValue);
+                });
+            } else {
+                // Старый формат или JSON строка
+                let matches;
+                if (question.matches_list) {
+                    matches = question.matches_list;
+                } else {
+                    matches = JSON.parse(question.matches);
+                }
+
+                // Извлекаем уникальные правые элементы
+                const rightItems = [...new Set(matches.map(match => match.right))];
+                rightItems.forEach(rightItem => {
+                    addEditRightItemWithValue(rightItem);
+                });
+
+                // Добавляем левые элементы с соответствиями
+                matches.forEach(match => {
+                    addEditLeftItemWithValue(match.left, match.right);
+                });
+            }
         } catch (error) {
             console.error('Ошибка при парсинге данных вопроса:', error);
         }
 
-        // Обновляем кнопки удаления
-        updateRemoveButtons('edit-pairs-list');
+        // Обновляем селекты и кнопки
+        updateEditMatchSelects();
+        updateEditRemoveButtons();
 
         // Показываем модальное окно
         const modal = document.getElementById('edit-matching-question-modal');
@@ -907,7 +1196,7 @@
         `;
 
         optionsList.appendChild(newOption);
-        updateRemoveButtons('edit-options-list');
+        updateRemoveTestButtons('edit-options-list');
 
         // Синхронизируем значения
         const inputs = newOption.querySelectorAll('input[name="options[]"]');
@@ -927,51 +1216,146 @@
     function removeEditOption(button) {
         const optionItem = button.closest('.option-item');
         optionItem.remove();
-        updateRemoveButtons('edit-options-list');
+        updateRemoveTestButtons('edit-options-list');
     }
 
-    function addEditPairItem(left = '', right = '') {
-        const pairsList = document.getElementById('edit-pairs-list');
-        const newPair = document.createElement('div');
-        newPair.className = 'pair-item flex mb-2';
-        newPair.innerHTML = `
+    function addEditLeftItemWithValue(leftValue = '', matchValue = '') {
+        const leftItemsList = document.getElementById('edit-left-items-list');
+        const newLeftItem = document.createElement('div');
+        newLeftItem.className = 'left-item-input flex mb-3';
+        newLeftItem.innerHTML = `
             <input
                 type="text"
                 name="left_items[]"
-                placeholder="Левый элемент"
-                value="${left.replace(/"/g, '&quot;')}"
+                placeholder="Элемент для сопоставления"
+                value="${leftValue.replace(/"/g, '&quot;')}"
                 required
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
             >
-            <input
-                type="text"
-                name="right_items[]"
-                placeholder="Правый элемент"
-                value="${right.replace(/"/g, '&quot;')}"
-                required
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-            >
+            <select name="match_${editLeftItemIndex}" required class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2 edit-match-select min-w-[120px]">
+                <option value="">Выберите соответствие</option>
+            </select>
             <button
                 type="button"
-                onclick="removeEditPair(this)"
-                class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-button"
+                onclick="removeEditLeftItem(this)"
+                class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-edit-left-button"
             >
                 ✕
             </button>
         `;
 
-        pairsList.appendChild(newPair);
-        updateRemoveButtons('edit-pairs-list');
+        leftItemsList.appendChild(newLeftItem);
+
+        // Устанавливаем выбранное значение после добавления в DOM
+        const select = newLeftItem.querySelector('select');
+        select.dataset.selectedValue = matchValue;
+
+        editLeftItemIndex++;
+        updateEditMatchSelects();
+        updateEditRemoveButtons();
     }
 
-    function addEditPair() {
-        addEditPairItem();
+    function addEditLeftItem() {
+        addEditLeftItemWithValue();
     }
 
-    function removeEditPair(button) {
-        const pairItem = button.closest('.pair-item');
-        pairItem.remove();
-        updateRemoveButtons('edit-pairs-list');
+    function removeEditLeftItem(button) {
+        const leftItem = button.closest('.left-item-input');
+        leftItem.remove();
+        updateEditMatchSelects();
+        updateEditRemoveButtons();
+    }
+
+    function addEditRightItemWithValue(rightValue = '') {
+        const rightItemsList = document.getElementById('edit-right-items-list');
+        const newRightItem = document.createElement('div');
+        newRightItem.className = 'right-item-input flex mb-3';
+        newRightItem.innerHTML = `
+            <input
+                type="text"
+                name="right_items[]"
+                placeholder="Вариант ответа"
+                value="${rightValue.replace(/"/g, '&quot;')}"
+                required
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary mr-2"
+            >
+            <button
+                type="button"
+                onclick="removeEditRightItem(this)"
+                class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 remove-edit-right-button"
+            >
+                ✕
+            </button>
+        `;
+
+        rightItemsList.appendChild(newRightItem);
+        editRightItemIndex++;
+        updateEditMatchSelects();
+        updateEditRemoveButtons();
+    }
+
+    function addEditRightItem() {
+        addEditRightItemWithValue();
+    }
+
+    function removeEditRightItem(button) {
+        const rightItem = button.closest('.right-item-input');
+        rightItem.remove();
+        updateEditMatchSelects();
+        updateEditRemoveButtons();
+    }
+
+    function updateEditMatchSelects() {
+        const rightInputs = document.querySelectorAll('#edit-right-items-list input[name="right_items[]"]');
+        const matchSelects = document.querySelectorAll('.edit-match-select');
+
+        matchSelects.forEach(select => {
+            const selectedValue = select.dataset.selectedValue || select.value;
+            select.innerHTML = '<option value="">Выберите соответствие</option>';
+
+            rightInputs.forEach((input, index) => {
+                if (input.value.trim()) {
+                    const option = document.createElement('option');
+                    option.value = input.value.trim();
+                    option.textContent = input.value.trim();
+                    if (option.value === selectedValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+
+            // Очищаем временное значение
+            delete select.dataset.selectedValue;
+        });
+
+        // Добавляем обработчики изменений для правых элементов
+        rightInputs.forEach(input => {
+            input.removeEventListener('input', updateEditMatchSelects);
+            input.addEventListener('input', updateEditMatchSelects);
+        });
+    }
+
+    function updateEditRemoveButtons() {
+        const leftItems = document.querySelectorAll('#edit-left-items-list .left-item-input');
+        const rightItems = document.querySelectorAll('#edit-right-items-list .right-item-input');
+
+        const leftRemoveButtons = document.querySelectorAll('.remove-edit-left-button');
+        const rightRemoveButtons = document.querySelectorAll('.remove-edit-right-button');
+
+        // Для левых элементов - минимум 1
+        if (leftItems.length <= 1) {
+            leftRemoveButtons.forEach(button => button.disabled = true);
+        } else {
+            leftRemoveButtons.forEach(button => button.disabled = false);
+        }
+
+        // Для правых элементов - минимум 1
+        if (rightItems.length <= 1) {
+            rightRemoveButtons.forEach(button => button.disabled = true);
+        } else {
+            rightRemoveButtons.forEach(button => button.disabled = false);
+        }
     }
 
     function updateQuestionForm(type) {
@@ -990,6 +1374,25 @@
                 return;
             } else {
                 document.getElementById('edit-error-message').classList.add('hidden');
+            }
+        } else if (type === 'matching') {
+            // Проверка для вопросов на сопоставление
+            const leftItems = document.querySelectorAll('#edit-left-items-list input[name="left_items[]"]');
+            const matchSelects = document.querySelectorAll('.edit-match-select');
+
+            let hasErrors = false;
+            leftItems.forEach((input, index) => {
+                if (input.value.trim() && matchSelects[index] && !matchSelects[index].value) {
+                    hasErrors = true;
+                    matchSelects[index].classList.add('border-red-500');
+                } else if (matchSelects[index]) {
+                    matchSelects[index].classList.remove('border-red-500');
+                }
+            });
+
+            if (hasErrors) {
+                showMessage('Пожалуйста, выберите соответствие для всех элементов левой колонки', 'error');
+                return;
             }
         }
 
@@ -1070,60 +1473,86 @@
             submitBtn.disabled = false;
         });
     }
+
+    // Вспомогательная функция для отображения сообщений
+    function showMessage(message, type = 'success') {
+        let notificationContainer = document.getElementById('notification-container');
+
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.className = 'fixed top-4 right-4 z-50 max-w-md';
+            document.body.appendChild(notificationContainer);
+        }
+
+        const notification = document.createElement('div');
+        notification.className = `rounded-lg shadow-md p-4 mb-3 ${type === 'success' ? 'bg-green-50 border-l-4 border-green-500 text-green-700' : 'bg-red-50 border-l-4 border-red-500 text-red-700'}`;
+        notification.innerHTML = `
+            <div class="flex justify-between">
+                <p>${message}</p>
+                <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            </div>
+        `;
+
+        notificationContainer.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Синхронизируем значения для правильных ответов при загрузке
         syncCorrectAnswers();
 
         // Настраиваем кнопки удаления при загрузке
-        updateRemoveButtons('options-list');
-        updateRemoveButtons('pairs-list');
+        updateRemoveTestButtons('options-list');
+        updateRemoveButtons();
 
         // Закрытие модальных окон по клику вне
         document.addEventListener('click', function(event) {
-            const testModal = document.getElementById('test-question-modal');
-            const matchingModal = document.getElementById('matching-question-modal');
-            const batchUploadModal = document.getElementById('batch-upload-modal');
+            const modals = [
+                'test-question-modal',
+                'matching-question-modal',
+                'batch-upload-modal',
+                'delete-question-modal',
+                'edit-test-question-modal',
+                'edit-matching-question-modal'
+            ];
 
-            if (testModal && !testModal.classList.contains('hidden')) {
-                const modalContent = testModal.querySelector('.bg-white');
-                if (event.target === testModal && !modalContent.contains(event.target)) {
-                    closeQuestionModal('test');
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && !modal.classList.contains('hidden')) {
+                    const modalContent = modal.querySelector('.bg-white');
+                    if (event.target === modal && !modalContent.contains(event.target)) {
+                        modal.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    }
                 }
-            }
-
-            if (matchingModal && !matchingModal.classList.contains('hidden')) {
-                const modalContent = matchingModal.querySelector('.bg-white');
-                if (event.target === matchingModal && !modalContent.contains(event.target)) {
-                    closeQuestionModal('matching');
-                }
-            }
-
-            if (batchUploadModal && !batchUploadModal.classList.contains('hidden')) {
-                const modalContent = batchUploadModal.querySelector('.bg-white');
-                if (event.target === batchUploadModal && !modalContent.contains(event.target)) {
-                    closeBatchUploadModal();
-                }
-            }
+            });
         });
 
         // Закрытие модальных окон по Escape
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                const testModal = document.getElementById('test-question-modal');
-                const matchingModal = document.getElementById('matching-question-modal');
-                const batchUploadModal = document.getElementById('batch-upload-modal');
+                const modals = [
+                    'test-question-modal',
+                    'matching-question-modal',
+                    'batch-upload-modal',
+                    'delete-question-modal',
+                    'edit-test-question-modal',
+                    'edit-matching-question-modal'
+                ];
 
-                if (testModal && !testModal.classList.contains('hidden')) {
-                    closeQuestionModal('test');
-                }
-
-                if (matchingModal && !matchingModal.classList.contains('hidden')) {
-                    closeQuestionModal('matching');
-                }
-
-                if (batchUploadModal && !batchUploadModal.classList.contains('hidden')) {
-                    closeBatchUploadModal();
-                }
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && !modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                });
             }
         });
     });
