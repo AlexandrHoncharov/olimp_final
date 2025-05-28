@@ -388,13 +388,105 @@ def generate_participation_certificate(user_name, olympiad_title, date_str, spec
     return img
 
 
-def generate_winner_certificate(user_name, olympiad_title, date_str, place=1, score=None, speciality=None):
-    """Генерирует сертификат победителя"""
-    img = create_certificate_background()
+def create_enhanced_certificate_background(width=3508, height=2480):
+    """Создает улучшенный фон сертификата с градиентом и декоративными элементами"""
+    # Создаем изображение с белым фоном
+    img = Image.new('RGB', (width, height), 'white')
+    draw = ImageDraw.Draw(img)
+
+    # Основная рамка сертификата
+    border_width = 50
+    border_color = '#820000'
+
+    # Внешняя рамка
+    draw.rectangle([0, 0, width - 1, height - 1], outline=border_color, width=border_width)
+
+    # Двойная внутренняя рамка
+    inner_margin = 100
+    draw.rectangle([inner_margin, inner_margin, width - inner_margin, height - inner_margin],
+                   outline='#B8860B', width=12)
+
+    # Еще одна внутренняя рамка
+    inner_margin2 = 130
+    draw.rectangle([inner_margin2, inner_margin2, width - inner_margin2, height - inner_margin2],
+                   outline='#820000', width=4)
+
+    # Декоративные углы с градиентом
+    corner_size = 200
+    corner_color = '#DAA520'  # Темно-золотистый
+
+    # Верхние углы
+    draw.polygon([(inner_margin, inner_margin),
+                  (inner_margin + corner_size, inner_margin),
+                  (inner_margin, inner_margin + corner_size)],
+                 fill=corner_color)
+    draw.polygon([(width - inner_margin, inner_margin),
+                  (width - inner_margin - corner_size, inner_margin),
+                  (width - inner_margin, inner_margin + corner_size)],
+                 fill=corner_color)
+
+    # Нижние углы
+    draw.polygon([(inner_margin, height - inner_margin),
+                  (inner_margin + corner_size, height - inner_margin),
+                  (inner_margin, height - inner_margin - corner_size)],
+                 fill=corner_color)
+    draw.polygon([(width - inner_margin, height - inner_margin),
+                  (width - inner_margin - corner_size, height - inner_margin),
+                  (width - inner_margin, height - inner_margin - corner_size)],
+                 fill=corner_color)
+
+    # Дополнительные декоративные элементы по краям
+    # Верхняя и нижняя декоративные полосы
+    decoration_height = 20
+    draw.rectangle(
+        [inner_margin + 100, inner_margin + 50, width - inner_margin - 100, inner_margin + 50 + decoration_height],
+        fill='#DAA520')
+    draw.rectangle([inner_margin + 100, height - inner_margin - 50 - decoration_height, width - inner_margin - 100,
+                    height - inner_margin - 50],
+                   fill='#DAA520')
+
+    return img
+
+
+def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, place=1, score=None, speciality=None):
+    """
+    Генерирует чистый сертификат победителя
+
+    Args:
+        user_name: Имя студента
+        olympiad_title: Название олимпиады
+        olympiad_end_date: Дата окончания олимпиады (datetime объект или год как строка)
+        place: Место (1, 2, 3, ...)
+        score: Количество баллов
+        speciality: Направление подготовки
+
+    ИЗМЕНЕНИЕ В ВЫЗОВЕ ФУНКЦИИ:
+    Вместо: date_str=datetime.now().year
+    Используйте: olympiad_end_date=olympiad.end_time
+    """
+    img = create_enhanced_certificate_background()
     draw = ImageDraw.Draw(img)
     width, height = img.size
 
-    # Заголовок университета
+    # Добавляем логотип пчелы слева вверху (если файл существует)
+    try:
+        logo_path = 'static/images/bee_logo.png'
+        if os.path.exists(logo_path):
+            logo_img = Image.open(logo_path)
+            # Изменяем размер логотипа с сохранением пропорций
+            max_logo_size = 250
+            logo_img.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
+            # Размещаем логотип слева вверху
+            logo_x = 200
+            logo_y = 200
+            if logo_img.mode == 'RGBA':
+                img.paste(logo_img, (logo_x, logo_y), logo_img)
+            else:
+                img.paste(logo_img, (logo_x, logo_y))
+    except Exception as e:
+        print(f"Не удалось загрузить логотип: {e}")
+
+    # Заголовок университета с улучшенным форматированием
     university_lines = [
         "ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ",
         "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»",
@@ -402,131 +494,144 @@ def generate_winner_certificate(user_name, olympiad_title, date_str, place=1, sc
         "кафедра «Гражданская безопасность»"
     ]
 
-    font_header = get_font(48, bold=True)
-    font_subheader = get_font(40, bold=True)
-    font_small_header = get_font(36, bold=True)
+    font_header = get_font(52, bold=True)
+    font_subheader = get_font(44, bold=True)
+    font_small_header = get_font(40, bold=True)
 
-    y = 180
+    y = 220
     for i, line in enumerate(university_lines):
         if i < 2:
             current_font = font_header
+            color = '#2F4F4F'  # Темно-серый вместо черного
         elif i == 2:
             current_font = font_subheader
+            color = '#8B0000'  # Темно-красный
         else:
             current_font = font_small_header
+            color = '#8B0000'  # Темно-красный
 
         bbox = draw.textbbox((0, 0), line, font=current_font)
         text_width = bbox[2] - bbox[0]
-        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill='#000000')
-        y += 60
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
+        y += 65
+
+    # Декоративная линия под заголовком
+    line_y = y + 30
+    draw.rectangle([width // 2 - 400, line_y, width // 2 + 400, line_y + 8], fill='#DAA520')
 
     # Заголовок сертификата
-    y += 80
-    if place == 1:
-        certificate_title = "ДИПЛОМ ПОБЕДИТЕЛЯ"
-        title_color = '#FFD700'  # Золотой
-    elif place == 2:
-        certificate_title = "ДИПЛОМ ПРИЗЁРА"
-        title_color = '#C0C0C0'  # Серебро
-    elif place == 3:
-        certificate_title = "ДИПЛОМ ПРИЗЁРА"
-        title_color = '#CD7F32'  # Бронза
-    else:
-        certificate_title = "ДИПЛОМ ПРИЗЁРА"
-        title_color = '#820000'
+    y += 120
+    certificate_title = "ДИПЛОМ ПОБЕДИТЕЛЯ"
+    title_color = '#8B0000'  # Темно-красный вместо желтого
 
-    font_title = get_font(80, bold=True)
+    font_title = get_font(90, bold=True)
     bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
     text_width = bbox[2] - bbox[0]
+
+    # Тень для заголовка
+    shadow_offset = 4
+    draw.text((width // 2 - text_width // 2 + shadow_offset, y + shadow_offset),
+              certificate_title, font=font_title, fill='#CCCCCC')
     draw.text((width // 2 - text_width // 2, y), certificate_title, font=font_title, fill=title_color)
 
-    # Место
-    y += 120
-    if place == 1:
-        place_text = "I МЕСТО"
-    elif place == 2:
-        place_text = "II МЕСТО"
-    elif place == 3:
-        place_text = "III МЕСТО"
-    else:
-        place_text = f"{place} МЕСТО"
-
-    font_place = get_font(60, bold=True)
-    bbox = draw.textbbox((0, 0), place_text, font=font_place)
-    text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), place_text, font=font_place, fill=title_color)
-
     # Основной текст
-    y += 150
-    font_main = get_font(48)
-    font_name = get_font(56, bold=True)
+    y += 220
+    font_main = get_font(52)
+    font_name = get_font(60, bold=True)
+    font_emphasis = get_font(56, bold=True)
 
     # "Награждается"
     award_text = "Награждается"
     bbox = draw.textbbox((0, 0), award_text, font=font_main)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), award_text, font=font_main, fill='#000000')
+    draw.text((width // 2 - text_width // 2, y), award_text, font=font_main, fill='#2F4F4F')
 
     # Имя участника
-    y += 100
+    y += 120
     bbox = draw.textbbox((0, 0), user_name, font=font_name)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#820000')
 
-    # Подчеркивание имени
-    line_start = width // 2 - text_width // 2 - 50
-    line_end = width // 2 + text_width // 2 + 50
-    draw.line([line_start, y + 70, line_end, y + 70], fill='#820000', width=4)
+    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#8B0000')
 
-    # Специальность (если указана)
+    # Определяем курс и статус студента
+    y += 120
+    student_text = "студент 1 курса"
+    bbox = draw.textbbox((0, 0), student_text, font=font_main)
+    text_width = bbox[2] - bbox[0]
+    draw.text((width // 2 - text_width // 2, y), student_text, font=font_main, fill='#2F4F4F')
+
+    # Специальность - показываем всегда если указана
     if speciality:
-        y += 100
+        y += 90
         speciality_text = f"направление подготовки: {speciality}"
-        speciality_lines = textwrap.wrap(speciality_text, width=60)
+        speciality_lines = textwrap.wrap(speciality_text, width=55)
         for line in speciality_lines:
             bbox = draw.textbbox((0, 0), line, font=font_main)
             text_width = bbox[2] - bbox[0]
-            draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#000000')
-            y += 60
+            draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#2F4F4F')
+            y += 65
 
-    # Текст о победе в олимпиаде
-    y += 80
-    victory_lines = [
-        f"занявшему {place_text} в олимпиаде",
-        f'"{olympiad_title}"'
-    ]
-
-    # Добавляем результат, если есть
-    if score is not None:
-        victory_lines.append(f"Результат: {score:.1f} баллов")
-
-    for line in victory_lines:
-        if line.startswith('"') or line.startswith('Результат:'):
-            current_font = font_name if line.startswith('"') else font_main
-            color = '#820000'
-        else:
-            current_font = font_main
-            color = '#000000'
-
-        bbox = draw.textbbox((0, 0), line, font=current_font)
-        text_width = bbox[2] - bbox[0]
-        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
-        y += 80
-
-    # Дата
+    # Место с выделением
     y += 100
-    date_text = f"«___» _____________ {date_str} г."
-    bbox = draw.textbbox((0, 0), date_text, font=font_main)
+    if place == 1:
+        place_text = "занявший I МЕСТО в олимпиаде"
+        place_color = '#8B0000'  # Красный для первого места
+    elif place == 2:
+        place_text = "занявший II МЕСТО в олимпиаде"
+        place_color = '#4169E1'  # Синий для второго места
+    elif place == 3:
+        place_text = "занявший III МЕСТО в олимпиаде"
+        place_color = '#CD853F'  # Коричневый для третьего места
+    else:
+        place_text = f"занявший {place} МЕСТО в олимпиаде"
+        place_color = '#2F4F4F'
+
+    bbox = draw.textbbox((0, 0), place_text, font=font_emphasis)
     text_width = bbox[2] - bbox[0]
-    draw.text((200, y), date_text, font=font_main, fill='#000000')
+    draw.text((width // 2 - text_width // 2, y), place_text, font=font_emphasis, fill=place_color)
+
+    # Название олимпиады
+    y += 100
+    olympiad_line = f'«{olympiad_title}»'
+    bbox = draw.textbbox((0, 0), olympiad_line, font=font_name)
+    text_width = bbox[2] - bbox[0]
+
+    draw.text((width // 2 - text_width // 2, y), olympiad_line, font=font_name, fill='#4169E1')
+
+    # Результат, если есть
+    if score is not None:
+        y += 100
+        result_text = f"Результат: {score:.1f} баллов"
+        bbox = draw.textbbox((0, 0), result_text, font=font_emphasis)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), result_text, font=font_emphasis, fill='#8B0000')
+
+    # Дата окончания олимпиады
+    y += 120
+    # Форматируем дату окончания олимпиады
+    if hasattr(olympiad_end_date, 'strftime'):
+        # Если передан объект datetime
+        formatted_date = olympiad_end_date.strftime("«%d» %B %Y г.")
+        # Заменяем английские названия месяцев на русские
+        months = {
+            'January': 'января', 'February': 'февраля', 'March': 'марта',
+            'April': 'апреля', 'May': 'мая', 'June': 'июня',
+            'July': 'июля', 'August': 'августа', 'September': 'сентября',
+            'October': 'октября', 'November': 'ноября', 'December': 'декабря'
+        }
+        for eng, rus in months.items():
+            formatted_date = formatted_date.replace(eng, rus)
+    else:
+        # Если передан год как строка
+        formatted_date = f"«___» _____________ {olympiad_end_date} г."
+
+    bbox = draw.textbbox((0, 0), formatted_date, font=font_main)
+    draw.text((250, y), formatted_date, font=font_main, fill='#2F4F4F')
 
     # Добавляем подписи
     img = add_signatures_to_certificate(img)
 
     return img
-
-# Добавьте эти роуты в app.py
-
 @app.route('/olympiad/<int:olympiad_id>/certificate/participation')
 @login_required
 def download_participation_certificate(olympiad_id):
@@ -623,7 +728,7 @@ def download_winner_certificate(olympiad_id):
         certificate_img = generate_winner_certificate(
             user_name=current_user.full_name,
             olympiad_title=olympiad.title,
-            date_str=datetime.now().year,
+            olympiad_end_date=olympiad.end_time,
             place=user_place,
             score=participation.final_score,
             speciality=speciality
