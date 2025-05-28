@@ -448,48 +448,127 @@ def create_enhanced_certificate_background(width=3508, height=2480):
     return img
 
 
-def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, place=1, score=None, speciality=None):
-    """
-    Генерирует чистый сертификат победителя
+def draw_hexagon(draw, center_x, center_y, radius, color="#DAA520", width=3):
+    """Рисует шестиугольник (соту)"""
+    import math
+    points = []
+    for i in range(6):
+        angle = math.pi * 2 * i / 6
+        x = center_x + radius * math.cos(angle)
+        y = center_y + radius * math.sin(angle)
+        points.append((x, y))
+    draw.polygon(points, outline=color, width=width)
 
-    Args:
-        user_name: Имя студента
-        olympiad_title: Название олимпиады
-        olympiad_end_date: Дата окончания олимпиады (datetime объект или год как строка)
-        place: Место (1, 2, 3, ...)
-        score: Количество баллов
-        speciality: Направление подготовки
 
-    ИЗМЕНЕНИЕ В ВЫЗОВЕ ФУНКЦИИ:
-    Вместо: date_str=datetime.now().year
-    Используйте: olympiad_end_date=olympiad.end_time
-    """
-    img = create_enhanced_certificate_background()
+def add_hexagon_pattern_from_file(img, hexagon_file='static/images/hexagons.png'):
+    """Добавляет узор из сот в верхний правый угол из файла ПОД всеми рамками"""
+    try:
+        if os.path.exists(hexagon_file):
+            hexagon_img = Image.open(hexagon_file)
+
+            # Размер для паттерна сот (уменьшаем чтобы не перекрывать рамки)
+            max_hex_size = 4000  # Уменьшаем размер
+            hexagon_img.thumbnail((max_hex_size, max_hex_size), Image.Resampling.LANCZOS)
+
+            # Позиция в верхнем правом углу (с большими отступами от рамок)
+            width, height = img.size
+            hex_x = width - hexagon_img.width - 150  # Больший отступ от правого края
+            hex_y = 200  # Больший отступ от верхнего края
+
+            # Вставляем изображение с сотами
+            if hexagon_img.mode == 'RGBA':
+                img.paste(hexagon_img, (hex_x, hex_y), hexagon_img)
+            else:
+                img.paste(hexagon_img, (hex_x, hex_y))
+
+            print(f"Добавлены соты из файла: {hexagon_file}")
+        else:
+            print(f"Файл с сотами не найден: {hexagon_file}")
+            # Fallback - рисуем программно если файла нет
+            draw_simple_hexagons_fallback(img)
+    except Exception as e:
+        print(f"Ошибка при загрузке сот: {e}")
+        draw_simple_hexagons_fallback(img)
+
+
+def draw_simple_hexagons_fallback(img):
+    """Резервный вариант - простые соты если файл не найден"""
     draw = ImageDraw.Draw(img)
     width, height = img.size
 
-    # Добавляем логотип пчелы слева вверху (если файл существует)
-    try:
-        logo_path = 'static/images/bee_logo.png'
-        if os.path.exists(logo_path):
-            logo_img = Image.open(logo_path)
-            # Изменяем размер логотипа с сохранением пропорций
-            max_logo_size = 250
-            logo_img.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
-            # Размещаем логотип слева вверху
-            logo_x = 200
-            logo_y = 200
-            if logo_img.mode == 'RGBA':
-                img.paste(logo_img, (logo_x, logo_y), logo_img)
-            else:
-                img.paste(logo_img, (logo_x, logo_y))
-    except Exception as e:
-        print(f"Не удалось загрузить логотип: {e}")
+    # Несколько простых сот в правом верхнем углу
+    hex_positions = [
+        (width - 200, 200, 80),
+        (width - 350, 150, 60),
+        (width - 280, 320, 70),
+        (width - 150, 350, 50),
+    ]
+
+    for x, y, radius in hex_positions:
+        draw_hexagon(draw, x, y, radius, "#B87373", 8)
+
+
+def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, place=1, score=None, speciality=None):
+    """
+    Генерирует улучшенный сертификат победителя с сотами и улучшенным дизайном
+
+    Изменения:
+    - Увеличен логотип (350px вместо 250px)
+    - Дата перенесена в правый нижний угол на уровень подписей
+    - Увеличен шрифт для "занявший/ая" (64pt вместо 56pt)
+    - Добавлен отступ между университетом и факультетом
+    - Изменен текст на "с результатом: X баллов"
+    - Добавлены декоративные соты на левой стороне
+    """
+    img = create_enhanced_certificate_background()
+
+    # ВАЖНО: Добавляем соты СРАЗУ после создания фона, чтобы они были ПОД всеми рамками
+    add_hexagon_pattern_from_file(img, 'static/images/hexagons.png')
+
+    draw = ImageDraw.Draw(img)
+    width, height = img.size
+
+    # Добавляем логотип пчелы слева вверху (УВЕЛИЧЕННЫЙ) - поддержка разных форматов
+    logo_files = [
+        'static/images/bee_logo.png',
+        'static/images/bee_logo.jpg',
+        'static/images/bee_logo.jpeg',
+        'static/images/logo.png',
+        'static/images/logo.jpg'
+    ]
+
+    logo_loaded = False
+    for logo_path in logo_files:
+        try:
+            if os.path.exists(logo_path):
+                logo_img = Image.open(logo_path)
+                # УВЕЛИЧИВАЕМ размер логотипа с 250 до 350
+                max_logo_size = 450
+                logo_img.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
+                # Размещаем логотип слева вверху
+                logo_x = 180
+                logo_y = 180
+                if logo_img.mode == 'RGBA':
+                    img.paste(logo_img, (logo_x, logo_y), logo_img)
+                else:
+                    img.paste(logo_img, (logo_x, logo_y))
+                print(f"Загружен логотип: {logo_path}")
+                logo_loaded = True
+                break
+        except Exception as e:
+            print(f"Не удалось загрузить логотип {logo_path}: {e}")
+            continue
+
+    if not logo_loaded:
+        print("Логотип не найден во всех указанных путях")
 
     # Заголовок университета с улучшенным форматированием
     university_lines = [
         "ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ",
-        "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»",
+        "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»"
+    ]
+
+    faculty_lines = [
         "Технический факультет",
         "кафедра «Гражданская безопасность»"
     ]
@@ -499,11 +578,22 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
     font_small_header = get_font(40, bold=True)
 
     y = 220
+    # Рисуем заголовки университета
     for i, line in enumerate(university_lines):
-        if i < 2:
-            current_font = font_header
-            color = '#2F4F4F'  # Темно-серый вместо черного
-        elif i == 2:
+        current_font = font_header
+        color = '#2F4F4F'  # Темно-серый
+
+        bbox = draw.textbbox((0, 0), line, font=current_font)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
+        y += 65
+
+    # ДОБАВЛЯЕМ ОТСТУП между университетом и факультетом
+    y += 40  # Дополнительный отступ
+
+    # Рисуем заголовки факультета
+    for i, line in enumerate(faculty_lines):
+        if i == 0:
             current_font = font_subheader
             color = '#8B0000'  # Темно-красный
         else:
@@ -522,7 +612,7 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
     # Заголовок сертификата
     y += 120
     certificate_title = "ДИПЛОМ ПОБЕДИТЕЛЯ"
-    title_color = '#8B0000'  # Темно-красный вместо желтого
+    title_color = '#8B0000'  # Темно-красный
 
     font_title = get_font(90, bold=True)
     bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
@@ -550,7 +640,6 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
     y += 120
     bbox = draw.textbbox((0, 0), user_name, font=font_name)
     text_width = bbox[2] - bbox[0]
-
     draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#8B0000')
 
     # Определяем курс и статус студента
@@ -571,13 +660,15 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
             draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#2F4F4F')
             y += 65
 
-    # Место с выделением
+    # Место с выделением (УВЕЛИЧЕННЫЙ РАЗМЕР ШРИФТА)
     y += 100
+    font_place = get_font(64, bold=True)  # Увеличиваем с 56 до 64
+
     if place == 1:
         place_text = "занявший I МЕСТО в олимпиаде"
         place_color = '#8B0000'  # Красный для первого места
     elif place == 2:
-        place_text = "занявший II МЕСТО в олимпиаде"
+        place_text = "занявшая II МЕСТО в олимпиаде"
         place_color = '#4169E1'  # Синий для второго места
     elif place == 3:
         place_text = "занявший III МЕСТО в олимпиаде"
@@ -586,31 +677,30 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
         place_text = f"занявший {place} МЕСТО в олимпиаде"
         place_color = '#2F4F4F'
 
-    bbox = draw.textbbox((0, 0), place_text, font=font_emphasis)
+    bbox = draw.textbbox((0, 0), place_text, font=font_place)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), place_text, font=font_emphasis, fill=place_color)
+    draw.text((width // 2 - text_width // 2, y), place_text, font=font_place, fill=place_color)
 
     # Название олимпиады
-    y += 100
+    y += 120
     olympiad_line = f'«{olympiad_title}»'
     bbox = draw.textbbox((0, 0), olympiad_line, font=font_name)
     text_width = bbox[2] - bbox[0]
-
     draw.text((width // 2 - text_width // 2, y), olympiad_line, font=font_name, fill='#4169E1')
 
-    # Результат, если есть
+    # Результат, если есть (ДОБАВЛЯЕМ ТЕКСТ "с результатом")
     if score is not None:
-        y += 100
-        result_text = f"Результат: {score:.1f} баллов"
+        y += 120
+        result_text = f"с результатом: {score:.1f} баллов"
         bbox = draw.textbbox((0, 0), result_text, font=font_emphasis)
         text_width = bbox[2] - bbox[0]
         draw.text((width // 2 - text_width // 2, y), result_text, font=font_emphasis, fill='#8B0000')
 
-    # Дата окончания олимпиады
-    y += 120
+    # ДАТА В ПРАВЫЙ УГОЛ ВЫШЕ ПОДПИСЕЙ
+    y += 200  # Дополнительный отступ после результата
+
     # Форматируем дату окончания олимпиады
     if hasattr(olympiad_end_date, 'strftime'):
-        # Если передан объект datetime
         formatted_date = olympiad_end_date.strftime("«%d» %B %Y г.")
         # Заменяем английские названия месяцев на русские
         months = {
@@ -622,11 +712,16 @@ def generate_winner_certificate(user_name, olympiad_title, olympiad_end_date, pl
         for eng, rus in months.items():
             formatted_date = formatted_date.replace(eng, rus)
     else:
-        # Если передан год как строка
         formatted_date = f"«___» _____________ {olympiad_end_date} г."
 
-    bbox = draw.textbbox((0, 0), formatted_date, font=font_main)
-    draw.text((250, y), formatted_date, font=font_main, fill='#2F4F4F')
+    # Размещаем дату в правом углу, но выше подписей
+    date_font = get_font(36)
+    bbox = draw.textbbox((0, 0), formatted_date, font=date_font)
+    text_width = bbox[2] - bbox[0]
+    date_x = width - text_width - 200  # Отступ от правого края
+    date_y = y  # На текущем уровне (выше подписей)
+
+    draw.text((date_x, date_y), formatted_date, font=date_font, fill='#2F4F4F')
 
     # Добавляем подписи
     img = add_signatures_to_certificate(img)
