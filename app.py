@@ -282,6 +282,7 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
 
 
 # Объединенная функция для генерации сертификатов и дипломов
+# Объединенная функция для генерации сертификатов и дипломов
 def generate_certificate(user_name, olympiad_title, olympiad_end_date, certificate_type='participation',
                          place=None, score=None, speciality=None):
     """
@@ -300,23 +301,19 @@ def generate_certificate(user_name, olympiad_title, olympiad_end_date, certifica
         PIL.Image: Изображение сертификата/диплома
     """
 
+    # Для ВСЕХ типов документов используем улучшенный фон с сотами
+    img = create_enhanced_certificate_background()
+    add_hexagon_pattern_from_file(img, 'static/images/hexagons.png')
+
+    # Добавляем логотип для ВСЕХ типов документов
+    _add_logo_to_certificate(img)
+
     if certificate_type == 'winner':
-        # Для дипломов используем улучшенный фон с сотами
-        img = create_enhanced_certificate_background()
-        add_hexagon_pattern_from_file(img, 'static/images/hexagons.png')
-
-        # Добавляем логотип для дипломов
-        _add_logo_to_certificate(img)
-
         return _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date,
                                         place, score, speciality)
     else:
-        # Для сертификатов используем простой фон
-        img = create_certificate_background()
-
         return _generate_participation_content(img, user_name, olympiad_title, olympiad_end_date,
                                                speciality)
-
 
 def _add_logo_to_certificate(img):
     """Добавляет логотип на сертификат"""
@@ -442,12 +439,36 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
         draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
         y += 80
 
-    # Дата
-    y += 100
-    date_text = f"«___» _____________ {datetime.now().year} г."
-    bbox = draw.textbbox((0, 0), date_text, font=font_main)
+    # Дата в правый угол - ВСЕГДА ЗАПОЛНЕННАЯ
+    y += 600
+
+    # Определяем дату для вывода
+    if hasattr(olympiad_end_date, 'strftime'):
+        # Если это datetime объект
+        date_to_format = olympiad_end_date
+    else:
+        # Если это что-то другое (год, строка и т.д.), используем текущую дату
+        date_to_format = datetime.now()
+
+    formatted_date = date_to_format.strftime("«%d» %B %Y г.")
+
+    # Заменяем английские названия месяцев на русские
+    months = {
+        'January': 'января', 'February': 'февраля', 'March': 'марта',
+        'April': 'апреля', 'May': 'мая', 'June': 'июня',
+        'July': 'июля', 'August': 'августа', 'September': 'сентября',
+        'October': 'октября', 'November': 'ноября', 'December': 'декабря'
+    }
+    for eng, rus in months.items():
+        formatted_date = formatted_date.replace(eng, rus)
+
+    date_font = get_font(36)
+    bbox = draw.textbbox((0, 0), formatted_date, font=date_font)
     text_width = bbox[2] - bbox[0]
-    draw.text((200, y), date_text, font=font_main, fill='#000000')
+    date_x = width - text_width - 200  # Размещаем в правом углу
+    date_y = y
+
+    draw.text((date_x, date_y), formatted_date, font=date_font, fill='#2F4F4F')
 
     # Добавляем подписи
     img = add_signatures_to_certificate(img)
@@ -683,7 +704,7 @@ def download_certificate(olympiad_id):
         certificate_img = generate_certificate(
             user_name=current_user.full_name,
             olympiad_title=olympiad.title,
-            olympiad_end_date=olympiad.end_time if cert_type == 'winner' else datetime.now().year,
+            olympiad_end_date=olympiad.end_time,  # ДЛЯ ВСЕХ ТИПОВ ПЕРЕДАЕМ ПОЛНУЮ ДАТУ
             certificate_type=cert_type,
             place=place,
             score=score,
