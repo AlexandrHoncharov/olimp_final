@@ -762,15 +762,7 @@ def calculate_time_bonus(actual_time, max_time, base_points):
     # Рассчитываем соотношение времени
     time_ratio = actual_time / max_time
 
-    if time_ratio <= 1.0:
-        # Выполнение в срок или быстрее - бонус
-        # Формула: bonus = base_points * max_bonus_rate * (1 - time_ratio)
-        time_bonus = base_points * max_bonus_rate * (1 - time_ratio)
-    else:
-        # Превышение времени - штраф
-        # Штраф растет до максимума при превышении времени в 2 раза
-        overtime_ratio = min(time_ratio - 1.0, 1.0)  # Ограничиваем максимальным штрафом
-        time_bonus = -base_points * max_penalty_rate * overtime_ratio
+    time_bonus = (1 - time_ratio)
 
     return round(time_bonus, 3)  # Точность до тысячных
 
@@ -3819,4 +3811,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Ошибка при пересчете существующих баллов: {e}")
 
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0а')
