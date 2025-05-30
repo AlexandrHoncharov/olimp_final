@@ -20,7 +20,8 @@
                         'primary-light': '#990002',
                     },
                     maxWidth: {
-                        '8xl': '88rem'
+                        '9xl': '96rem',
+                        '10xl': '120rem'
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-out',
@@ -73,6 +74,33 @@
             min-height: 100vh;
             color: #1f2937;
             overflow-x: hidden;
+        }
+
+        /* Расширенный контейнер для олимпиад */
+        .olympiad-main-container {
+            max-width: 95% !important;
+            width: 95% !important;
+        }
+
+        @media (min-width: 1024px) {
+            .olympiad-main-container {
+                max-width: 90% !important;
+                width: 90% !important;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .olympiad-main-container {
+                max-width: 1400px !important;
+                width: 1400px !important;
+            }
+        }
+
+        @media (min-width: 1536px) {
+            .olympiad-main-container {
+                max-width: 1600px !important;
+                width: 1600px !important;
+            }
         }
 
         /* Анимации */
@@ -137,7 +165,7 @@
         }
 
         .nav-container {
-            max-width: 88rem;
+            max-width: 95%;
             margin: 0 auto;
             padding: 0 1.5rem;
             display: flex;
@@ -146,6 +174,18 @@
             height: 80px;
             position: relative;
             z-index: 1;
+        }
+
+        @media (min-width: 1280px) {
+            .nav-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1536px) {
+            .nav-container {
+                max-width: 1600px;
+            }
         }
 
         .nav-logo {
@@ -407,11 +447,23 @@
         }
 
         .footer-container {
-            max-width: 88rem;
+            max-width: 95%;
             margin: 0 auto;
             padding: 3rem 1.5rem 2rem;
             position: relative;
             z-index: 1;
+        }
+
+        @media (min-width: 1280px) {
+            .footer-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1536px) {
+            .footer-container {
+                max-width: 1600px;
+            }
         }
 
         .footer-content {
@@ -748,6 +800,12 @@
             .modal-footer {
                 padding: 20px;
             }
+
+            .olympiad-main-container {
+                max-width: 98% !important;
+                width: 98% !important;
+                padding: 0 0.5rem !important;
+            }
         }
 
         /* Общие утилиты */
@@ -896,7 +954,7 @@
 
     <!-- Основное содержимое -->
     <main class="flex-1 py-8">
-        <div class="max-w-8xl mx-auto px-6 relative z-10">
+        <div class="olympiad-main-container mx-auto px-4 relative z-10">
             {% block content %}{% endblock %}
         </div>
     </main>
@@ -915,8 +973,6 @@
                         <div class="footer-copyright">© 2025 Все права защищены</div>
                     </div>
                 </div>
-
-
             </div>
         </div>
     </footer>
