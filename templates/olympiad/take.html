@@ -1261,11 +1261,11 @@
                 // Обновляем рейтинг после сохранения ответа
                 setTimeout(updateRanking, 1000);
             } else {
-                showMessage(data.message || 'Ошибка при сохранении', 'error');
+
             }
         })
         .catch(error => {
-            showMessage('Произошла ошибка', 'error');
+
             console.error('Ошибка:', error);
         })
         .finally(() => {
