@@ -645,32 +645,7 @@
     </div>
 
     <!-- Карточка рейтинга -->
-    <div id="ranking-card" class="ranking-card">
-        <h3>📊 Ваш прогресс</h3>
-        <div class="rank-display">
-            <div class="rank-position" id="rank-position-display">—</div>
-            <div class="rank-label">Место в рейтинге</div>
-        </div>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value" id="block-points-display">{{ "%.1f"|format(block.max_points * (user_answers|length / questions|length)) }}</div>
-                <div class="stat-label">Баллы за блок</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="total-points-display">{{ "%.1f"|format(participation.total_points) }}</div>
-                <div class="stat-label">Общий балл</div>
-            </div>
-        </div>
-        <div class="progress-section">
-            <div class="progress-label">
-                <span id="block-name-display">{{ block.title }}</span>
-                <span class="progress-percentage" id="block-percentage-display">{{ "%.0f"|format((user_answers|length / questions|length) * 100) }}%</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="block-progress-fill" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Вопросы -->
     <div class="space-y-6">
