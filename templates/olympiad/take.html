@@ -4,278 +4,270 @@
 
 {% block head %}
 <style>
-    /* Base styles с улучшенным дизайном */
+    /* Упрощенные стили */
     .question-card {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border-left: 4px solid transparent;
-        overflow: hidden;
-        position: relative;
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border-radius: 16px;
-    }
-
-    .question-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(130, 0, 0, 0.02) 0%, rgba(130, 0, 0, 0.08) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-    }
-
-    .question-card:hover::before {
-        opacity: 1;
-    }
-
-    .question-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 25px 50px -12px rgba(130, 0, 0, 0.15),
-                    0 0 0 1px rgba(130, 0, 0, 0.05);
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .question-card.answered {
-        border-left-color: #10b981;
-        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        border-left: 4px solid #10b981;
+        background-color: #f0fdf4;
     }
 
-    .question-card.active {
-        border-left-color: #820000;
-        background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
-    }
-
-    /* Улучшенный таймер */
     .timer-container {
-        background: linear-gradient(145deg, #820000 0%, #a91b2b 50%, #820000 100%);
-        border-radius: 20px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 10px 40px rgba(130, 0, 0, 0.3),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-
-    .timer-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        animation: shimmer 3s infinite;
-    }
-
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
+        background: #dc2626;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 10px;
     }
 
     .timer-display {
-        font-family: 'Courier New', monospace;
-        font-size: 2.5rem;
+        font-size: 1.5rem;
         font-weight: bold;
-        color: white;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        position: relative;
-        z-index: 1;
+        font-family: monospace;
     }
 
     .timer-label {
-        color: rgba(255, 255, 255, 0.9);
         font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        position: relative;
-        z-index: 1;
-    }
-
-    .timer-warning {
-        animation: pulse-red 1s infinite;
-    }
-
-    @keyframes pulse-red {
-        0%, 100% {
-            background: linear-gradient(145deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
-        }
-        50% {
-            background: linear-gradient(145deg, #ef4444 0%, #f87171 50%, #ef4444 100%);
-            transform: scale(1.05);
-        }
-    }
-
-    /* Суперкрасивый прогресс-бар */
-    .progress-container {
-        height: 12px;
-        width: 100%;
-        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
-        border-radius: 20px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 5px;
     }
 
     .progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #820000 0%, #dc2626 50%, #820000 100%);
-        border-radius: 20px;
-        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .progress-bar::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
         width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-        animation: progress-shine 2s infinite;
-    }
-
-    @keyframes progress-shine {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-
-    /* Стили заголовка олимпиады */
-    .olympiad-header {
-        background: linear-gradient(135deg, #820000 0%, #a91b2b 50%, #820000 100%);
-        border-radius: 24px 24px 0 0;
-        position: relative;
+        height: 20px;
+        background-color: #e5e7eb;
+        border-radius: 10px;
         overflow: hidden;
+        margin: 20px 0;
     }
 
-    .olympiad-header::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 300px;
+    .progress-fill {
         height: 100%;
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="120" viewBox="0 0 60 120"><polygon points="30,0 60,20 60,60 30,80 0,60 0,20" fill="white" opacity="0.05" /></svg>');
-        background-repeat: repeat;
-        pointer-events: none;
+        background-color: #dc2626;
+        transition: width 0.3s ease;
     }
 
-    /* Обновленные стили для сопоставления */
+    /* Улучшенные стили для сопоставления */
     .matching-grid {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
         gap: 20px;
-        align-items: start;
         margin-top: 20px;
     }
 
+    .matching-grid.two-column {
+        grid-template-columns: 1fr auto 1fr;
+    }
+
+    .matching-grid.three-column {
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+    }
+
     .matching-column {
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-        border: 2px solid #e5e7eb;
-        border-radius: 16px;
+        background: #f9fafb;
+        border: 2px solid #d1d5db;
+        border-radius: 12px;
         padding: 20px;
-        min-height: 300px;
+        min-height: 250px;
     }
 
     .matching-column.left {
         border-color: #3b82f6;
-        background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .matching-column.middle {
+        border-color: #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
     }
 
     .matching-column.right {
         border-color: #10b981;
-        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
     }
 
     .matching-column h4 {
-        margin: 0 0 16px 0;
+        margin: 0 0 15px 0;
         font-weight: 600;
-        color: #374151;
-        display: flex;
-        align-items: center;
         font-size: 1rem;
+        padding-bottom: 8px;
+        border-bottom: 2px solid;
     }
 
     .matching-column.left h4 {
         color: #1d4ed8;
+        border-color: #3b82f6;
     }
-
+    .matching-column.middle h4 {
+        color: #d97706;
+        border-color: #f59e0b;
+    }
     .matching-column.right h4 {
         color: #059669;
+        border-color: #10b981;
     }
 
     .matching-item {
-        margin-bottom: 12px;
-        padding: 16px 20px;
         background: white;
-        border: 2px solid transparent;
-        border-radius: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        user-select: none;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
         position: relative;
-        overflow: hidden;
-    }
-
-    .matching-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-        transition: left 0.5s ease;
-    }
-
-    .matching-item:hover::before {
-        left: 100%;
     }
 
     .matching-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        border-color: #cbd5e1;
+        border-color: #9ca3af;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
     }
 
     .matching-item.left-item {
-        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+        background: white;
+        border-color: #3b82f6;
         font-weight: 600;
         color: #1e40af;
-        border-left: 4px solid #3b82f6;
+        cursor: default;
+        min-height: 80px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .matching-item.middle-item {
+        border-color: #f59e0b;
+        color: #d97706;
+        cursor: grab;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        font-weight: 500;
     }
 
     .matching-item.right-item {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        color: #374151;
+        border-color: #10b981;
+        color: #059669;
         cursor: grab;
-    }
-
-    .matching-item.right-item:active {
-        cursor: grabbing;
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        font-weight: 500;
     }
 
     .matching-item.dragging {
-        opacity: 0.8;
-        transform: rotate(2deg) scale(1.05);
-        box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2);
-        border-color: #3b82f6;
+        opacity: 0.7;
+        transform: scale(1.05) rotate(2deg);
         z-index: 1000;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
 
-    .matching-item.drop-zone {
+    /* Индикаторы для использованных элементов */
+    .matching-item.used {
+        opacity: 0.5;
         border-style: dashed;
-        border-color: #10b981;
-        background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+        background: #f3f4f6 !important;
+        color: #9ca3af !important;
+        cursor: not-allowed;
     }
 
-    .matching-item.drop-zone.drag-over {
-        border-color: #059669;
-        background: linear-gradient(135deg, #a7f3d0 0%, #d1fae5 100%);
+    .matching-item.used::after {
+        content: "✓";
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        color: #10b981;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .drop-zone-container {
+        margin-top: 12px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .drop-zone-slot {
+        min-height: 48px;
+        border: 2px dashed #9ca3af;
+        border-radius: 8px;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-size: 0.875rem;
+        padding: 12px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .drop-zone-slot.middle-slot {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .drop-zone-slot.right-slot {
+        border-color: #10b981;
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .drop-zone-slot.drag-over {
+        border-style: solid;
+        background: #e5e7eb;
         transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .drop-zone-slot.filled {
+        border-style: solid;
+        background: white;
+        color: #374151;
+        font-weight: 500;
+        padding: 8px 12px;
+    }
+
+    /* Кнопка удаления в слоте */
+    .remove-button {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .drop-zone-slot.filled:hover .remove-button {
+        display: flex;
+    }
+
+    .remove-button:hover {
+        background: #dc2626;
+        transform: scale(1.1);
     }
 
     .matching-connector {
@@ -290,720 +282,565 @@
         height: 32px;
         color: #6b7280;
         background: white;
+        border: 2px solid #d1d5db;
         border-radius: 50%;
         padding: 6px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    /* Улучшенные checkbox и radio */
-    .custom-radio,
-    .custom-checkbox {
-        position: relative;
-        padding: 16px 20px 16px 50px;
+    /* Упрощенные радио и чекбоксы */
+    .answer-option {
+        display: block;
+        padding: 12px 15px;
+        margin-bottom: 8px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
         cursor: pointer;
-        user-select: none;
-        display: flex;
-        align-items: flex-start;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 2px solid #f1f5f9;
-    }
-
-    .custom-radio:hover,
-    .custom-checkbox:hover {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        border-color: #e2e8f0;
-        transform: translateX(4px);
-    }
-
-    .custom-radio input,
-    .custom-checkbox input {
-        position: absolute;
-        opacity: 0;
-        cursor: pointer;
-        height: 0;
-        width: 0;
-    }
-
-    .radio-checkmark,
-    .checkbox-checkmark {
-        position: absolute;
-        top: 18px;
-        left: 16px;
-        height: 24px;
-        width: 24px;
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 3px solid #d1d5db;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .radio-checkmark {
-        border-radius: 50%;
-    }
-
-    .checkbox-checkmark {
-        border-radius: 8px;
-    }
-
-    .custom-radio:hover .radio-checkmark,
-    .custom-checkbox:hover .checkbox-checkmark {
-        border-color: #9ca3af;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .custom-radio input:checked ~ .radio-checkmark,
-    .custom-checkbox input:checked ~ .checkbox-checkmark {
-        background: linear-gradient(135deg, #820000 0%, #a91b2b 100%);
-        border-color: #820000;
-        box-shadow: 0 0 0 3px rgba(130, 0, 0, 0.2),
-                    0 4px 12px rgba(130, 0, 0, 0.3);
-        transform: scale(1.1);
-    }
-
-    .radio-checkmark:after,
-    .checkbox-checkmark:after {
-        content: "";
-        position: absolute;
-        display: none;
         transition: all 0.2s ease;
     }
 
-    .custom-radio input:checked ~ .radio-checkmark:after,
-    .custom-checkbox input:checked ~ .checkbox-checkmark:after {
-        display: block;
-        animation: checkmark-appear 0.3s ease-out;
+    .answer-option:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
     }
 
-    @keyframes checkmark-appear {
-        0% {
-            opacity: 0;
-            transform: scale(0.5);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1);
-        }
+    .answer-option input {
+        margin-right: 10px;
     }
 
-    .custom-radio .radio-checkmark:after {
-        top: 5px;
-        left: 5px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    }
-
-    .custom-checkbox .checkbox-checkmark:after {
-        left: 7px;
-        top: 3px;
-        width: 5px;
-        height: 10px;
-        border: solid white;
-        border-width: 0 3px 3px 0;
-        transform: rotate(45deg);
-    }
-
-    /* Анимированные кнопки */
-    .btn-action {
-        position: relative;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border-radius: 16px;
+    .answer-option input:checked + span {
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        box-shadow: 0 4px 15px rgba(130, 0, 0, 0.3);
+        color: #dc2626;
     }
 
-    .btn-action::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s ease;
+    .answer-option:has(input:checked) {
+        border-color: #dc2626;
+        background: #fef2f2;
     }
 
-    .btn-action:hover::before {
-        left: 100%;
-    }
-
-    .btn-action:hover {
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 8px 25px rgba(130, 0, 0, 0.4);
-    }
-
-    .btn-action:active {
-        transform: translateY(-1px) scale(1.02);
-        transition: all 0.1s ease;
-    }
-
-    /* Улучшенная статистика */
-    .stats-pill {
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-        border: 2px solid #e2e8f0;
-        border-radius: 25px;
-        padding: 8px 20px;
+    /* Кнопки */
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
-        margin-right: 16px;
-        margin-bottom: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
+        gap: 8px;
     }
 
-    .stats-pill:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #cbd5e1;
+    .btn-primary {
+        background: #dc2626;
+        color: white;
     }
 
-    .stats-pill .icon {
-        margin-right: 8px;
-        color: #820000;
+    .btn-primary:hover {
+        background: #b91c1c;
     }
 
-    /* Модальное окно рейтинга */
-    .rank-header {
-        background: linear-gradient(135deg, #820000 0%, #a91b2b 50%, #820000 100%);
-        border-radius: 16px 16px 0 0;
-        position: relative;
-        overflow: hidden;
+    .btn-primary:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
     }
 
-    .rank-container {
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #4b5563;
+    }
+
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+    }
+
+    /* Информационные блоки */
+    .info-block {
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
+
+    .info-block.success {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .info-block.info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+    }
+
+    .info-block.warning {
+        background: #fffbeb;
+        border: 1px solid #fed7aa;
+        color: #92400e;
+    }
+
+    .info-block.error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+    }
+
+    /* Модальные окна */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        background: #dc2626;
+        color: white;
+        padding: 15px 20px;
+        margin: -20px -20px 20px -20px;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Стили для карточки рейтинга */
+    .ranking-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid rgba(220, 38, 38, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .ranking-card h3 {
+        color: #dc2626;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 16px;
         text-align: center;
-        margin-bottom: 32px;
-        position: relative;
     }
 
-    .rank-value {
-        font-size: 4rem;
+    .rank-display {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .rank-position {
+        font-size: 3rem;
         font-weight: 900;
-        background: linear-gradient(135deg, #820000 0%, #dc2626 50%, #820000 100%);
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         line-height: 1;
-        text-shadow: 0 2px 4px rgba(130, 0, 0, 0.2);
-        animation: rank-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes rank-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
     }
 
     .rank-label {
-        margin-top: 12px;
-        font-size: 1.125rem;
-        color: #64748b;
-        font-weight: 500;
-    }
-
-    .rank-progress {
-        margin-top: 24px;
-        height: 12px;
-        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
-        border-radius: 20px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .rank-progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
-        border-radius: 20px;
-        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .rank-progress-bar::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-        animation: rank-shine 2s infinite;
-    }
-
-    @keyframes rank-shine {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-
-    /* Стильные карточки статистики в модальном окне */
-    .stats-box {
-        display: flex;
-        align-items: center;
-        padding: 20px;
-        margin-bottom: 16px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stats-box::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(130, 0, 0, 0.05), transparent);
-        transition: left 0.5s ease;
-    }
-
-    .stats-box:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        border-color: #cbd5e1;
-    }
-
-    .stats-box:hover::before {
-        left: 100%;
-    }
-
-    .stats-icon {
-        width: 48px;
-        height: 48px;
-        margin-right: 16px;
-        padding: 12px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .stats-content {
-        flex: 1;
-    }
-
-    .stats-label {
-        font-size: 14px;
         color: #6b7280;
+        font-size: 0.875rem;
         font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .stats-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937;
         margin-top: 4px;
     }
 
-    /* Анимация появления */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translate3d(0, 40px, 0);
-        }
-        to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-        }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
     }
 
-    @keyframes slideInFromLeft {
-        from {
-            opacity: 0;
-            transform: translate3d(-40px, 0, 0);
-        }
-        to {
-            opacity: 1;
-            transform: translate3d(0, 0, 0);
-        }
+    .stat-item {
+        text-align: center;
+        padding: 12px;
+        background: rgba(220, 38, 38, 0.05);
+        border-radius: 8px;
     }
 
-    .animate-fadeInUp {
-        animation: fadeInUp 0.6s ease-out;
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #dc2626;
+        line-height: 1;
     }
 
-    .animate-slideInFromLeft {
-        animation: slideInFromLeft 0.6s ease-out;
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 4px;
+    }
+
+    .progress-section {
+        margin-top: 16px;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+
+    .progress-percentage {
+        font-weight: 600;
+        color: #dc2626;
     }
 
     /* Адаптивность */
     @media (max-width: 768px) {
-        .timer-display {
-            font-size: 2rem;
-        }
-
-        .question-card {
-            margin-bottom: 20px;
-        }
-
-        .matching-grid {
+        .matching-grid.three-column,
+        .matching-grid.two-column {
             grid-template-columns: 1fr;
-            gap: 16px;
-        }
-
-        .matching-connector {
-            padding: 10px 0;
+            gap: 15px;
         }
 
         .connector-icon {
             transform: rotate(90deg);
         }
 
-        .stats-box {
+        .timer-container {
+            margin-bottom: 15px;
+        }
+
+        .timer-display {
+            font-size: 1.25rem;
+        }
+
+        .matching-column {
+            min-height: 200px;
             padding: 16px;
         }
 
-        .stats-icon {
-            width: 40px;
-            height: 40px;
+        .drop-zone-slot {
+            min-height: 44px;
+            padding: 10px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .rank-position {
+            font-size: 2.5rem;
         }
     }
 
-    /* Специальные эффекты */
-    .question-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #820000 0%, #dc2626 100%);
-        color: white;
-        border-radius: 50%;
-        font-weight: bold;
-        font-size: 1.125rem;
-        margin-right: 16px;
-        box-shadow: 0 4px 12px rgba(130, 0, 0, 0.3);
+    /* Анимации */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
     }
 
-    .pulse-slow {
-        animation: pulse-slow 3s infinite;
+    .pulse-animation {
+        animation: pulse 0.3s ease-in-out;
     }
 
-    @keyframes pulse-slow {
-        0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-        }
-        50% {
-            opacity: 0.8;
-            transform: scale(1.05);
-        }
-    }
-
-    /* Индикатор успешного сопоставления */
-    .match-success {
-        background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%) !important;
-        border-color: #10b981 !important;
-        border-style: solid !important;
-    }
-
-    .match-success::after {
-        content: '✓';
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 20px;
-        height: 20px;
-        background: #10b981;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-    }
+    /* Утилиты */
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mt-4 { margin-top: 1rem; }
+    .flex { display: flex; }
+    .justify-between { justify-content: space-between; }
+    .items-center { align-items: center; }
+    .gap-4 { gap: 1rem; }
+    .hidden { display: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="mb-6">
-    <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="inline-flex items-center text-[#820000] hover:text-[#990002] transition-all duration-300 transform hover:scale-105">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-        </svg>
-        Вернуться к олимпиаде
-    </a>
-</div>
+<div class="container mx-auto max-w-4xl px-4 py-6">
+    <!-- Навигация назад -->
+    <div class="mb-6">
+        <a href="{{ url_for('view_olympiad', olympiad_id=olympiad.id) }}" class="text-blue-600 hover:text-blue-800">
+            ← Вернуться к олимпиаде
+        </a>
+    </div>
 
-<div class="bg-white rounded-3xl shadow-2xl overflow-hidden mb-8 animate-fadeInUp">
-    <div class="olympiad-header text-white p-8">
-        <div class="relative z-10">
-            <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ olympiad.title }}</h1>
-            <h2 class="text-xl md:text-2xl font-medium mb-6">Блок: {{ block.title }}</h2>
+    <!-- Заголовок олимпиады -->
+    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ olympiad.title }}</h1>
+        <h2 class="text-lg text-gray-700 mb-4">Блок: {{ block.title }}</h2>
 
-            {% if block.description %}
-                <p class="mb-6 text-white text-opacity-90 text-lg">{{ block.description }}</p>
-            {% endif %}
+        {% if block.description %}
+            <p class="text-gray-600 mb-4">{{ block.description }}</p>
+        {% endif %}
 
-            <!-- Таймер -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div class="timer-container p-6 text-center">
-                    <div class="timer-label mb-2">Время с начала</div>
-                    <div id="elapsed-timer" class="timer-display">00:00:00</div>
-                </div>
+        <!-- Таймеры -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="timer-container">
+                <div class="timer-label">Время с начала</div>
+                <div id="elapsed-timer" class="timer-display">00:00:00</div>
+            </div>
+            <div class="timer-container">
+                <div class="timer-label">До окончания</div>
+                <div id="remaining-timer" class="timer-display">00:00:00</div>
+            </div>
+        </div>
 
-                <div class="timer-container p-6 text-center">
-                    <div class="timer-label mb-2">До окончания</div>
-                    <div id="remaining-timer" class="timer-display">00:00:00</div>
-                </div>
+        <!-- Прогресс -->
+        <div class="mt-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Прогресс: <span id="answer-count">{{ user_answers|length }}</span> / {{ questions|length }}</span>
+                <span>Начало: {{ participation.start_time.strftime('%H:%M') if participation.start_time else 'Н/Д' }}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
             </div>
         </div>
     </div>
 
-    <div class="p-8">
-        <div class="flex flex-wrap justify-between items-center mb-6">
-            <div class="stats-pill">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                </svg>
-                <span class="text-gray-700 font-medium">
-                    Начало: {{ participation.start_time.strftime('%d.%m.%Y %H:%M') if participation.start_time else 'Н/Д' }}
-                </span>
+    <!-- Карточка рейтинга -->
+    <div id="ranking-card" class="ranking-card">
+        <h3>📊 Ваш прогресс</h3>
+        <div class="rank-display">
+            <div class="rank-position" id="rank-position-display">—</div>
+            <div class="rank-label">Место в рейтинге</div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="block-points-display">{{ "%.1f"|format(block.max_points * (user_answers|length / questions|length)) }}</div>
+                <div class="stat-label">Баллы за блок</div>
             </div>
-
-            <div class="stats-pill">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                </svg>
-                <span class="font-bold text-[#820000]">Прогресс:</span>
-                <span id="answer-count" class="font-bold text-[#820000] ml-1">{{ user_answers|length }}</span> / <span class="font-bold text-gray-700">{{ questions|length }}</span>
+            <div class="stat-item">
+                <div class="stat-value" id="total-points-display">{{ "%.1f"|format(participation.total_points) }}</div>
+                <div class="stat-label">Общий балл</div>
             </div>
         </div>
-
-        <div class="progress-container mb-8">
-            <div class="progress-bar" id="main-progress-bar" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
+        <div class="progress-section">
+            <div class="progress-label">
+                <span id="block-name-display">{{ block.title }}</span>
+                <span class="progress-percentage" id="block-percentage-display">{{ "%.0f"|format((user_answers|length / questions|length) * 100) }}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="block-progress-fill" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="space-y-8 mb-8">
-    {% for question in questions %}
-        <div
-            id="question-{{ question.id }}"
-            class="question-card p-8 {% if question.id in user_answers %}answered{% endif %} animate-slideInFromLeft"
-            data-question-id="{{ question.id }}"
-            data-question-type="{{ question.question_type }}"
-            style="animation-delay: {{ loop.index0 * 0.1 }}s"
-        >
-            <div class="flex items-start justify-between mb-6">
-                <div class="flex items-start">
-                    <div class="question-number">{{ loop.index }}</div>
-                    <h3 class="text-xl md:text-2xl font-bold text-gray-800 leading-tight">{{ question.text }}</h3>
-                </div>
-                <div id="answer-status-{{ question.id }}" class="answer-status {% if question.id in user_answers %}flex{% else %}hidden{% endif %} items-center text-green-600 bg-green-50 px-4 py-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-sm font-medium">Ответ сохранен</span>
-                </div>
-            </div>
+    <!-- Вопросы -->
+    <div class="space-y-6">
+        {% for question in questions %}
+            <div id="question-{{ question.id }}"
+                 class="question-card {% if question.id in user_answers %}answered{% endif %}"
+                 data-question-id="{{ question.id }}"
+                 data-question-type="{{ question.question_type }}">
 
-            <form id="question-form-{{ question.id }}" class="mb-6">
-                {% if question.question_type == 'test' %}
-                    <div class="space-y-4 mb-8">
-                        {% if question.options_list %}
-                            {% set isMultiple = question.correct_answers_list|length > 1 %}
-                            {% for option in question.options_list %}
-                                <label class="custom-{% if isMultiple %}checkbox{% else %}radio{% endif %} block transition-all duration-300">
-                                    <input
-                                        type="{% if isMultiple %}checkbox{% else %}radio{% endif %}"
-                                        name="question-{{ question.id }}"
-                                        value="{{ option }}"
-                                        class="answer-input"
-                                        {% if question.id in user_answers and option in user_answers[question.id] %}checked{% endif %}
-                                    >
-                                    <span class="{% if isMultiple %}checkbox{% else %}radio{% endif %}-checkmark"></span>
-                                    <span class="text-gray-800 font-medium">{{ option }}</span>
-                                </label>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить варианты ответов</p>
-                        {% endif %}
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-start">
+                        <div class="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 mt-1">
+                            {{ loop.index }}
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ question.text }}</h3>
                     </div>
-                {% elif question.question_type == 'matching' %}
-                    <div class="matching-container" id="matching-container-{{ question.id }}">
-                        {% if question.matches_data or question.matches_list %}
-                            <!-- Скрытые данные для JavaScript -->
-                            {% if question.matches_data %}
-                                <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_data|tojson }}">
+                    <div id="answer-status-{{ question.id }}" class="{% if question.id not in user_answers %}hidden{% endif %} text-green-600 bg-green-100 px-3 py-1 rounded text-sm">
+                        ✓ Сохранено
+                    </div>
+                </div>
+
+                <!-- Форма ответа -->
+                <form id="question-form-{{ question.id }}">
+                    {% if question.question_type == 'test' %}
+                        <div class="space-y-3">
+                            {% if question.options_list %}
+                                {% set isMultiple = question.correct_answers_list|length > 1 %}
+                                {% for option in question.options_list %}
+                                    <label class="answer-option">
+                                        <input type="{% if isMultiple %}checkbox{% else %}radio{% endif %}"
+                                               name="question-{{ question.id }}"
+                                               value="{{ option }}"
+                                               class="answer-input"
+                                               {% if question.id in user_answers and option in user_answers[question.id] %}checked{% endif %}>
+                                        <span>{{ option }}</span>
+                                    </label>
+                                {% endfor %}
                             {% else %}
-                                <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+                                <div class="info-block error">
+                                    Ошибка: не удалось загрузить варианты ответов
+                                </div>
                             {% endif %}
+                        </div>
+                    {% elif question.question_type == 'matching' %}
+                        <div class="matching-container" id="matching-container-{{ question.id }}">
+                            {% if question.matches_data or question.matches_list %}
+                                <!-- Скрытые данные для JavaScript -->
+                                {% if question.matches_data %}
+                                    <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_data|tojson }}">
+                                {% else %}
+                                    <input type="hidden" id="matching-data-{{ question.id }}" value="{{ question.matches_list|tojson }}">
+                                {% endif %}
 
-                            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p class="text-blue-800 text-sm font-medium">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                    </svg>
-                                    Перетащите элементы из правой колонки к соответствующим элементам в левой колонке
-                                </p>
-                            </div>
+                                <div class="info-block info mb-4">
+                                    <span id="instruction-text-{{ question.id }}">Загрузка инструкций...</span>
+                                    <br><small style="margin-top: 8px; display: block;">
+                                        💡 <strong>Подсказка:</strong> Для изменения выбора нажмите на красный крестик или перетащите другой элемент
+                                    </small>
+                                </div>
 
-                            <div class="matching-grid" id="matching-grid-{{ question.id }}">
-                                <!-- Левая колонка -->
-                                <div class="matching-column left">
-                                    <h4>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                <div class="matching-grid" id="matching-grid-{{ question.id }}">
+                                    <!-- Левая колонка -->
+                                    <div class="matching-column left">
+                                        <h4>Элементы для сопоставления</h4>
+                                        <div id="left-items-{{ question.id }}"></div>
+                                    </div>
+
+                                    <!-- Первый соединитель -->
+                                    <div class="matching-connector">
+                                        <svg class="connector-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                                         </svg>
-                                        Элементы для сопоставления
-                                    </h4>
-                                    <div id="left-items-{{ question.id }}">
-                                        <!-- Заполняется через JavaScript -->
+                                    </div>
+
+                                    <!-- Средняя колонка (условная) -->
+                                    <div class="matching-column middle" id="middle-column-{{ question.id }}" style="display: none;">
+                                        <h4>Промежуточные элементы</h4>
+                                        <div id="middle-items-{{ question.id }}"></div>
+                                    </div>
+
+                                    <!-- Второй соединитель (условный) -->
+                                    <div class="matching-connector" id="second-connector-{{ question.id }}" style="display: none;">
+                                        <svg class="connector-icon" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+
+                                    <!-- Правая колонка -->
+                                    <div class="matching-column right">
+                                        <h4>Варианты ответов</h4>
+                                        <div id="right-items-{{ question.id }}"></div>
                                     </div>
                                 </div>
-
-                                <!-- Соединительная колонка -->
-                                <div class="matching-connector">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="connector-icon" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
+                            {% else %}
+                                <div class="info-block error">
+                                    Ошибка: не удалось загрузить элементы сопоставления
                                 </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
-                                <!-- Правая колонка -->
-                                <div class="matching-column right">
-                                    <h4>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-                                        </svg>
-                                        Варианты ответов
-                                    </h4>
-                                    <div id="right-items-{{ question.id }}">
-                                        <!-- Заполняется через JavaScript -->
-                                    </div>
-                                </div>
-                            </div>
-                        {% else %}
-                            <p class="text-red-500 bg-red-50 p-4 rounded-lg">Ошибка: не удалось загрузить элементы сопоставления</p>
-                        {% endif %}
+                    <!-- Кнопка сохранения ответа -->
+                    <div class="mt-6 flex justify-between items-center">
+                        <button type="button"
+                                class="btn {% if question.id in user_answers %}btn-success{% else %}btn-primary{% endif %} answer-button"
+                                data-question-id="{{ question.id }}">
+                            {% if question.id in user_answers %}
+                                ✓ Ответ сохранен
+                            {% else %}
+                                Сохранить ответ
+                            {% endif %}
+                        </button>
+                        <div class="text-sm text-gray-600">
+                            Баллы: <strong>{{ "%.1f"|format(question.points) }}</strong>
+                        </div>
                     </div>
-                {% endif %}
+                </form>
+            </div>
+        {% endfor %}
+    </div>
 
-                <!-- Кнопка для отправки ответа -->
-                <button
-                    type="button"
-                    class="btn-action px-8 py-4 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-medium rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-xl flex items-center answer-button {% if question.id in user_answers %}from-green-600 to-green-700 hover:from-green-700 hover:to-green-800{% endif %}"
-                    data-question-id="{{ question.id }}"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    Сохранить ответ
+    <!-- Управление -->
+    <div class="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Управление прохождением</h3>
+                <p class="text-gray-600">
+                    Отвечено: <span id="answers-count" class="font-bold text-red-600">{{ user_answers|length }}</span> из <span class="font-bold">{{ questions|length }}</span>
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    Максимум баллов за блок: <strong>{{ "%.1f"|format(block.max_points) }}</strong>
+                </p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="showEarlyFinishModal()" class="btn btn-warning">
+                    Завершить досрочно
                 </button>
-            </form>
-
-            <div class="flex justify-between items-center">
-                <div class="stats-pill">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 icon" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
-                    </svg>
-                    <span class="font-medium text-gray-700">Баллы: <span class="text-[#820000] font-bold">{{ question.points }}</span></span>
-                </div>
+                <button id="submit-block-button"
+                        class="btn btn-primary"
+                        {% if user_answers|length < questions|length %}disabled{% endif %}>
+                    Завершить блок
+                </button>
             </div>
-        </div>
-    {% endfor %}
-</div>
-
-<div class="bg-gradient-to-r from-white via-gray-50 to-white p-8 rounded-3xl shadow-2xl mb-6 animate-fadeInUp">
-    <div class="flex flex-col lg:flex-row justify-between items-center">
-        <div class="mb-6 lg:mb-0">
-            <div class="flex items-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#820000] mr-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                </svg>
-                <span class="text-xl font-bold text-gray-700">Управление прохождением</span>
-            </div>
-            <div class="text-lg">
-                <span class="font-medium">Отвечено:</span>
-                <span id="answers-count" class="ml-2 text-2xl font-bold text-[#820000]">{{ user_answers|length }}</span>
-                <span class="text-gray-500">из</span>
-                <span class="text-2xl font-bold text-gray-700">{{ questions|length }}</span>
-            </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-4">
-            <!-- Кнопка досрочного завершения олимпиады -->
-            <button
-                id="finish-early-button"
-                class="btn-action px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-2xl flex items-center text-lg"
-                onclick="showEarlyFinishConfirmation()"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414L7 8.586 5.707 7.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-                Завершить досрочно
-            </button>
-
-            <!-- Кнопка завершения блока -->
-            <button
-                id="submit-block-button"
-                class="btn-action px-10 py-5 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl flex items-center text-lg {% if user_answers|length < questions|length %}opacity-50 cursor-not-allowed{% else %}pulse-slow{% endif %}"
-                {% if user_answers|length < questions|length %}disabled{% endif %}
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
-                </svg>
-                Завершить блок
-            </button>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно подтверждения досрочного завершения -->
-<div id="early-finish-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 animate-fadeInUp">
-        <div class="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-6 flex justify-between items-center text-white rounded-t-3xl">
-            <h3 class="text-2xl font-bold flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-                Досрочное завершение
-            </h3>
-            <button onclick="closeEarlyFinishModal()" class="text-white hover:text-gray-200 text-3xl transition-colors duration-200">&times;</button>
+<!-- Модальное окно досрочного завершения -->
+<div id="early-finish-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Досрочное завершение</h3>
+            <button onclick="closeEarlyFinishModal()" class="modal-close">&times;</button>
         </div>
-        <div class="p-8">
-            <div class="text-center mb-6">
-                <div class="text-6xl mb-4">⚠️</div>
-                <h4 class="text-xl font-bold text-gray-800 mb-4">Вы уверены, что хотите завершить олимпиаду досрочно?</h4>
-                <div class="space-y-3 text-left bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <p class="text-yellow-800"><strong>Внимание:</strong></p>
-                    <ul class="text-yellow-700 space-y-2">
-                        <li>• Вы не получите временной бонус за быстрое выполнение</li>
-                        <li>• Будут засчитаны только баллы за выполненные задания</li>
-                        <li>• Вернуться к прохождению будет невозможно</li>
-                        <li>• Незавершенные блоки не будут засчитаны</li>
-                    </ul>
-                </div>
+        <div class="text-center">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h4 class="text-lg font-semibold mb-4">Вы уверены, что хотите завершить олимпиаду досрочно?</h4>
+            <div class="info-block warning text-left mb-6">
+                <strong>Внимание:</strong>
+                <ul class="mt-2 space-y-1">
+                    <li>• Вы не получите временной бонус</li>
+                    <li>• Будут засчитаны только выполненные задания</li>
+                    <li>• Вернуться к прохождению будет невозможно</li>
+                </ul>
             </div>
-
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                    onclick="closeEarlyFinishModal()"
-                    class="px-8 py-3 bg-gray-500 text-white font-bold rounded-2xl hover:bg-gray-600 transition-all duration-300"
-                >
+            <div class="flex gap-4">
+                <button onclick="closeEarlyFinishModal()" class="btn btn-secondary">
                     Продолжить олимпиаду
                 </button>
-                <button
-                    onclick="finishOlympiadEarly()"
-                    class="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300"
-                >
+                <button onclick="finishEarly()" class="btn btn-warning">
                     Завершить досрочно
                 </button>
             </div>
@@ -1011,97 +848,15 @@
     </div>
 </div>
 
-<!-- Модальное окно с рейтингом -->
-<div id="ranking-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full mx-4 animate-fadeInUp">
-        <div class="rank-header px-8 py-6 flex justify-between items-center text-white">
-            <h3 class="text-2xl font-bold flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                Ваш результат
-            </h3>
-            <button onclick="closeRankingModal()" class="text-white hover:text-gray-200 text-3xl transition-colors duration-200">&times;</button>
+<!-- Модальное окно результата блока -->
+<div id="block-result-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Результат блока</h3>
+            <button onclick="closeBlockResultModal()" class="modal-close">&times;</button>
         </div>
-        <div class="p-8">
-            <div class="rank-container">
-                <div class="rank-value" id="rank-position">0</div>
-                <div class="rank-label">Ваше место в рейтинге</div>
-
-                <div class="flex justify-between text-sm text-gray-600 mt-6">
-                    <span class="font-medium">0%</span>
-                    <span id="rank-percentage" class="font-bold text-lg text-[#820000]">0%</span>
-                    <span class="font-medium">100%</span>
-                </div>
-                <div class="rank-progress">
-                    <div class="rank-progress-bar" id="rank-progress-bar" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="stats-box">
-                    <div class="stats-icon text-[#820000]">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                        </svg>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-label">Баллы за блок</div>
-                        <div class="stats-value" id="block-points">0</div>
-                    </div>
-                </div>
-
-                <div class="stats-box">
-                    <div class="stats-icon text-blue-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-label">Максимум баллов</div>
-                        <div class="stats-value" id="block-max-points">0</div>
-                    </div>
-                </div>
-
-                <div class="stats-box">
-                    <div class="stats-icon text-green-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-label">Всего баллов</div>
-                        <div class="stats-value" id="total-points">0</div>
-                    </div>
-                </div>
-
-                <div class="stats-box">
-                    <div class="stats-icon text-indigo-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                        </svg>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-label">Всего участников</div>
-                        <div class="stats-value" id="total-participants">0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-8 text-center">
-                <button
-                    id="continue-button"
-                    class="btn-action px-10 py-4 bg-gradient-to-r from-[#820000] to-[#a91b2b] text-white font-bold rounded-2xl hover:from-[#990002] hover:to-[#c91b2b] transition-all duration-300 shadow-2xl"
-                    onclick="continueAfterRanking()"
-                >
-                    <span class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                        Продолжить олимпиаду
-                    </span>
-                </button>
-            </div>
+        <div id="block-result-content">
+            <!-- Контент будет загружен динамически -->
         </div>
     </div>
 </div>
@@ -1109,66 +864,24 @@
 
 {% block scripts %}
 <script>
-    // Переменные для таймеров
+    // Переменные
     let startTime = new Date('{{ participation.start_time.isoformat() }}');
     let endTime = new Date('{{ olympiad.end_time.isoformat() }}');
-    let elapsedTimer, remainingTimer;
+    let draggedElement = null;
+    const olympiadId = {{ olympiad.id }};
 
-    // Функция обновления таймеров
-    function updateTimers() {
-        const now = new Date();
-
-        // Время, прошедшее с начала
-        const elapsedMs = now - startTime;
-        const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));
-        const elapsedMinutes = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
-        const elapsedSeconds = Math.floor((elapsedMs % (1000 * 60)) / 1000);
-
-        const elapsedDisplay = `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}:${String(elapsedSeconds).padStart(2, '0')}`;
-        document.getElementById('elapsed-timer').textContent = elapsedDisplay;
-
-        // Время до окончания
-        const remainingMs = endTime - now;
-
-        if (remainingMs > 0) {
-            const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
-            const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-            const remainingSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-
-            const remainingDisplay = `${String(remainingHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-            document.getElementById('remaining-timer').textContent = remainingDisplay;
-
-            // Предупреждение если осталось мало времени (меньше 10 минут)
-            const remainingTimerElement = document.getElementById('remaining-timer').parentElement;
-            if (remainingMs < 10 * 60 * 1000) {
-                remainingTimerElement.classList.add('timer-warning');
-            } else {
-                remainingTimerElement.classList.remove('timer-warning');
-            }
-        } else {
-            document.getElementById('remaining-timer').textContent = '00:00:00';
-            document.getElementById('remaining-timer').parentElement.classList.add('timer-warning');
-
-            // Автоматическая отправка, если время истекло
-            if (remainingMs <= 0) {
-                showMessage('Время олимпиады истекло! Автоматическая отправка блока...', 'warning');
-                setTimeout(() => {
-                    submitBlock();
-                }, 3000);
-            }
-        }
-    }
-
+    // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
-        // Запуск таймеров
         updateTimers();
         setInterval(updateTimers, 1000);
 
-        // Инициализация
         initMatchingQuestions();
-        updateAnswerStatusDisplay();
+        updateRanking(); // Обновляем рейтинг при загрузке
 
-        // Обработчики для радио и чекбоксов
+        // Периодическое обновление рейтинга
+        setInterval(updateRanking, 30000);
+
+        // Обработчики событий
         document.querySelectorAll('.answer-input').forEach(input => {
             input.addEventListener('change', function() {
                 const questionId = this.name.split('-')[1];
@@ -1176,7 +889,6 @@
             });
         });
 
-        // Обработчики для кнопок ответа
         document.querySelectorAll('.answer-button').forEach(button => {
             button.addEventListener('click', function() {
                 const questionId = this.dataset.questionId;
@@ -1184,650 +896,633 @@
             });
         });
 
-        // Обработчик для кнопки завершения блока
-        document.getElementById('submit-block-button').addEventListener('click', function() {
-            submitBlock();
-        });
+        document.getElementById('submit-block-button').addEventListener('click', submitBlock);
+    });
 
-        // Функция инициализации заданий на сопоставление
-        function initMatchingQuestions() {
-            document.querySelectorAll('.matching-container').forEach(container => {
-                const questionId = container.closest('[data-question-id]').dataset.questionId;
-                const matchesDataElement = document.getElementById(`matching-data-${questionId}`);
-
-                if (matchesDataElement) {
-                    try {
-                        let matchesData = JSON.parse(matchesDataElement.value);
-                        console.log("Original matching data:", matchesData);
-
-                        // Проверяем формат данных
-                        let leftItems, rightItems, correctMatches;
-
-                        if (matchesData && typeof matchesData === 'object' && matchesData.left_items) {
-                            // Новый формат с неравным сопоставлением
-                            leftItems = matchesData.left_items;
-                            rightItems = matchesData.right_items;
-                            correctMatches = matchesData.correct_matches;
-                            console.log("New format detected:", { leftItems, rightItems, correctMatches });
-                        } else if (Array.isArray(matchesData)) {
-                            // Старый формат - массив пар
-                            leftItems = matchesData.map(match => match.left);
-                            rightItems = matchesData.map(match => match.right);
-                            correctMatches = {};
-                            matchesData.forEach(match => {
-                                correctMatches[match.left] = match.right;
-                            });
-                            console.log("Old format detected and converted:", { leftItems, rightItems, correctMatches });
-                        } else {
-                            throw new Error("Unknown data format");
-                        }
-
-                        // Создаем уникальные массивы (убираем дубликаты)
-                        leftItems = [...new Set(leftItems)];
-                        rightItems = [...new Set(rightItems)];
-
-                        // Заполняем левую колонку
-                        const leftContainer = document.getElementById(`left-items-${questionId}`);
-                        leftContainer.innerHTML = '';
-
-                        leftItems.forEach((leftItem, index) => {
-                            const leftElement = document.createElement('div');
-                            leftElement.className = 'matching-item left-item drop-zone';
-                            leftElement.textContent = leftItem;
-                            leftElement.dataset.leftItem = leftItem;
-                            leftElement.dataset.questionId = questionId;
-                            leftElement.id = `left-item-${index}-${questionId}`;
-
-                            // Добавляем обработчики для drop zone
-                            leftElement.addEventListener('dragover', handleDragOver);
-                            leftElement.addEventListener('dragleave', handleDragLeave);
-                            leftElement.addEventListener('drop', handleDrop);
-
-                            leftContainer.appendChild(leftElement);
-                        });
-
-                        // Перемешиваем правые элементы
-                        const shuffledRightItems = [...rightItems];
-                        shuffleArray(shuffledRightItems);
-
-                        // Заполняем правую колонку перемешанными элементами
-                        const rightContainer = document.getElementById(`right-items-${questionId}`);
-                        rightContainer.innerHTML = '';
-
-                        shuffledRightItems.forEach((rightItem, index) => {
-                            const rightElement = document.createElement('div');
-                            rightElement.className = 'matching-item right-item';
-                            rightElement.textContent = rightItem;
-                            rightElement.dataset.rightItem = rightItem;
-                            rightElement.dataset.questionId = questionId;
-                            rightElement.draggable = true;
-                            rightElement.id = `right-item-${index}-${questionId}`;
-
-                            // Добавляем обработчики для перетаскивания
-                            rightElement.addEventListener('dragstart', handleDragStart);
-                            rightElement.addEventListener('dragend', handleDragEnd);
-
-                            rightContainer.appendChild(rightElement);
-                        });
-
-                        // Восстанавливаем сохраненные ответы если они есть
-                        const savedAnswers = getSavedMatchingAnswers(questionId);
-                        if (savedAnswers && savedAnswers.length > 0) {
-                            restoreMatchingAnswers(questionId, savedAnswers);
-                        }
-
-                    } catch (error) {
-                        console.error('Error initializing matching question:', error);
-                    }
-                }
-            });
-        }
-
-        // Функции для обработки drag and drop
-        function handleDragStart(e) {
-            this.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', this.dataset.rightItem);
-            e.dataTransfer.setData('application/x-question-id', this.dataset.questionId);
-        }
-
-        function handleDragEnd(e) {
-            this.classList.remove('dragging');
-
-            // Отмечаем кнопку ответа как требующую нажатия
-            const questionId = this.dataset.questionId;
-            highlightAnswerButton(questionId);
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            this.classList.add('drag-over');
-        }
-
-        function handleDragLeave(e) {
-            this.classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            this.classList.remove('drag-over');
-
-            const rightItemValue = e.dataTransfer.getData('text/plain');
-            const questionId = e.dataTransfer.getData('application/x-question-id');
-
-            if (!rightItemValue || !questionId) return;
-
-            // Находим перетаскиваемый элемент
-            const draggedElement = document.querySelector(`.right-item[data-right-item="${rightItemValue}"][data-question-id="${questionId}"]`);
-            if (!draggedElement) return;
-
-            // Проверяем, есть ли уже элемент в этой зоне сброса
-            const existingItem = this.querySelector('.right-item');
-            if (existingItem) {
-                // Если элемент уже есть, возвращаем его в правую колонку
-                const rightContainer = document.getElementById(`right-items-${questionId}`);
-                rightContainer.appendChild(existingItem);
-            }
-
-            // Перемещаем новый элемент в зону сброса
-            this.appendChild(draggedElement);
-
-            // Добавляем визуальную индикацию успешного размещения
-            this.classList.add('match-success');
-            draggedElement.classList.add('match-success');
-
-            // Отмечаем кнопку ответа как требующую обновления
-            highlightAnswerButton(questionId);
-        }
-
-        // Функция для отправки ответа
-        function submitAnswer(questionId) {
-            const questionContainer = document.getElementById(`question-${questionId}`);
-            const questionType = questionContainer.dataset.questionType;
-            let answerData;
-
-            if (questionType === 'matching') {
-                // Собираем данные для вопроса на сопоставление
-                answerData = [];
-                const leftItems = questionContainer.querySelectorAll('.left-item');
-
-                leftItems.forEach(leftItem => {
-                    const leftValue = leftItem.dataset.leftItem;
-                    const rightElement = leftItem.querySelector('.right-item');
-
-                    if (rightElement) {
-                        const rightValue = rightElement.dataset.rightItem;
-                        answerData.push({
-                            left: leftValue,
-                            right: rightValue
-                        });
-                    }
-                });
-
-                // Проверяем, что все левые элементы имеют соответствия
-                const totalLeftItems = questionContainer.querySelectorAll('.left-item').length;
-                if (answerData.length < totalLeftItems) {
-                    showMessage('Пожалуйста, завершите все сопоставления', 'error');
-                    return;
-                }
-            } else {
-                // Собираем данные для тестового вопроса
-                const inputs = questionContainer.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
-
-                if (inputs.length === 0) {
-                    showMessage('Пожалуйста, выберите вариант ответа', 'error');
-                    return;
-                }
-
-                answerData = Array.from(inputs).map(input => input.value);
-            }
-
-            // Отправляем ответ
-            const button = questionContainer.querySelector('.answer-button');
-            const originalText = button.innerHTML;
-            button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Сохранение...';
-            button.disabled = true;
-
-            axios.post(`{{ url_for("submit_answer", olympiad_id=olympiad.id) }}`, {
-                question_id: questionId,
-                answer_data: answerData
-            })
-            .then(response => {
-                if (response.data.success) {
-                    // Показываем статус сохранения
-                    const statusElement = document.getElementById(`answer-status-${questionId}`);
-                    statusElement.classList.remove('hidden');
-                    statusElement.classList.add('flex', 'animate-fadeInUp');
-
-                    // Подсвечиваем вопрос
-                    questionContainer.classList.add('answered', 'animate-slideInFromLeft');
-
-                    // Обновляем счетчик ответов
-                    updateAnswerCount();
-
-                    // Сбрасываем кнопку
-                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Сохранить ответ';
-                    button.disabled = false;
-                    button.className = button.className.replace('from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]', 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800');
-
-                    // Сохраняем ответы в локальном хранилище для восстановления
-                    if (questionType === 'matching') {
-                        saveMatchingAnswers(questionId, answerData);
+    // Обновление рейтинга
+    function updateRanking() {
+        fetch(`/olympiad/${olympiadId}/ranking`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем отображение места
+                    const rankElement = document.getElementById('rank-position-display');
+                    if (data.in_progress) {
+                        rankElement.textContent = 'В процессе';
+                        rankElement.style.fontSize = '1.5rem';
+                    } else if (data.rank_position > 0) {
+                        rankElement.textContent = data.rank_position;
+                        rankElement.style.fontSize = '3rem';
+                    } else {
+                        rankElement.textContent = '—';
+                        rankElement.style.fontSize = '3rem';
                     }
 
-                    // Показываем сообщение
-                    showMessage('Ответ успешно сохранен!');
+                    // Обновляем баллы
+                    document.getElementById('block-points-display').textContent =
+                        parseFloat(data.block_points || 0).toFixed(1);
+                    document.getElementById('total-points-display').textContent =
+                        parseFloat(data.total_points || 0).toFixed(1);
+
+                    // Обновляем прогресс блока
+                    const blockProgress = data.block_max_points > 0
+                        ? Math.round((data.block_points / data.block_max_points) * 100)
+                        : 0;
+
+                    document.getElementById('block-percentage-display').textContent = blockProgress + '%';
+                    document.getElementById('block-progress-fill').style.width = blockProgress + '%';
+
+                    // Обновляем название блока
+                    if (data.block_name) {
+                        document.getElementById('block-name-display').textContent = data.block_name;
+                    }
                 } else {
-                    showMessage(response.data.message || 'Ошибка при сохранении ответа', 'error');
-                    button.innerHTML = originalText;
-                    button.disabled = false;
+                    console.error('Ошибка получения рейтинга:', data.message);
                 }
             })
             .catch(error => {
-                showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
+                console.error('Ошибка при получении рейтинга:', error);
             });
-        }
+    }
 
-        // Выделение кнопки ответа при изменении выбора
-        function highlightAnswerButton(questionId) {
-            const button = document.querySelector(`.answer-button[data-question-id="${questionId}"]`);
-            if (button) {
-                button.className = button.className.replace('from-green-600 to-green-700 hover:from-green-700 hover:to-green-800', 'from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]');
-                button.classList.add('pulse-slow');
-                setTimeout(() => {
-                    button.classList.remove('pulse-slow');
-                }, 3000);
-            }
-        }
+    // Обновление таймеров
+    function updateTimers() {
+        const now = new Date();
 
-        // Обновление отображения статуса ответов
-        function updateAnswerStatusDisplay() {
-            {% for q_id in user_answers.keys() %}
-                const statusElement{{ q_id }} = document.getElementById('answer-status-{{ q_id }}');
-                if (statusElement{{ q_id }}) {
-                    statusElement{{ q_id }}.classList.remove('hidden');
-                    statusElement{{ q_id }}.classList.add('flex');
+        // Время с начала
+        const elapsed = now - startTime;
+        const elapsedHours = Math.floor(elapsed / (1000 * 60 * 60));
+        const elapsedMins = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+        const elapsedSecs = Math.floor((elapsed % (1000 * 60)) / 1000);
+
+        document.getElementById('elapsed-timer').textContent =
+            `${elapsedHours.toString().padStart(2, '0')}:${elapsedMins.toString().padStart(2, '0')}:${elapsedSecs.toString().padStart(2, '0')}`;
+
+        // Время до окончания
+        const remaining = endTime - now;
+
+        if (remaining > 0) {
+            const remainingHours = Math.floor(remaining / (1000 * 60 * 60));
+            const remainingMins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const remainingSecs = Math.floor((remaining % (1000 * 60)) / 1000);
+
+            document.getElementById('remaining-timer').textContent =
+                `${remainingHours.toString().padStart(2, '0')}:${remainingMins.toString().padStart(2, '0')}:${remainingSecs.toString().padStart(2, '0')}`;
+        } else {
+            document.getElementById('remaining-timer').textContent = '00:00:00';
+            showMessage('Время истекло! Автоматическая отправка...', 'warning');
+            setTimeout(submitBlock, 2000);
+        }
+    }
+
+    // Инициализация вопросов на сопоставление
+    function initMatchingQuestions() {
+        document.querySelectorAll('.matching-container').forEach(container => {
+            const questionId = container.closest('[data-question-id]').dataset.questionId;
+            const dataElement = document.getElementById(`matching-data-${questionId}`);
+
+            if (!dataElement) return;
+
+            try {
+                let data = JSON.parse(dataElement.value);
+                let leftItems, middleItems = [], rightItems, correctMatches, isThreeColumn = false;
+
+                // Определение формата данных
+                if (data && data.columns) {
+                    leftItems = data.left_items || [];
+                    middleItems = data.middle_items || [];
+                    rightItems = data.right_items || [];
+                    correctMatches = data.correct_matches || {};
+                    isThreeColumn = data.columns === 3;
+                } else if (data && data.left_items) {
+                    leftItems = data.left_items || [];
+                    middleItems = data.middle_items || [];
+                    rightItems = data.right_items || [];
+                    correctMatches = data.correct_matches || {};
+                    isThreeColumn = middleItems.length > 0;
+                } else if (Array.isArray(data)) {
+                    // Старый формат
+                    leftItems = data.map(m => m.left);
+                    rightItems = data.map(m => m.right);
+                    correctMatches = {};
+                    data.forEach(m => {
+                        correctMatches[m.left] = { right: m.right };
+                    });
+                    isThreeColumn = false;
                 }
 
-                const questionElement{{ q_id }} = document.getElementById('question-{{ q_id }}');
-                if (questionElement{{ q_id }}) {
-                    questionElement{{ q_id }}.classList.add('answered');
+                // Настройка сетки
+                const grid = document.getElementById(`matching-grid-${questionId}`);
+                if (isThreeColumn) {
+                    grid.classList.add('three-column');
+                    document.getElementById(`middle-column-${questionId}`).style.display = 'block';
+                    document.getElementById(`second-connector-${questionId}`).style.display = 'flex';
+                } else {
+                    grid.classList.add('two-column');
                 }
 
-                const answerButton{{ q_id }} = document.querySelector(`.answer-button[data-question-id="{{ q_id }}"]`);
-                if (answerButton{{ q_id }}) {
-                    answerButton{{ q_id }}.className = answerButton{{ q_id }}.className.replace('from-[#820000] to-[#a91b2b] hover:from-[#990002] hover:to-[#c91b2b]', 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800');
+                // Инструкция
+                const instruction = document.getElementById(`instruction-text-${questionId}`);
+                instruction.textContent = isThreeColumn ?
+                    'Перетащите элементы из средней и правой колонок к элементам левой колонки' :
+                    'Перетащите элементы из правой колонки к элементам левой колонки';
+
+                // Заполнение левой колонки
+                const leftContainer = document.getElementById(`left-items-${questionId}`);
+                leftContainer.innerHTML = '';
+
+                leftItems.forEach((item, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'matching-item left-item';
+                    element.dataset.leftItem = item;
+                    element.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 10px;">${item}</div>
+                        <div class="drop-zone-container">
+                            ${isThreeColumn ? `<div class="drop-zone-slot middle-slot" data-slot-type="middle" data-left-item="${item}" data-question-id="${questionId}">Средний элемент<button class="remove-button" onclick="removeFromSlot(this)">×</button></div>` : ''}
+                            <div class="drop-zone-slot right-slot" data-slot-type="right" data-left-item="${item}" data-question-id="${questionId}">Правый элемент<button class="remove-button" onclick="removeFromSlot(this)">×</button></div>
+                        </div>
+                    `;
+
+                    // Добавление обработчиков перетаскивания
+                    element.querySelectorAll('.drop-zone-slot').forEach(slot => {
+                        slot.addEventListener('dragover', handleDragOver);
+                        slot.addEventListener('dragleave', handleDragLeave);
+                        slot.addEventListener('drop', handleDrop);
+                    });
+
+                    leftContainer.appendChild(element);
+                });
+
+                // Заполнение средней колонки
+                if (isThreeColumn && middleItems.length > 0) {
+                    const middleContainer = document.getElementById(`middle-items-${questionId}`);
+                    middleContainer.innerHTML = '';
+
+                    shuffleArray(middleItems).forEach(item => {
+                        const element = document.createElement('div');
+                        element.className = 'matching-item middle-item';
+                        element.textContent = item;
+                        element.dataset.middleItem = item;
+                        element.dataset.questionId = questionId;
+                        element.draggable = true;
+
+                        element.addEventListener('dragstart', handleDragStart);
+                        element.addEventListener('dragend', handleDragEnd);
+
+                        middleContainer.appendChild(element);
+                    });
                 }
-            {% endfor %}
-        }
 
-        // Обновление счетчика ответов
-        function updateAnswerCount() {
-            const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
-            const countElement = document.getElementById('answers-count');
-            const headerCountElement = document.getElementById('answer-count');
+                // Заполнение правой колонки
+                const rightContainer = document.getElementById(`right-items-${questionId}`);
+                rightContainer.innerHTML = '';
 
-            if (countElement) {
-                countElement.textContent = answeredQuestions;
+                shuffleArray(rightItems).forEach(item => {
+                    const element = document.createElement('div');
+                    element.className = 'matching-item right-item';
+                    element.textContent = item;
+                    element.dataset.rightItem = item;
+                    element.dataset.questionId = questionId;
+                    element.draggable = true;
+
+                    element.addEventListener('dragstart', handleDragStart);
+                    element.addEventListener('dragend', handleDragEnd);
+
+                    rightContainer.appendChild(element);
+                });
+
+                // Восстановление сохраненных ответов
+                restoreSavedAnswers(questionId);
+
+            } catch (error) {
+                console.error('Ошибка инициализации вопроса:', error);
             }
-
-            if (headerCountElement) {
-                headerCountElement.textContent = answeredQuestions;
-            }
-
-            // Обновляем прогресс-бар
-            const progressBar = document.getElementById('main-progress-bar');
-            if (progressBar) {
-                progressBar.style.width = `${(answeredQuestions / {{ questions|length }}) * 100}%`;
-            }
-
-            // Обновляем состояние кнопки завершения блока
-            const submitButton = document.getElementById('submit-block-button');
-            if (answeredQuestions >= {{ questions|length }}) {
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.add('pulse-slow');
-            } else {
-                submitButton.disabled = true;
-                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.remove('pulse-slow');
-            }
-        }
-
-        // Функция перемешивания массива
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        // Функции для сохранения/восстановления ответов сопоставления
-        function saveMatchingAnswers(questionId, answers) {
-            const key = `matching_answers_${questionId}`;
-            const answersData = { answers: answers, timestamp: Date.now() };
-            sessionStorage.setItem(key, JSON.stringify(answersData));
-        }
-
-        function getSavedMatchingAnswers(questionId) {
-            const key = `matching_answers_${questionId}`;
-            const savedData = sessionStorage.getItem(key);
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    // Проверяем, что данные не старше 1 часа
-                    if (Date.now() - parsed.timestamp < 3600000) {
-                        return parsed.answers;
-                    }
-                } catch (error) {
-                    console.error('Error parsing saved matching answers:', error);
-                }
-                sessionStorage.removeItem(key);
-            }
-            return null;
-        }
-
-        function restoreMatchingAnswers(questionId, savedAnswers) {
-            savedAnswers.forEach(match => {
-                // Находим левый элемент
-                const leftElement = document.querySelector(`[data-left-item="${match.left}"][data-question-id="${questionId}"]`);
-                // Находим правый элемент
-                const rightElement = document.querySelector(`[data-right-item="${match.right}"][data-question-id="${questionId}"]`);
-
-                if (leftElement && rightElement) {
-                    // Перемещаем правый элемент к левому
-                    leftElement.appendChild(rightElement);
-                    leftElement.classList.add('match-success');
-                    rightElement.classList.add('match-success');
-                }
-            });
-        }
-    });
-
-    // Функция для завершения блока
-    function submitBlock() {
-        const totalQuestions = {{ questions|length }};
-        const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
-
-        if (answeredQuestions < totalQuestions) {
-            showMessage(`Пожалуйста, ответьте на все вопросы перед отправкой (${answeredQuestions}/${totalQuestions})`, 'error');
-            return;
-        }
-
-        const button = document.getElementById('submit-block-button');
-        button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Отправка...';
-        button.disabled = true;
-
-        // Обязательно задаем тип данных как JSON
-        axios.post('{{ url_for("submit_block", olympiad_id=olympiad.id) }}', {}, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            console.log("Response from submit_block:", response.data);
-            if (response.data.success) {
-                // Получаем рейтинг и показываем модальное окно
-                fetchRanking(response.data.redirect);
-            } else {
-                showMessage(response.data.message || 'Ошибка при отправке блока', 'error');
-                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg> Завершить блок';
-                button.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error("Error in submit_block:", error);
-            showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
-            button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg> Завершить блок';
-            button.disabled = false;
         });
     }
 
-    // Функции для досрочного завершения
-    function showEarlyFinishConfirmation() {
-        const modal = document.getElementById('early-finish-modal');
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+    // Обработчики перетаскивания
+    function handleDragStart(e) {
+        draggedElement = this;
+        this.classList.add('dragging');
+        const itemType = this.classList.contains('middle-item') ? 'middle' : 'right';
+        const itemValue = this.dataset[itemType + 'Item'];
+
+        e.dataTransfer.setData('text/plain', itemValue);
+        e.dataTransfer.setData('application/x-item-type', itemType);
+        e.dataTransfer.setData('application/x-question-id', this.dataset.questionId);
+        e.dataTransfer.effectAllowed = 'move';
     }
 
-    function closeEarlyFinishModal() {
-        const modal = document.getElementById('early-finish-modal');
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        const questionId = this.dataset.questionId;
+        updateUsedItemsVisual(questionId);
+        highlightAnswerButton(questionId);
+        draggedElement = null;
     }
 
-    function finishOlympiadEarly() {
-        const button = event.target;
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+
+        const itemValue = e.dataTransfer.getData('text/plain');
+        const itemType = e.dataTransfer.getData('application/x-item-type');
+        const questionId = e.dataTransfer.getData('application/x-question-id');
+        const slotType = this.dataset.slotType;
+
+        if (!itemValue || itemType !== slotType) return;
+
+        const draggedElement = document.querySelector(`.${itemType}-item[data-${itemType}-item="${itemValue}"][data-question-id="${questionId}"]`);
+        if (!draggedElement) return;
+
+        // Если в слоте уже есть элемент, возвращаем его обратно
+        const existingItem = this.querySelector(`.${itemType}-item`);
+        if (existingItem) {
+            returnItemToColumn(existingItem, questionId);
+        }
+
+        // Размещаем новый элемент в слоте
+        placeItemInSlot(this, draggedElement, questionId);
+    }
+
+    // Размещение элемента в слоте
+    function placeItemInSlot(slot, element, questionId) {
+        // Очищаем содержимое слота, кроме кнопки удаления
+        const removeButton = slot.querySelector('.remove-button');
+        slot.innerHTML = '';
+        slot.appendChild(element);
+        slot.appendChild(removeButton);
+        slot.classList.add('filled');
+
+        // Добавляем анимацию
+        slot.classList.add('pulse-animation');
+        setTimeout(() => slot.classList.remove('pulse-animation'), 300);
+
+        updateUsedItemsVisual(questionId);
+        highlightAnswerButton(questionId);
+    }
+
+    // Возврат элемента в колонку
+    function returnItemToColumn(element, questionId) {
+        const itemType = element.classList.contains('middle-item') ? 'middle' : 'right';
+        const columnContainer = document.getElementById(`${itemType}-items-${questionId}`);
+
+        if (columnContainer) {
+            columnContainer.appendChild(element);
+        }
+    }
+
+    // Удаление элемента из слота
+    function removeFromSlot(button) {
+        const slot = button.parentElement;
+        const element = slot.querySelector('.matching-item:not(.left-item)');
+        const questionId = slot.dataset.questionId;
+
+        if (element) {
+            returnItemToColumn(element, questionId);
+            slot.classList.remove('filled');
+            slot.innerHTML = slot.classList.contains('middle-slot') ?
+                'Средний элемент<button class="remove-button" onclick="removeFromSlot(this)">×</button>' :
+                'Правый элемент<button class="remove-button" onclick="removeFromSlot(this)">×</button>';
+
+            updateUsedItemsVisual(questionId);
+            highlightAnswerButton(questionId);
+        }
+    }
+
+    // Обновление визуального отображения использованных элементов
+    function updateUsedItemsVisual(questionId) {
+        const container = document.getElementById(`matching-container-${questionId}`);
+        if (!container) return;
+
+        // Сбрасываем состояние для всех элементов
+        container.querySelectorAll('.matching-item:not(.left-item)').forEach(item => {
+            item.classList.remove('used');
+        });
+
+        // Помечаем использованные элементы
+        container.querySelectorAll('.drop-zone-slot.filled .matching-item').forEach(item => {
+            const originalItem = container.querySelector(
+                `.matching-item[data-${item.classList.contains('middle-item') ? 'middle' : 'right'}-item="${item.dataset.middleItem || item.dataset.rightItem}"]`
+            );
+            if (originalItem && originalItem.parentElement.id.includes('-items-')) {
+                originalItem.classList.add('used');
+            }
+        });
+    }
+
+    // Отправка ответа
+    function submitAnswer(questionId) {
+        const questionContainer = document.getElementById(`question-${questionId}`);
+        const questionType = questionContainer.dataset.questionType;
+        let answerData;
+
+        if (questionType === 'matching') {
+            answerData = [];
+            const leftItems = questionContainer.querySelectorAll('.left-item');
+
+            leftItems.forEach(leftItem => {
+                const leftValue = leftItem.dataset.leftItem;
+                const answerPair = { left: leftValue };
+
+                // Проверка среднего элемента
+                const middleSlot = leftItem.querySelector('.drop-zone-slot.middle-slot');
+                if (middleSlot) {
+                    const middleElement = middleSlot.querySelector('.middle-item');
+                    if (middleElement) {
+                        answerPair.middle = middleElement.dataset.middleItem;
+                    }
+                }
+
+                // Проверка правого элемента
+                const rightSlot = leftItem.querySelector('.drop-zone-slot.right-slot');
+                if (rightSlot) {
+                    const rightElement = rightSlot.querySelector('.right-item');
+                    if (rightElement) {
+                        answerPair.right = rightElement.dataset.rightItem;
+                    }
+                }
+
+                if (answerPair.middle || answerPair.right) {
+                    answerData.push(answerPair);
+                }
+            });
+
+            if (answerData.length === 0) {
+                showMessage('Пожалуйста, выполните сопоставления', 'error');
+                return;
+            }
+        } else {
+            const inputs = questionContainer.querySelectorAll('input:checked');
+            if (inputs.length === 0) {
+                showMessage('Пожалуйста, выберите ответ', 'error');
+                return;
+            }
+            answerData = Array.from(inputs).map(input => input.value);
+        }
+
+        const button = questionContainer.querySelector('.answer-button');
         const originalText = button.innerHTML;
-
-        button.innerHTML = '<svg class="animate-spin h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Завершение...';
+        button.innerHTML = '⏳ Сохранение...';
         button.disabled = true;
 
-        axios.post('{{ url_for("finish_olympiad_early", olympiad_id=olympiad.id) }}', {}, {
+        fetch(`{{ url_for("submit_answer", olympiad_id=olympiad.id) }}`, {
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_id: questionId,
+                answer_data: answerData
+            })
         })
-        .then(response => {
-            if (response.data.success) {
-                showMessage(response.data.message, 'info');
-                setTimeout(() => {
-                    window.location.href = response.data.redirect;
-                }, 2000);
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                markQuestionAnswered(questionId);
+                showMessage(`Ответ сохранен!`, 'success');
+                updateProgress();
+                // Обновляем рейтинг после сохранения ответа
+                setTimeout(updateRanking, 1000);
             } else {
-                showMessage(response.data.message || 'Ошибка при завершении олимпиады', 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
+                showMessage(data.message || 'Ошибка при сохранении', 'error');
             }
         })
         .catch(error => {
-            showMessage('Произошла ошибка: ' + (error.response?.data?.message || error.message), 'error');
+            showMessage('Произошла ошибка', 'error');
+            console.error('Ошибка:', error);
+        })
+        .finally(() => {
             button.innerHTML = originalText;
             button.disabled = false;
         });
     }
 
-    // Функция для отладки значений рейтинга
-    function debugRanking(data) {
-        console.log("=== ОТЛАДКА РЕЙТИНГА ===");
-        console.log("Место в рейтинге:", data.rank_position);
-        console.log("Баллы за текущий блок:", data.block_points);
-        console.log("Максимум баллов за блок:", data.block_max_points);
-        console.log("Всего баллов:", data.total_points);
-        console.log("Всего участников:", data.total_participants);
-        console.log("Процент рейтинга:", data.rank_percentage);
-        console.log("========================");
-    }
+    // Отправка блока
+    function submitBlock() {
+        const totalQuestions = {{ questions|length }};
+        const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
 
-    // Функция для получения рейтинга
-    function fetchRanking(redirectUrl) {
-        console.log("Fetching ranking, redirect URL:", redirectUrl);
-
-        // Добавляем временную метку для предотвращения кэширования
-        const timestamp = new Date().getTime();
-        axios.get(`{{ url_for("get_ranking", olympiad_id=olympiad.id) }}?t=${timestamp}`)
-            .then(response => {
-                console.log("Ranking response:", response.data);
-                if (response.data.success) {
-                    // Отладка полученных значений
-                    debugRanking(response.data);
-
-                    // Заполняем данные в модальном окне
-                    document.getElementById('rank-position').textContent = response.data.rank_position || "-";
-
-                    // Проверяем процент рейтинга для корректного отображения
-                    let rankPercentage = response.data.rank_percentage;
-                    if (isNaN(rankPercentage) || rankPercentage < 0) rankPercentage = 0;
-                    if (rankPercentage > 100) rankPercentage = 100;
-
-                    document.getElementById('rank-percentage').textContent = rankPercentage + '%';
-
-                    // Анимируем прогресс-бар с задержкой
-                    setTimeout(() => {
-                        document.getElementById('rank-progress-bar').style.width = rankPercentage + '%';
-                    }, 500);
-
-                    // Устанавливаем баллы за блок
-                    document.getElementById('block-points').textContent = response.data.block_points;
-                    document.getElementById('block-max-points').textContent = response.data.block_max_points;
-
-                    // Устанавливаем общие баллы и участников
-                    document.getElementById('total-points').textContent = response.data.total_points;
-                    document.getElementById('total-participants').textContent = response.data.total_participants;
-
-                    // Устанавливаем URL для редиректа
-                    const continueButton = document.getElementById('continue-button');
-                    continueButton.dataset.redirect = redirectUrl;
-
-                    // Показываем модальное окно
-                    showRankingModal();
-                } else {
-                    console.error("Error in ranking response:", response.data.message);
-                    // Если не удалось получить рейтинг, просто переходим дальше
-                    window.location.href = redirectUrl;
-                }
-            })
-            .catch(error => {
-                console.error("Error fetching ranking:", error);
-                // В случае ошибки просто переходим дальше
-                window.location.href = redirectUrl;
-            });
-    }
-
-    // Показать модальное окно с рейтингом
-    function showRankingModal() {
-        console.log("Showing ranking modal");
-        const modal = document.getElementById('ranking-modal');
-        if (!modal) {
-            console.error("Modal element not found!");
+        if (answeredQuestions < totalQuestions) {
+            showMessage(`Ответьте на все вопросы (${answeredQuestions}/${totalQuestions})`, 'error');
             return;
         }
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+
+        const button = document.getElementById('submit-block-button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '⏳ Завершение блока...';
+        button.disabled = true;
+
+        fetch(`{{ url_for("submit_block", olympiad_id=olympiad.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Показываем результат блока
+                if (data.block_data) {
+                    showBlockResult(data);
+                }
+
+                // Если олимпиада завершена, показываем итоговые результаты
+                if (data.completed) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 3000);
+                } else {
+                    // Переходим к следующему блоку
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 3000);
+                }
+            } else {
+                showMessage(data.message || 'Ошибка при завершении блока', 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            showMessage('Произошла ошибка', 'error');
+            console.error('Ошибка:', error);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
     }
 
-    // Закрыть модальное окно с рейтингом
-    function closeRankingModal() {
-        const modal = document.getElementById('ranking-modal');
-        if (!modal) return;
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
+    // Показ результата блока
+    function showBlockResult(data) {
+        const content = `
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4">${data.completed ? '🎉' : '✅'}</div>
+                <h4 class="text-xl font-bold mb-2">${data.completed ? 'Олимпиада завершена!' : 'Блок завершен!'}</h4>
+                <p class="text-gray-600 mb-4">${data.message}</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h5 class="font-semibold mb-4">Результаты блока "${data.block_data.block_name}":</h5>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-primary">${data.block_data.points_earned}</div>
+                        <div class="text-sm text-gray-600">Набрано баллов</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-700">${data.block_data.total_points_possible}</div>
+                        <div class="text-sm text-gray-600">Максимум</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold ${data.block_data.percentage >= 70 ? 'text-green-600' : 'text-orange-600'}">${data.block_data.percentage}%</div>
+                        <div class="text-sm text-gray-600">Результат</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <div class="text-sm text-gray-500 mb-4">
+                    ${data.completed ? 'Переход к результатам...' : 'Переход к следующему блоку...'}
+                </div>
+                <div class="bg-gray-200 rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full animate-pulse" style="width: 0%; animation: loading 3s ease-in-out forwards;"></div>
+                </div>
+            </div>
+
+            <style>
+                @keyframes loading {
+                    from { width: 0%; }
+                    to { width: 100%; }
+                }
+            </style>
+        `;
+
+        document.getElementById('block-result-content').innerHTML = content;
+        document.getElementById('block-result-modal').style.display = 'flex';
     }
 
-    // Функция для продолжения после просмотра рейтинга
-    function continueAfterRanking() {
-        const redirectUrl = document.getElementById('continue-button').dataset.redirect;
-        if (redirectUrl) {
-            window.location.href = redirectUrl;
-        } else {
-            closeRankingModal();
+    function closeBlockResultModal() {
+        document.getElementById('block-result-modal').style.display = 'none';
+    }
+
+    // Утилиты
+    function shuffleArray(array) {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    }
+
+    function highlightAnswerButton(questionId) {
+        const button = document.querySelector(`.answer-button[data-question-id="${questionId}"]`);
+        if (button && !button.classList.contains('btn-success')) {
+            button.style.backgroundColor = '#f59e0b';
+            setTimeout(() => {
+                button.style.backgroundColor = '';
+            }, 2000);
         }
     }
 
-    // Функция отображения сообщений
-    function showMessage(message, type = 'success') {
-        let notificationContainer = document.getElementById('notification-container');
+    function markQuestionAnswered(questionId) {
+        const card = document.getElementById(`question-${questionId}`);
+        const status = document.getElementById(`answer-status-${questionId}`);
+        const button = card.querySelector('.answer-button');
 
-        if (!notificationContainer) {
-            notificationContainer = document.createElement('div');
-            notificationContainer.id = 'notification-container';
-            notificationContainer.className = 'fixed top-4 right-4 z-50 max-w-md';
-            document.body.appendChild(notificationContainer);
+        card.classList.add('answered');
+        status.classList.remove('hidden');
+        button.innerHTML = '✓ Ответ сохранен';
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+    }
+
+    function updateProgress() {
+        const answered = document.querySelectorAll('.question-card.answered').length;
+        const total = {{ questions|length }};
+
+        document.getElementById('answer-count').textContent = answered;
+        document.getElementById('answers-count').textContent = answered;
+        document.getElementById('progress-fill').style.width = `${(answered / total) * 100}%`;
+
+        const submitButton = document.getElementById('submit-block-button');
+        if (answered >= total) {
+            submitButton.disabled = false;
         }
+    }
+
+    function restoreSavedAnswers(questionId) {
+        // Восстановление из user_answers
+        {% for q_id, answers in user_answers.items() %}
+            if ('{{ q_id }}' === questionId) {
+                const card = document.getElementById(`question-${questionId}`);
+                if (card) {
+                    // Здесь можно добавить логику восстановления конкретных сопоставлений
+                    markQuestionAnswered(questionId);
+                }
+            }
+        {% endfor %}
+    }
+
+    function showMessage(message, type = 'info') {
+        const colors = {
+            success: 'bg-green-100 border-green-500 text-green-700',
+            error: 'bg-red-100 border-red-500 text-red-700',
+            warning: 'bg-yellow-100 border-yellow-500 text-yellow-700',
+            info: 'bg-blue-100 border-blue-500 text-blue-700'
+        };
 
         const notification = document.createElement('div');
-        const bgClass = type === 'success' ? 'bg-green-50 border-l-4 border-green-500 text-green-700' :
-                       type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700' :
-                       'bg-red-50 border-l-4 border-red-500 text-red-700';
-
-        notification.className = `rounded-lg shadow-md p-4 mb-3 ${bgClass}`;
+        notification.className = `fixed top-4 right-4 z-50 p-4 border-l-4 rounded ${colors[type]} max-w-sm shadow-lg`;
         notification.innerHTML = `
-            <div class="flex justify-between">
-                <p>${message}</p>
-                <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            <div class="flex justify-between items-start">
+                <span class="pr-2">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 font-bold text-lg leading-none">&times;</button>
             </div>
         `;
 
-        notificationContainer.appendChild(notification);
-
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 5000);
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
     }
 
-    // Закрытие модальных окон при нажатии ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const earlyModal = document.getElementById('early-finish-modal');
-            const rankingModal = document.getElementById('ranking-modal');
+    // Модальные окна
+    function showEarlyFinishModal() {
+        document.getElementById('early-finish-modal').style.display = 'flex';
+    }
 
-            if (earlyModal && earlyModal.style.display !== 'none') {
-                closeEarlyFinishModal();
-            }
-            if (rankingModal && rankingModal.style.display !== 'none') {
-                closeRankingModal();
-            }
-        }
-    });
+    function closeEarlyFinishModal() {
+        document.getElementById('early-finish-modal').style.display = 'none';
+    }
 
-    // Закрытие модальных окон при клике вне их
-    document.addEventListener('click', function(e) {
-        const earlyModal = document.getElementById('early-finish-modal');
-        const rankingModal = document.getElementById('ranking-modal');
-
-        if (earlyModal && earlyModal.style.display === 'flex' && e.target === earlyModal) {
-            closeEarlyFinishModal();
-        }
-
-        if (rankingModal && rankingModal.style.display === 'flex' && e.target === rankingModal) {
-            closeRankingModal();
-        }
-    });
-
-    // Предупреждение о закрытии страницы
-    window.addEventListener('beforeunload', function(e) {
-        const answeredQuestions = document.querySelectorAll('.question-card.answered').length;
-        const totalQuestions = {{ questions|length }};
-
-        if (answeredQuestions > 0 && answeredQuestions < totalQuestions) {
-            e.preventDefault();
-            e.returnValue = 'У вас есть несохраненные ответы. Вы уверены, что хотите покинуть страницу?';
-        }
-    });
-
-    // Автосохранение прогресса каждые 30 секунд
-    setInterval(function() {
-        const matchingQuestions = document.querySelectorAll('.matching-container');
-        matchingQuestions.forEach(container => {
-            const questionId = container.closest('[data-question-id]').dataset.questionId;
-            const leftItems = container.querySelectorAll('.left-item');
-            const currentMatches = [];
-
-            leftItems.forEach(leftItem => {
-                const leftValue = leftItem.dataset.leftItem;
-                const rightElement = leftItem.querySelector('.right-item');
-                if (rightElement) {
-                    const rightValue = rightElement.dataset.rightItem;
-                    currentMatches.push({ left: leftValue, right: rightValue });
-                }
-            });
-
-            if (currentMatches.length > 0) {
-                saveMatchingAnswers(questionId, currentMatches);
+    function finishEarly() {
+        fetch(`{{ url_for("finish_olympiad_early", olympiad_id=olympiad.id) }}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                showMessage(data.message, 'error');
             }
         });
-    }, 30000);
+    }
 
-    // Глобальные функции для использования в HTML
-    window.closeRankingModal = closeRankingModal;
-    window.continueAfterRanking = continueAfterRanking;
-    window.showEarlyFinishConfirmation = showEarlyFinishConfirmation;
-    window.closeEarlyFinishModal = closeEarlyFinishModal;
-    window.finishOlympiadEarly = finishOlympiadEarly;
-    window.showMessage = showMessage;
+    // Закрытие модальных окон по клику вне них
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}

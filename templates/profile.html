@@ -744,14 +744,26 @@
                 <div class="text-center md:text-left">
                     <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ current_user.full_name }}</h1>
                     <p class="text-white text-opacity-90 text-lg mb-2">{{ current_user.email }}</p>
-                    {% if current_user.study_group %}
-                        <p class="text-white text-opacity-80 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
-                            </svg>
-                            Группа: {{ current_user.study_group }}
-                        </p>
-                    {% endif %}
+                    {% if current_user.study_group or current_user.course %}
+    <div class="text-white text-opacity-80 mb-4">
+        {% if current_user.study_group %}
+            <p class="mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
+                </svg>
+                Группа: {{ current_user.study_group }}
+            </p>
+        {% endif %}
+        {% if current_user.course %}
+            <p>
+                <svg xmlns="http://www.w3.org/2000/svg" class="inline h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                </svg>
+                Курс: {{ current_user.course }}
+            </p>
+        {% endif %}
+    </div>
+{% endif %}
                     {% if current_user.is_admin %}
                         <div class="inline-flex items-center px-6 py-2 bg-white bg-opacity-20 rounded-full backdrop-blur-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">

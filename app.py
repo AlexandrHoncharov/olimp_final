@@ -102,51 +102,6 @@ def prepare_question_data(questions):
     return questions
 
 
-def create_certificate_background(width=3508, height=2480):
-    """Создает фон сертификата (A4 в альбомной ориентации, 300 DPI)"""
-    # Создаем изображение с белым фоном
-    img = Image.new('RGB', (width, height), 'white')
-    draw = ImageDraw.Draw(img)
-
-    # Рамка сертификата
-    border_width = 40
-    border_color = '#820000'
-
-    # Внешняя рамка
-    draw.rectangle([0, 0, width - 1, height - 1], outline=border_color, width=border_width)
-
-    # Внутренняя декоративная рамка
-    inner_margin = 80
-    draw.rectangle([inner_margin, inner_margin, width - inner_margin, height - inner_margin],
-                   outline='#B8860B', width=8)
-
-    # Декоративные углы
-    corner_size = 150
-    corner_color = '#FFD700'
-
-    # Верхние углы
-    draw.polygon([(inner_margin, inner_margin),
-                  (inner_margin + corner_size, inner_margin),
-                  (inner_margin, inner_margin + corner_size)],
-                 fill=corner_color)
-    draw.polygon([(width - inner_margin, inner_margin),
-                  (width - inner_margin - corner_size, inner_margin),
-                  (width - inner_margin, inner_margin + corner_size)],
-                 fill=corner_color)
-
-    # Нижние углы
-    draw.polygon([(inner_margin, height - inner_margin),
-                  (inner_margin + corner_size, height - inner_margin),
-                  (inner_margin, height - inner_margin - corner_size)],
-                 fill=corner_color)
-    draw.polygon([(width - inner_margin, height - inner_margin),
-                  (width - inner_margin - corner_size, height - inner_margin),
-                  (width - inner_margin, height - inner_margin - corner_size)],
-                 fill=corner_color)
-
-    return img
-
-
 def resize_signature_with_aspect_ratio(img, max_width, max_height):
     """
     Изменяет размер изображения подписи с сохранением пропорций
@@ -175,6 +130,7 @@ def resize_signature_with_aspect_ratio(img, max_width, max_height):
     # Изменяем размер с высоким качеством
     return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
+
 def get_font(size, bold=False):
     """Получает шрифт нужного размера"""
     try:
@@ -199,10 +155,10 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
 
     # Позиции для подписей (внизу сертификата)
     signature_y = height - 400
-    signature_width = 350  # Увеличиваем ширину с 300 до 350
+    signature_width = 350
     signature_height = 150
 
-    # Данные членов жюри (из изображения)
+    # Данные членов жюри
     jury_members = [
         {"name": "Мохнатко Ирина Николаевна", "position": "к.т.н., доцент, зав. кафедрой «Гражданская безопасность»",
          "file": "1.jpg"},
@@ -212,8 +168,8 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
          "file": "3.jpg"}
     ]
 
-    # Расчет позиций для размещения подписей (увеличиваем расстояние между подписями)
-    spacing_between_signatures = 200  # Увеличиваем расстояние с 100 до 200 пикселей
+    # Расчет позиций для размещения подписей
+    spacing_between_signatures = 200
     total_width = len(jury_members) * signature_width + (len(jury_members) - 1) * spacing_between_signatures
     start_x = (width - total_width) // 2
 
@@ -248,7 +204,7 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
                 img.paste(signature_img, (sig_x, sig_y), signature_img if signature_img.mode == 'RGBA' else None)
         except Exception as e:
             print(f"Не удалось загрузить подпись {member['file']}: {e}")
-            # Рисуем прямоугольник для подписи (обновляем координаты)
+            # Рисуем прямоугольник для подписи
             draw.rectangle([x + 25, signature_y - 100, x + signature_width - 25, signature_y - 20],
                            outline='#CCCCCC', width=2)
             draw.text((x + signature_width // 2, signature_y - 60), "(подпись)",
@@ -258,9 +214,8 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
         draw.line([x, signature_y, x + signature_width, signature_y], fill='#000000', width=3)
 
         # Добавляем имя и должность
-        # Разбиваем длинный текст на строки (увеличиваем лимиты для большей ширины)
-        name_lines = textwrap.wrap(member["name"], width=30)  # Увеличено с 25 до 30
-        position_lines = textwrap.wrap(member["position"], width=35)  # Увеличено с 30 до 35
+        name_lines = textwrap.wrap(member["name"], width=30)
+        position_lines = textwrap.wrap(member["position"], width=35)
 
         current_y = signature_y + 20
         for line in name_lines:
@@ -268,23 +223,22 @@ def add_signatures_to_certificate(img, signatures_folder='static/signatures'):
             text_width = bbox[2] - bbox[0]
             draw.text((x + signature_width // 2 - text_width // 2, current_y), line,
                       font=font_name, fill='#000000')
-            current_y += 45  # Увеличен интервал с 40 до 45
+            current_y += 45
 
-        current_y += 15  # Увеличен отступ с 10 до 15
+        current_y += 15
         for line in position_lines:
             bbox = draw.textbbox((0, 0), line, font=font_position)
             text_width = bbox[2] - bbox[0]
             draw.text((x + signature_width // 2 - text_width // 2, current_y), line,
                       font=font_position, fill='#000000')
-            current_y += 35  # Увеличен интервал с 30 до 35
+            current_y += 35
 
     return img
 
 
-# Объединенная функция для генерации сертификатов и дипломов
-# Объединенная функция для генерации сертификатов и дипломов
 def generate_certificate(user_name, olympiad_title, olympiad_end_date, certificate_type='participation',
-                         place=None, score=None, speciality=None):
+                         place=None, score=None, time_bonus=None, speciality=None,
+                         background_image_path='static/images/certificate_background.png'):
     """
     Универсальная функция для генерации сертификатов и дипломов
 
@@ -294,61 +248,36 @@ def generate_certificate(user_name, olympiad_title, olympiad_end_date, certifica
         olympiad_end_date: Дата окончания олимпиады
         certificate_type (str): Тип документа ('participation' или 'winner')
         place (int): Место (для дипломов)
-        score (float): Баллы (для дипломов)
+        score (float): Итоговые баллы участника
+        time_bonus (float): Временной бонус/штраф
         speciality (str): Специальность участника
+        background_image_path (str): Путь к фоновому изображению
 
     Returns:
         PIL.Image: Изображение сертификата/диплома
     """
 
-    # Для ВСЕХ типов документов используем улучшенный фон с сотами
-    img = create_enhanced_certificate_background()
-    add_hexagon_pattern_from_file(img, 'static/images/hexagons.png')
-
-    # Добавляем логотип для ВСЕХ типов документов
-    _add_logo_to_certificate(img)
+    # Загружаем готовое фоновое изображение
+    try:
+        img = Image.open(background_image_path)
+        print(f"Загружено фоновое изображение: {background_image_path}")
+    except Exception as e:
+        print(f"Ошибка загрузки фонового изображения {background_image_path}: {e}")
+        # Создаем простой белый фон как fallback
+        img = Image.new('RGB', (3508, 2480), 'white')
 
     if certificate_type == 'winner':
         return _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date,
                                         place, score, speciality)
     else:
         return _generate_participation_content(img, user_name, olympiad_title, olympiad_end_date,
-                                               speciality)
-
-def _add_logo_to_certificate(img):
-    """Добавляет логотип на сертификат"""
-    logo_files = [
-        'static/images/bee_logo.png',
-        'static/images/bee_logo.jpg',
-        'static/images/bee_logo.jpeg',
-        'static/images/logo.png',
-        'static/images/logo.jpg'
-    ]
-
-    for logo_path in logo_files:
-        try:
-            if os.path.exists(logo_path):
-                logo_img = Image.open(logo_path)
-                max_logo_size = 450
-                logo_img.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
-
-                logo_x = 180
-                logo_y = 180
-
-                if logo_img.mode == 'RGBA':
-                    img.paste(logo_img, (logo_x, logo_y), logo_img)
-                else:
-                    img.paste(logo_img, (logo_x, logo_y))
-
-                print(f"Загружен логотип: {logo_path}")
-                break
-        except Exception as e:
-            print(f"Не удалось загрузить логотип {logo_path}: {e}")
-            continue
+                                               speciality, score, time_bonus)
 
 
-def _generate_participation_content(img, user_name, olympiad_title, olympiad_end_date, speciality):
-    """Генерирует содержимое сертификата участия"""
+# Обновленная функция генерации сертификата участия с баллами
+def _generate_participation_content(img, user_name, olympiad_title, olympiad_end_date, speciality, score=None,
+                                    time_bonus=None):
+    """Генерирует содержимое сертификата участия с результатами"""
     draw = ImageDraw.Draw(img)
     width, height = img.size
 
@@ -378,10 +307,10 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
         draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill='#000000')
         y += 70
 
-    # Заголовок сертификата
+    # Заголовок сертификата - УВЕЛИЧЕННЫЙ РАЗМЕР И ЖИРНЫЙ
     y += 100
     certificate_title = "СЕРТИФИКАТ УЧАСТНИКА"
-    font_title = get_font(80, bold=True)
+    font_title = get_font(100, bold=True)
     bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
     text_width = bbox[2] - bbox[0]
     draw.text((width // 2 - text_width // 2, y), certificate_title, font=font_title, fill='#820000')
@@ -397,20 +326,31 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
     text_width = bbox[2] - bbox[0]
     draw.text((width // 2 - text_width // 2, y), confirm_text, font=font_main, fill='#000000')
 
-    # Имя участника
+    # Имя участника - УВЕЛИЧЕННЫЙ РАЗМЕР
     y += 120
-    bbox = draw.textbbox((0, 0), user_name, font=font_name)
+    font_name_big = get_font(70, bold=True)
+    bbox = draw.textbbox((0, 0), user_name, font=font_name_big)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#820000')
+    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name_big, fill='#820000')
 
     # Подчеркивание имени
     line_start = width // 2 - text_width // 2 - 50
     line_end = width // 2 + text_width // 2 + 50
-    draw.line([line_start, y + 70, line_end, y + 70], fill='#820000', width=4)
+    draw.line([line_start, y + 80, line_end, y + 80], fill='#820000', width=4)
+
+    # Курс студента
+    y += 120
+    user = User.query.filter_by(full_name=user_name).first()
+    if user and user.course:
+        course_text = f"студент {user.course} курса"
+        bbox = draw.textbbox((0, 0), course_text, font=font_main)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), course_text, font=font_main, fill='#000000')
+        y += 80
 
     # Специальность (если указана)
     if speciality:
-        y += 100
+        y += 80
         speciality_text = f"направление подготовки: {speciality}"
         speciality_lines = textwrap.wrap(speciality_text, width=60)
         for line in speciality_lines:
@@ -423,12 +363,12 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
     y += 80
     participation_lines = [
         "принял(а) участие в олимпиаде",
-        f'"{olympiad_title}"'
+        f'"{olympiad_title.upper()}"'  # БОЛЬШИМИ БУКВАМИ
     ]
 
     for line in participation_lines:
         if line.startswith('"'):
-            current_font = font_name
+            current_font = get_font(70, bold=True)  # Увеличен размер названия олимпиады
             color = '#820000'
         else:
             current_font = font_main
@@ -437,17 +377,47 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
         bbox = draw.textbbox((0, 0), line, font=current_font)
         text_width = bbox[2] - bbox[0]
         draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
+        y += 100 if line.startswith('"') else 80
+
+    # НОВОЕ: Блок с результатами участника
+    if score is not None:
         y += 80
 
-    # Дата в правый угол - ВСЕГДА ЗАПОЛНЕННАЯ
-    y += 600
+        # Заголовок результатов
+        results_title = "и показал следующий результат:"
+        bbox = draw.textbbox((0, 0), results_title, font=font_main)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), results_title, font=font_main, fill='#000000')
+        y += 100
+
+        # Рамка для результатов
+        box_width = 800
+        box_height = 120
+        box_x = width // 2 - box_width // 2
+        box_y = y
+
+        # Рисуем рамку
+        draw.rectangle([box_x, box_y, box_x + box_width, box_y + box_height],
+                       outline='#820000', width=4, fill='#FFF8DC')
+
+        # Основной результат
+        y += 30
+        main_score_text = f"{score:.1f} баллов"
+        font_score = get_font(60, bold=True)
+        bbox = draw.textbbox((0, 0), main_score_text, font=font_score)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), main_score_text, font=font_score, fill='#820000')
+
+
+        y += 80
+
+    # Дата в правый угол
+    y += 150
 
     # Определяем дату для вывода
     if hasattr(olympiad_end_date, 'strftime'):
-        # Если это datetime объект
         date_to_format = olympiad_end_date
     else:
-        # Если это что-то другое (год, строка и т.д.), используем текущую дату
         date_to_format = datetime.now()
 
     formatted_date = date_to_format.strftime("«%d» %B %Y г.")
@@ -465,7 +435,7 @@ def _generate_participation_content(img, user_name, olympiad_title, olympiad_end
     date_font = get_font(36)
     bbox = draw.textbbox((0, 0), formatted_date, font=date_font)
     text_width = bbox[2] - bbox[0]
-    date_x = width - text_width - 200  # Размещаем в правом углу
+    date_x = width - text_width - 200
     date_y = y
 
     draw.text((date_x, date_y), formatted_date, font=date_font, fill='#2F4F4F')
@@ -481,7 +451,7 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
     draw = ImageDraw.Draw(img)
     width, height = img.size
 
-    # Заголовок университета с улучшенным форматированием
+    # Заголовок университета
     university_lines = [
         "ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ БЮДЖЕТНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ",
         "ВЫСШЕГО ОБРАЗОВАНИЯ «МЕЛИТОПОЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ»"
@@ -524,16 +494,12 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
         draw.text((width // 2 - text_width // 2, y), line, font=current_font, fill=color)
         y += 65
 
-    # Декоративная линия под заголовком
-    line_y = y + 30
-    draw.rectangle([width // 2 - 400, line_y, width // 2 + 400, line_y + 8], fill='#DAA520')
-
-    # Заголовок диплома
+    # Заголовок диплома - УВЕЛИЧЕННЫЙ РАЗМЕР И ЖИРНЫЙ
     y += 120
     certificate_title = "ДИПЛОМ ПОБЕДИТЕЛЯ"
     title_color = '#8B0000'
 
-    font_title = get_font(90, bold=True)
+    font_title = get_font(110, bold=True)  # Увеличен с 90 до 110
     bbox = draw.textbbox((0, 0), certificate_title, font=font_title)
     text_width = bbox[2] - bbox[0]
 
@@ -555,15 +521,21 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
     text_width = bbox[2] - bbox[0]
     draw.text((width // 2 - text_width // 2, y), award_text, font=font_main, fill='#2F4F4F')
 
-    # Имя участника
+    # Имя участника - УВЕЛИЧЕННЫЙ РАЗМЕР
     y += 120
-    bbox = draw.textbbox((0, 0), user_name, font=font_name)
+    font_name_big = get_font(75, bold=True)  # Увеличен с 60 до 75
+    bbox = draw.textbbox((0, 0), user_name, font=font_name_big)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name, fill='#8B0000')
+    draw.text((width // 2 - text_width // 2, y), user_name, font=font_name_big, fill='#8B0000')
 
-    # Статус студента
+    # Курс студента - НОВОЕ
     y += 120
-    student_text = "студент 1 курса"
+    user = User.query.filter_by(full_name=user_name).first()
+    if user and user.course:
+        student_text = f"студент {user.course} курса"
+    else:
+        student_text = "студент 1 курса"  # fallback
+
     bbox = draw.textbbox((0, 0), student_text, font=font_main)
     text_width = bbox[2] - bbox[0]
     draw.text((width // 2 - text_width // 2, y), student_text, font=font_main, fill='#2F4F4F')
@@ -579,9 +551,9 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
             draw.text((width // 2 - text_width // 2, y), line, font=font_main, fill='#2F4F4F')
             y += 65
 
-    # Место с выделением
+    # Место с выделением - УВЕЛИЧЕННЫЙ РАЗМЕР
     y += 100
-    font_place = get_font(64, bold=True)
+    font_place = get_font(80, bold=True)  # Увеличен с 64 до 80
 
     if place == 1:
         place_text = "занявший I МЕСТО в олимпиаде"
@@ -600,20 +572,44 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
     text_width = bbox[2] - bbox[0]
     draw.text((width // 2 - text_width // 2, y), place_text, font=font_place, fill=place_color)
 
-    # Название олимпиады
-    y += 120
-    olympiad_line = f'«{olympiad_title}»'
-    bbox = draw.textbbox((0, 0), olympiad_line, font=font_name)
+    # Название олимпиады - БОЛЬШИМИ БУКВАМИ И УВЕЛИЧЕННЫЙ РАЗМЕР
+    y += 140
+    olympiad_line = f'«{olympiad_title.upper()}»'  # БОЛЬШИМИ БУКВАМИ
+    font_olympiad = get_font(75, bold=True)  # Увеличен размер
+    bbox = draw.textbbox((0, 0), olympiad_line, font=font_olympiad)
     text_width = bbox[2] - bbox[0]
-    draw.text((width // 2 - text_width // 2, y), olympiad_line, font=font_name, fill='#4169E1')
+    draw.text((width // 2 - text_width // 2, y), olympiad_line, font=font_olympiad, fill='#4169E1')
 
     # Результат
     if score is not None:
-        y += 120
-        result_text = f"с результатом: {score:.1f} баллов"
-        bbox = draw.textbbox((0, 0), result_text, font=font_emphasis)
+        y += 80
+
+        # Заголовок результатов
+        results_title = "и показал следующий результат:"
+        bbox = draw.textbbox((0, 0), results_title, font=font_main)
         text_width = bbox[2] - bbox[0]
-        draw.text((width // 2 - text_width // 2, y), result_text, font=font_emphasis, fill='#8B0000')
+        draw.text((width // 2 - text_width // 2, y), results_title, font=font_main, fill='#000000')
+        y += 100
+
+        # Рамка для результатов
+        box_width = 800
+        box_height = 120
+        box_x = width // 2 - box_width // 2
+        box_y = y
+
+        # Рисуем рамку
+        draw.rectangle([box_x, box_y, box_x + box_width, box_y + box_height],
+                       outline='#820000', width=4, fill='#FFF8DC')
+
+        # Основной результат
+        y += 30
+        main_score_text = f"{score:.1f} баллов"
+        font_score = get_font(60, bold=True)
+        bbox = draw.textbbox((0, 0), main_score_text, font=font_score)
+        text_width = bbox[2] - bbox[0]
+        draw.text((width // 2 - text_width // 2, y), main_score_text, font=font_score, fill='#820000')
+
+        y += 80
 
     # Дата в правый угол
     y += 200
@@ -644,14 +640,14 @@ def _generate_winner_content(img, user_name, olympiad_title, olympiad_end_date, 
 
     return img
 
-
 # Объединенный маршрут для скачивания сертификатов и дипломов
+
 @app.route('/olympiad/<int:olympiad_id>/certificate')
 @login_required
 def download_certificate(olympiad_id):
     """Универсальный маршрут для скачивания сертификатов и дипломов"""
     olympiad = Olympiad.query.get_or_404(olympiad_id)
-    cert_type = request.args.get('type', 'participation')  # по умолчанию сертификат участия
+    cert_type = request.args.get('type', 'participation')
 
     # Проверяем участие пользователя
     participation = Participation.query.filter_by(
@@ -670,7 +666,8 @@ def download_certificate(olympiad_id):
 
     # Для дипломов проверяем место и определяем параметры
     place = None
-    score = None
+    score = participation.final_score  # Используем итоговый балл для всех типов
+    time_bonus = participation.time_bonus if participation.time_bonus else 0
     filename_prefix = 'certificate_participation'
 
     if cert_type == 'winner':
@@ -695,19 +692,19 @@ def download_certificate(olympiad_id):
             return redirect(url_for('olympiad_results', olympiad_id=olympiad_id))
 
         place = user_place
-        score = participation.final_score
         place_names = {1: 'winner', 2: 'second', 3: 'third'}
         filename_prefix = f'diploma_{place_names.get(place, "prize")}'
 
-    # Генерируем сертификат/диплом
+    # Генерируем сертификат/диплом с баллами
     try:
         certificate_img = generate_certificate(
             user_name=current_user.full_name,
             olympiad_title=olympiad.title,
-            olympiad_end_date=olympiad.end_time,  # ДЛЯ ВСЕХ ТИПОВ ПЕРЕДАЕМ ПОЛНУЮ ДАТУ
+            olympiad_end_date=olympiad.end_time,
             certificate_type=cert_type,
             place=place,
-            score=score,
+            score=score,  # Передаем баллы для всех типов сертификатов
+            time_bonus=time_bonus,  # Передаем временной бонус
             speciality=speciality
         )
 
@@ -716,7 +713,9 @@ def download_certificate(olympiad_id):
         certificate_img.save(img_io, 'PNG', quality=95, dpi=(300, 300))
         img_io.seek(0)
 
-        filename = f'{filename_prefix}_{current_user.full_name}_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.png'
+        # Формируем имя файла с указанием баллов
+        score_text = f"{score:.1f}b"  # Добавляем баллы в имя файла
+        filename = f'{filename_prefix}_{score_text}_{current_user.full_name}_{olympiad.title}_{datetime.now().strftime("%Y%m%d")}.png'
         filename = secure_filename(filename)
 
         return send_file(
@@ -729,168 +728,212 @@ def download_certificate(olympiad_id):
     except Exception as e:
         flash(f'Ошибка при создании {"диплома" if cert_type == "winner" else "сертификата"}: {str(e)}', 'error')
         return redirect(url_for('olympiad_results', olympiad_id=olympiad_id))
-
-
-# Удаляем старые функции и маршруты
-# Убираем generate_participation_certificate, generate_winner_certificate
-# Убираем download_participation_certificate, download_winner_certificate
-
-def create_enhanced_certificate_background(width=3508, height=2480):
-    """Создает улучшенный фон сертификата с градиентом и декоративными элементами"""
-    # Создаем изображение с белым фоном
-    img = Image.new('RGB', (width, height), 'white')
-    draw = ImageDraw.Draw(img)
-
-    # Основная рамка сертификата
-    border_width = 50
-    border_color = '#820000'
-
-    # Внешняя рамка
-    draw.rectangle([0, 0, width - 1, height - 1], outline=border_color, width=border_width)
-
-    # Двойная внутренняя рамка
-    inner_margin = 100
-    draw.rectangle([inner_margin, inner_margin, width - inner_margin, height - inner_margin],
-                   outline='#B8860B', width=12)
-
-    # Еще одна внутренняя рамка
-    inner_margin2 = 130
-    draw.rectangle([inner_margin2, inner_margin2, width - inner_margin2, height - inner_margin2],
-                   outline='#820000', width=4)
-
-    # Декоративные углы с градиентом
-    corner_size = 200
-    corner_color = '#DAA520'  # Темно-золотистый
-
-    # Верхние углы
-    draw.polygon([(inner_margin, inner_margin),
-                  (inner_margin + corner_size, inner_margin),
-                  (inner_margin, inner_margin + corner_size)],
-                 fill=corner_color)
-    draw.polygon([(width - inner_margin, inner_margin),
-                  (width - inner_margin - corner_size, inner_margin),
-                  (width - inner_margin, inner_margin + corner_size)],
-                 fill=corner_color)
-
-    # Нижние углы
-    draw.polygon([(inner_margin, height - inner_margin),
-                  (inner_margin + corner_size, height - inner_margin),
-                  (inner_margin, height - inner_margin - corner_size)],
-                 fill=corner_color)
-    draw.polygon([(width - inner_margin, height - inner_margin),
-                  (width - inner_margin - corner_size, height - inner_margin),
-                  (width - inner_margin, height - inner_margin - corner_size)],
-                 fill=corner_color)
-
-    # Дополнительные декоративные элементы по краям
-    # Верхняя и нижняя декоративные полосы
-    decoration_height = 20
-    draw.rectangle(
-        [inner_margin + 100, inner_margin + 50, width - inner_margin - 100, inner_margin + 50 + decoration_height],
-        fill='#DAA520')
-    draw.rectangle([inner_margin + 100, height - inner_margin - 50 - decoration_height, width - inner_margin - 100,
-                    height - inner_margin - 50],
-                   fill='#DAA520')
-
-    return img
-
-
-def draw_hexagon(draw, center_x, center_y, radius, color="#DAA520", width=3):
-    """Рисует шестиугольник (соту)"""
-    import math
-    points = []
-    for i in range(6):
-        angle = math.pi * 2 * i / 6
-        x = center_x + radius * math.cos(angle)
-        y = center_y + radius * math.sin(angle)
-        points.append((x, y))
-    draw.polygon(points, outline=color, width=width)
-
-
-def add_hexagon_pattern_from_file(img, hexagon_file='static/images/hexagons.png'):
-    """Добавляет узор из сот в верхний правый угол из файла ПОД всеми рамками"""
-    try:
-        if os.path.exists(hexagon_file):
-            hexagon_img = Image.open(hexagon_file)
-
-            # Размер для паттерна сот (уменьшаем чтобы не перекрывать рамки)
-            max_hex_size = 4000  # Уменьшаем размер
-            hexagon_img.thumbnail((max_hex_size, max_hex_size), Image.Resampling.LANCZOS)
-
-            # Позиция в верхнем правом углу (с большими отступами от рамок)
-            width, height = img.size
-            hex_x = width - hexagon_img.width - 150  # Больший отступ от правого края
-            hex_y = 200  # Больший отступ от верхнего края
-
-            # Вставляем изображение с сотами
-            if hexagon_img.mode == 'RGBA':
-                img.paste(hexagon_img, (hex_x, hex_y), hexagon_img)
-            else:
-                img.paste(hexagon_img, (hex_x, hex_y))
-
-            print(f"Добавлены соты из файла: {hexagon_file}")
-        else:
-            print(f"Файл с сотами не найден: {hexagon_file}")
-            # Fallback - рисуем программно если файла нет
-            draw_simple_hexagons_fallback(img)
-    except Exception as e:
-        print(f"Ошибка при загрузке сот: {e}")
-        draw_simple_hexagons_fallback(img)
-
-
-def draw_simple_hexagons_fallback(img):
-    """Резервный вариант - простые соты если файл не найден"""
-    draw = ImageDraw.Draw(img)
-    width, height = img.size
-
-    # Несколько простых сот в правом верхнем углу
-    hex_positions = [
-        (width - 200, 200, 80),
-        (width - 350, 150, 60),
-        (width - 280, 320, 70),
-        (width - 150, 350, 50),
-    ]
-
-    for x, y, radius in hex_positions:
-        draw_hexagon(draw, x, y, radius, "#B87373", 8)
-
-
-
 # Новые функции для расчета временного коэффициента
 def calculate_time_bonus(actual_time, max_time, base_points):
     """
-    Расчет временного бонуса
+    Точный расчет временного бонуса на основе времени
+
+    Формула: bonus = base_points * max_bonus_rate * (max_time - actual_time) / max_time
 
     Логика:
-    - Если выполнил быстрее 25% от времени - максимальный бонус (20% от базовых баллов)
-    - Если выполнил за 25-50% времени - хороший бонус (10% от базовых баллов)
-    - Если выполнил за 50-75% времени - небольшой бонус (5% от базовых баллов)
-    - Если выполнил за 75-100% времени - минимальный бонус (1% от базовых баллов)
-    - Если превысил время - нет бонуса
+    - Мгновенное выполнение (0 сек) = максимальный бонус (25% от базовых баллов)
+    - Выполнение в срок (100% времени) = 0 бонусов
+    - Превышение времени = штраф (до -10% от базовых баллов)
+
+    Args:
+        actual_time: фактическое время выполнения в секундах
+        max_time: максимальное время олимпиады в секундах
+        base_points: базовые балл
+        ы за правильные ответы
+
+    Returns:
+        float: точный временной бонус (может быть отрицательным)
     """
 
     if actual_time <= 0 or max_time <= 0 or base_points <= 0:
         return 0
 
-    # Рассчитываем процент использованного времени
+    # Максимальный бонус за скорость (25% от базовых баллов)
+    max_bonus_rate = 0.25
+
+    # Максимальный штраф за превышение времени (10% от базовых баллов)
+    max_penalty_rate = 0.10
+
+    # Рассчитываем соотношение времени
+    time_ratio = actual_time / max_time
+
+    if time_ratio <= 1.0:
+        # Выполнение в срок или быстрее - бонус
+        # Формула: bonus = base_points * max_bonus_rate * (1 - time_ratio)
+        time_bonus = base_points * max_bonus_rate * (1 - time_ratio)
+    else:
+        # Превышение времени - штраф
+        # Штраф растет до максимума при превышении времени в 2 раза
+        overtime_ratio = min(time_ratio - 1.0, 1.0)  # Ограничиваем максимальным штрафом
+        time_bonus = -base_points * max_penalty_rate * overtime_ratio
+
+    return round(time_bonus, 3)  # Точность до тысячных
+
+
+def calculate_time_bonus_exponential(actual_time, max_time, base_points):
+    """
+    Экспоненциальная формула - более резкое падение бонуса
+
+    Дает большой бонус за очень быстрое выполнение,
+    но быстро убывает при увеличении времени
+    """
+
+    if actual_time <= 0 or max_time <= 0 or base_points <= 0:
+        return 0
+
+    max_bonus_rate = 0.30  # Увеличенный максимальный бонус
+    time_ratio = actual_time / max_time
+
+    if time_ratio <= 1.0:
+        # Экспоненциальное убывание: bonus = base * max_bonus * exp(-3 * time_ratio)
+        time_bonus = base_points * max_bonus_rate * math.exp(-3 * time_ratio)
+    else:
+        # Штраф за превышение времени
+        overtime_ratio = min(time_ratio - 1.0, 1.0)
+        time_bonus = -base_points * 0.15 * overtime_ratio
+
+    return round(time_bonus, 3)
+
+
+def calculate_time_bonus_logarithmic(actual_time, max_time, base_points):
+    """
+    Логарифмическая формула - плавное убывание бонуса
+
+    Более справедливое распределение бонусов
+    """
+
+    if actual_time <= 0 or max_time <= 0 or base_points <= 0:
+        return 0
+
+    max_bonus_rate = 0.20
+    time_ratio = actual_time / max_time
+
+    if time_ratio <= 1.0:
+        # Избегаем log(0), добавляем небольшое значение
+        safe_ratio = max(time_ratio, 0.01)
+        # Логарифмическая формула: bonus = base * max_bonus * -log(safe_ratio)
+        time_bonus = base_points * max_bonus_rate * (-math.log(safe_ratio)) / 4.6  # нормализуем
+    else:
+        # Штраф за превышение времени
+        overtime_ratio = min(time_ratio - 1.0, 1.0)
+        time_bonus = -base_points * 0.12 * overtime_ratio
+
+    return round(time_bonus, 3)
+
+
+def get_time_performance_category_precise(actual_time, max_time):
+    """
+    Более точные категории производительности
+    """
+    if actual_time <= 0 or max_time <= 0:
+        return "unknown", "⏰ Время не определено"
+
     time_percentage = (actual_time / max_time) * 100
 
-    # Определяем размер бонуса в зависимости от скорости выполнения
-    if time_percentage <= 25:
-        bonus_percentage = 20  # Максимальный бонус за очень быстрое выполнение
-    elif time_percentage <= 50:
-        bonus_percentage = 10  # Хороший бонус за быстрое выполнение
-    elif time_percentage <= 75:
-        bonus_percentage = 5  # Небольшой бонус за нормальное выполнение
+    if time_percentage <= 10:
+        return "lightning", "⚡ Молниеносно"
+    elif time_percentage <= 25:
+        return "excellent", "🚀 Превосходно"
+    elif time_percentage <= 40:
+        return "very_good", "⭐ Очень быстро"
+    elif time_percentage <= 60:
+        return "good", "✅ Быстро"
+    elif time_percentage <= 80:
+        return "normal", "⏱️ Нормально"
     elif time_percentage <= 100:
-        bonus_percentage = 1  # Минимальный бонус за выполнение в срок
+        return "slow", "🐌 Медленно"
+    elif time_percentage <= 120:
+        return "overtime", "⏰ Превышение времени"
     else:
-        bonus_percentage = 0  # Нет бонуса за превышение времени
+        return "very_overtime", "🚨 Значительное превышение"
 
-    # Рассчитываем итоговый временной бонус
-    time_bonus = (base_points * bonus_percentage) / 100
 
-    return round(time_bonus, 2)
+# Обновленная функция для расчета итогового балла
+def calculate_final_score_precise(participation, early_finish=False):
+    """
+    Рассчитывает итоговый балл с точным учетом времени выполнения
+    """
+    if not participation.start_time or not participation.finish_time:
+        participation.final_score = participation.total_points
+        participation.duration_seconds = None
+        participation.time_bonus = 0
+        return
+
+    # Получаем олимпиаду для расчета максимального времени
+    olympiad = Olympiad.query.get(participation.olympiad_id)
+    if not olympiad:
+        participation.final_score = participation.total_points
+        participation.time_bonus = 0
+        return
+
+    # Рассчитываем время выполнения в секундах
+    duration = participation.finish_time - participation.start_time
+    participation.duration_seconds = duration.total_seconds()
+
+    # При досрочном завершении временной бонус не начисляется
+    if early_finish:
+        participation.time_bonus = 0
+        participation.final_score = participation.total_points
+        return
+
+    # Максимальное время олимпиады в секундах
+    max_duration = (olympiad.end_time - olympiad.start_time).total_seconds()
+
+    # Выберите одну из формул (рекомендую линейную для начала):
+
+    # 1. Линейная формула (рекомендуется)
+    time_bonus = calculate_time_bonus(participation.duration_seconds, max_duration, participation.total_points)
+
+    # 2. Экспоненциальная формула (для более агрессивного бонуса за скорость)
+    # time_bonus = calculate_time_bonus_exponential(participation.duration_seconds, max_duration, participation.total_points)
+
+    # 3. Логарифмическая формула (для плавного распределения)
+    # time_bonus = calculate_time_bonus_logarithmic(participation.duration_seconds, max_duration, participation.total_points)
+
+    # Сохраняем временной бонус отдельно для отображения
+    participation.time_bonus = time_bonus
+
+    # Итоговый балл = основные баллы + временной бонус
+    participation.final_score = participation.total_points + time_bonus
+
+
+# Демонстрация разных формул
+def demo_time_bonus_formulas():
+    """
+    Демонстрирует работу разных формул расчета временного бонуса
+    """
+    print("=== ДЕМОНСТРАЦИЯ ФОРМУЛ ВРЕМЕННОГО БОНУСА ===")
+    print("Базовые баллы: 100, Максимальное время: 3600 сек (1 час)")
+    print()
+
+    base_points = 100
+    max_time = 3600  # 1 час
+
+    test_times = [
+        (180, "3 минуты (молниеносно)"),
+        (900, "15 минут (очень быстро)"),
+        (1800, "30 минут (быстро)"),
+        (2700, "45 минут (нормально)"),
+        (3600, "60 минут (в срок)"),
+        (4500, "75 минут (превышение)"),
+        (7200, "120 минут (большое превышение)")
+    ]
+
+    print(f"{'Время':<25} {'Линейная':<12} {'Экспонент.':<12} {'Логариф.':<12} {'Итого (лин.)':<12}")
+    print("-" * 80)
+
+    for actual_time, description in test_times:
+        linear = calculate_time_bonus(actual_time, max_time, base_points)
+        exponential = calculate_time_bonus_exponential(actual_time, max_time, base_points)
+        logarithmic = calculate_time_bonus_logarithmic(actual_time, max_time, base_points)
+        total_linear = base_points + linear
+
+        print(f"{description:<25} {linear:>+8.2f} {exponential:>+8.2f} {logarithmic:>+8.2f} {total_linear:>8.2f}")
 
 
 def get_time_performance_category(actual_time, max_time):
@@ -981,6 +1024,50 @@ def update_all_final_scores(olympiad_id):
     db.session.commit()
 
 
+# Функция для пересчета баллов существующих участий
+@app.route('/admin/fix_scoring/<int:olympiad_id>', methods=['GET'])
+@login_required
+def fix_scoring_system(olympiad_id):
+    """Исправляет систему подсчета баллов для олимпиады"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        olympiad = Olympiad.query.get_or_404(olympiad_id)
+
+        # Получаем все участия в этой олимпиаде
+        participations = Participation.query.filter_by(olympiad_id=olympiad_id).all()
+
+        fixed_count = 0
+        for participation in participations:
+            # Пересчитываем total_points на основе BlockResult
+            block_results = BlockResult.query.filter_by(participation_id=participation.id).all()
+            correct_total = sum(br.points_earned for br in block_results)
+
+            if participation.total_points != correct_total:
+                print(f"Участник {participation.user_id}: было {participation.total_points}, стало {correct_total}")
+                participation.total_points = correct_total
+
+                # Пересчитываем итоговый балл
+                if participation.status == 'completed':
+                    calculate_final_score(participation)
+
+                fixed_count += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Исправлена система баллов для {fixed_count} участий в олимпиаде "{olympiad.title}"'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка при исправлении: {str(e)}'
+        }), 500
+
+
 def recalculate_all_time_scores():
     """
     Пересчитывает временные коэффициенты для всех завершенных участий
@@ -1002,6 +1089,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(200), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     study_group = db.Column(db.String(50), nullable=True)
+    course = db.Column(db.Integer, nullable=True)  # НОВОЕ ПОЛЕ
     speciality = db.Column(db.Text, nullable=True)  # JSON с информацией о специальности
     is_admin = db.Column(db.Boolean, default=False)
     participations = db.relationship('Participation', backref='user', lazy=True)
@@ -1157,6 +1245,7 @@ def register():
         password = request.form.get('password')
         full_name = request.form.get('full_name')
         study_group = request.form.get('study_group')
+        course = request.form.get('course')  # НОВОЕ ПОЛЕ
         speciality_id = request.form.get('speciality_id')
 
         if User.query.filter_by(email=email).first():
@@ -1188,6 +1277,7 @@ def register():
             email=email,
             full_name=full_name,
             study_group=study_group,
+            course=int(course) if course else None,  # НОВОЕ ПОЛЕ
             speciality=json.dumps(speciality_info) if speciality_info else None
         )
         user.set_password(password)
@@ -1692,12 +1782,13 @@ def parse_test_questions(content, block_id):
 
 
 def parse_matching_questions(content, block_id):
-    """Разбор содержимого файла с вопросами на сопоставление (обновленная версия)"""
+    """Разбор содержимого файла с вопросами на сопоставление (обновленная версия для 3 колонок)"""
     lines = content.splitlines()
 
     questions = []
     current_question = None
     current_left_items = []
+    current_middle_items = []
     current_right_items = []
     current_correct_matches = {}
 
@@ -1713,6 +1804,7 @@ def parse_matching_questions(content, block_id):
                 questions.append({
                     'text': current_question,
                     'left_items': current_left_items,
+                    'middle_items': current_middle_items,
                     'right_items': current_right_items,
                     'correct_matches': current_correct_matches
                 })
@@ -1720,24 +1812,38 @@ def parse_matching_questions(content, block_id):
             # Начинаем новый вопрос
             current_question = line.split('.', 1)[1].strip()
             current_left_items = []
+            current_middle_items = []
             current_right_items = []
             current_correct_matches = {}
         elif '|' in line:  # Строка с парой для сопоставления
-            parts = line.split('|', 1)
+            parts = line.split('|')
             if len(parts) == 2:
+                # Двухколоночное сопоставление (старый формат)
                 left = parts[0].strip()
                 right = parts[1].strip()
                 if left and right:
-                    # Добавляем в левые элементы, если еще нет
                     if left not in current_left_items:
                         current_left_items.append(left)
-
-                    # Добавляем в правые элементы, если еще нет
                     if right not in current_right_items:
                         current_right_items.append(right)
-
-                    # Запоминаем правильное соответствие
-                    current_correct_matches[left] = right
+                    current_correct_matches[left] = {'right': right}
+            elif len(parts) == 3:
+                # Трехколоночное сопоставление (новый формат)
+                left = parts[0].strip()
+                middle = parts[1].strip()
+                right = parts[2].strip()
+                if left and middle and right:
+                    if left not in current_left_items:
+                        current_left_items.append(left)
+                    if middle not in current_middle_items:
+                        current_middle_items.append(middle)
+                    if right not in current_right_items:
+                        current_right_items.append(right)
+                    current_correct_matches[left] = {'middle': middle, 'right': right}
+        elif line.startswith('M:'):  # Дополнительные средние элементы (отвлекающие)
+            middle_item = line[2:].strip()
+            if middle_item and middle_item not in current_middle_items:
+                current_middle_items.append(middle_item)
         elif line.startswith('R:'):  # Дополнительные правые элементы (отвлекающие)
             right_item = line[2:].strip()
             if right_item and right_item not in current_right_items:
@@ -1748,6 +1854,7 @@ def parse_matching_questions(content, block_id):
         questions.append({
             'text': current_question,
             'left_items': current_left_items,
+            'middle_items': current_middle_items,
             'right_items': current_right_items,
             'correct_matches': current_correct_matches
         })
@@ -1755,14 +1862,19 @@ def parse_matching_questions(content, block_id):
     # Сохраняем вопросы в базу данных
     questions_created = 0
     for q_data in questions:
-        if not q_data['left_items'] or not q_data['right_items'] or not q_data['correct_matches']:
+        if not q_data['left_items']:
             continue  # Пропускаем некорректные вопросы
+
+        # Определяем тип сопоставления
+        has_middle = len(q_data['middle_items']) > 0
 
         # Создаем новую структуру данных
         matches_data = {
             'left_items': q_data['left_items'],
+            'middle_items': q_data['middle_items'] if has_middle else [],
             'right_items': q_data['right_items'],
-            'correct_matches': q_data['correct_matches']
+            'correct_matches': q_data['correct_matches'],
+            'columns': 3 if has_middle else 2  # Указываем количество колонок
         }
 
         question = Question(
@@ -1794,6 +1906,7 @@ def update_question_points(block_id):
         question.points = points_per_question
 
     db.session.commit()
+
 
 
 QUESTION_FILE_FORMAT = """
@@ -2020,6 +2133,22 @@ def recalculate_points_for_block(block_id):
 
     for question in questions:
         question.points = points_per_question
+
+    db.session.commit()
+
+    # Пересчитываем баллы для всех существующих ответов
+    for question in questions:
+        answers = Answer.query.filter_by(question_id=question.id).all()
+        for answer in answers:
+            # Пересчитываем баллы для ответа
+            if answer.is_correct:
+                answer.points_earned = question.points
+            else:
+                # Для частично правильных ответов (например, matching)
+                if question.question_type == 'matching' and answer.points_earned > 0:
+                    # Сохраняем пропорцию правильности
+                    old_proportion = answer.points_earned / question.points if question.points > 0 else 0
+                    answer.points_earned = old_proportion * question.points
 
     db.session.commit()
 
@@ -2599,6 +2728,7 @@ def edit_block(block_id):
     return render_template('admin/edit_block.html', block=block, questions=questions)
 
 
+# Исправленная функция для создания блока с правильным распределением баллов
 @app.route('/admin/block/<int:block_id>/add_question', methods=['POST'])
 @login_required
 def add_question(block_id):
@@ -2610,14 +2740,6 @@ def add_question(block_id):
     question_type = request.form.get('question_type')
     text = request.form.get('text')
 
-    # Подсчет количества вопросов в блоке для равномерного распределения баллов
-    questions_count = Question.query.filter_by(block_id=block_id).count() + 1
-    points_per_question = block.max_points / questions_count
-
-    # Обновляем баллы для существующих вопросов
-    for q in Question.query.filter_by(block_id=block_id).all():
-        q.points = points_per_question
-
     if question_type == 'test':
         options = request.form.getlist('options[]')
         correct_answers = request.form.getlist('correct_answers[]')
@@ -2628,24 +2750,45 @@ def add_question(block_id):
             text=text,
             options=json.dumps(options),
             correct_answers=json.dumps(correct_answers),
-            points=points_per_question
+            points=1.0  # Временное значение
         )
     elif question_type == 'matching':
         left_items = request.form.getlist('left_items[]')
+        middle_items = request.form.getlist('middle_items[]')
         right_items = request.form.getlist('right_items[]')
+
+        # Определяем количество колонок
+        has_middle = len(middle_items) > 0 and any(item.strip() for item in middle_items)
+        columns = 3 if has_middle else 2
+
         correct_matches_data = {}
 
         # Получаем соответствия из формы
         for i, left_item in enumerate(left_items):
-            match_key = f'match_{i}'
-            if match_key in request.form:
-                correct_matches_data[left_item] = request.form[match_key]
+            if has_middle:
+                # Трехколоночное сопоставление
+                middle_key = f'match_middle_{i}'
+                right_key = f'match_right_{i}'
+                if middle_key in request.form and right_key in request.form:
+                    correct_matches_data[left_item] = {
+                        'middle': request.form[middle_key],
+                        'right': request.form[right_key]
+                    }
+            else:
+                # Двухколоночное сопоставление
+                match_key = f'match_{i}'
+                if match_key in request.form:
+                    correct_matches_data[left_item] = {
+                        'right': request.form[match_key]
+                    }
 
-        # Создаем новую структуру данных
+        # Создаем структуру данных
         matches_data = {
             'left_items': left_items,
+            'middle_items': middle_items if has_middle else [],
             'right_items': right_items,
-            'correct_matches': correct_matches_data
+            'correct_matches': correct_matches_data,
+            'columns': columns
         }
 
         question = Question(
@@ -2653,14 +2796,251 @@ def add_question(block_id):
             question_type=question_type,
             text=text,
             matches=json.dumps(matches_data),
-            points=points_per_question
+            points=1.0  # Временное значение
         )
 
     db.session.add(question)
     db.session.commit()
 
+    # Пересчитываем баллы для всех вопросов в блоке
+    update_question_points(block_id)
+
     return jsonify({'success': True, 'question_id': question.id})
 
+# Дополнительная функция для проверки и исправления баллов
+@app.route('/admin/fix_points/<int:olympiad_id>', methods=['POST'])
+@login_required
+def fix_olympiad_points(olympiad_id):
+    """Исправляет баллы для всех блоков олимпиады"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        olympiad = Olympiad.query.get_or_404(olympiad_id)
+        blocks = Block.query.filter_by(olympiad_id=olympiad_id).all()
+
+        fixed_blocks = 0
+        for block in blocks:
+            questions = Question.query.filter_by(block_id=block.id).all()
+            if questions:
+                # Пересчитываем баллы
+                recalculate_points_for_block(block.id)
+                fixed_blocks += 1
+
+        # Пересчитываем итоговые баллы для всех участников
+        update_all_final_scores(olympiad_id)
+
+        return jsonify({
+            'success': True,
+            'message': f'Исправлены баллы для {fixed_blocks} блоков олимпиады "{olympiad.title}"'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка при исправлении баллов: {str(e)}'
+        }), 500
+
+
+# Маршрут для диагностики блока
+@app.route('/admin/block/<int:block_id>/diagnose', methods=['GET'])
+@login_required
+def diagnose_block(block_id):
+    """Диагностика блока для проверки правильности распределения баллов"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        block = Block.query.get_or_404(block_id)
+        questions = Question.query.filter_by(block_id=block_id).all()
+
+        # Подсчитываем статистику
+        total_question_points = sum(q.points for q in questions)
+        points_per_question = block.max_points / len(questions) if questions else 0
+
+        # Проверяем участников с ответами
+        participants_with_answers = db.session.query(Answer.participation_id).filter(
+            Answer.question_id.in_([q.id for q in questions])
+        ).distinct().count() if questions else 0
+
+        return jsonify({
+            'success': True,
+            'block_name': block.title,
+            'max_points': block.max_points,
+            'questions_count': len(questions),
+            'points_per_question': round(points_per_question, 2),
+            'total_question_points': round(total_question_points, 2),
+            'participants_count': participants_with_answers,
+            'questions_details': [{
+                'id': q.id,
+                'text': q.text[:50] + '...' if len(q.text) > 50 else q.text,
+                'points': q.points,
+                'type': q.question_type
+            } for q in questions[:5]]  # Показываем первые 5 вопросов
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка диагностики: {str(e)}'
+        }), 500
+
+
+# Маршрут для полной диагностики олимпиады
+@app.route('/admin/olympiad/<int:olympiad_id>/diagnose', methods=['GET'])
+@login_required
+def diagnose_olympiad(olympiad_id):
+    """Полная диагностика олимпиады"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        olympiad = Olympiad.query.get_or_404(olympiad_id)
+        blocks = Block.query.filter_by(olympiad_id=olympiad_id).order_by(Block.order).all()
+
+        blocks_info = []
+        total_olympiad_points = 0
+
+        for block in blocks:
+            questions = Question.query.filter_by(block_id=block.id).all()
+            total_question_points = sum(q.points for q in questions)
+
+            # Проверяем участников
+            participants_count = db.session.query(Answer.participation_id).filter(
+                Answer.question_id.in_([q.id for q in questions])
+            ).distinct().count() if questions else 0
+
+            block_info = {
+                'id': block.id,
+                'title': block.title,
+                'order': block.order,
+                'max_points': block.max_points,
+                'questions_count': len(questions),
+                'total_question_points': round(total_question_points, 2),
+                'participants_count': participants_count,
+                'is_correct': abs(total_question_points - block.max_points) < 0.01
+            }
+
+            blocks_info.append(block_info)
+            total_olympiad_points += block.max_points
+
+        # Проверяем участников олимпиады
+        total_participants = Participation.query.filter_by(olympiad_id=olympiad_id).count()
+        completed_participants = Participation.query.filter_by(
+            olympiad_id=olympiad_id,
+            status='completed'
+        ).count()
+
+        return jsonify({
+            'success': True,
+            'olympiad_title': olympiad.title,
+            'total_olympiad_points': total_olympiad_points,
+            'blocks_count': len(blocks),
+            'total_participants': total_participants,
+            'completed_participants': completed_participants,
+            'blocks': blocks_info,
+            'has_issues': any(not block['is_correct'] for block in blocks_info)
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка диагностики: {str(e)}'
+        }), 500
+
+
+# Маршрут для быстрого исправления одного блока
+@app.route('/admin/block/<int:block_id>/fix_points', methods=['POST'])
+@login_required
+def fix_block_points(block_id):
+    """Быстрое исправление баллов для одного блока"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        block = Block.query.get_or_404(block_id)
+
+        # Исправляем баллы
+        recalculate_points_for_block(block_id)
+
+        # Пересчитываем итоговые баллы участников
+        olympiad_id = block.olympiad_id
+        update_all_final_scores(olympiad_id)
+
+        return jsonify({
+            'success': True,
+            'message': f'Баллы для блока "{block.title}" успешно исправлены'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка при исправлении: {str(e)}'
+        }), 500
+
+
+# Дополнительный маршрут для показа детальной информации об участнике
+@app.route('/admin/participation/<int:participation_id>/details', methods=['GET'])
+@login_required
+def participation_details(participation_id):
+    """Детальная информация об участии"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+
+    try:
+        participation = Participation.query.get_or_404(participation_id)
+        user = User.query.get(participation.user_id)
+        olympiad = Olympiad.query.get(participation.olympiad_id)
+
+        # Получаем результаты по блокам
+        blocks_results = []
+        blocks = Block.query.filter_by(olympiad_id=olympiad.id).order_by(Block.order).all()
+
+        for block in blocks:
+            block_result = BlockResult.query.filter_by(
+                participation_id=participation.id,
+                block_id=block.id
+            ).first()
+
+            # Альтернативный подсчет через ответы
+            questions = Question.query.filter_by(block_id=block.id).all()
+            answers = Answer.query.filter(
+                Answer.participation_id == participation.id,
+                Answer.question_id.in_([q.id for q in questions])
+            ).all()
+
+            points_from_answers = sum(answer.points_earned for answer in answers)
+
+            blocks_results.append({
+                'block_title': block.title,
+                'block_order': block.order,
+                'max_points': block.max_points,
+                'result_points': block_result.points_earned if block_result else 0,
+                'answers_points': points_from_answers,
+                'questions_answered': len(answers),
+                'total_questions': len(questions),
+                'completed': block_result is not None
+            })
+
+        return jsonify({
+            'success': True,
+            'user_name': user.full_name,
+            'user_email': user.email,
+            'olympiad_title': olympiad.title,
+            'status': participation.status,
+            'total_points': participation.total_points,
+            'final_score': participation.final_score,
+            'time_bonus': participation.time_bonus,
+            'start_time': participation.start_time.isoformat() if participation.start_time else None,
+            'finish_time': participation.finish_time.isoformat() if participation.finish_time else None,
+            'blocks_results': blocks_results
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Ошибка получения информации: {str(e)}'
+        }), 500
 
 @app.route('/olympiad/<int:olympiad_id>/view', methods=['GET'])
 @login_required
@@ -2804,6 +3184,8 @@ def take_olympiad(olympiad_id):
     )
 
 
+# 3. Update the submit_answer route to handle three-column matching
+# Исправленная функция submit_answer - НЕ обновляем total_points здесь
 @app.route('/olympiad/<int:olympiad_id>/submit_answer', methods=['POST'])
 @login_required
 def submit_answer(olympiad_id):
@@ -2842,23 +3224,44 @@ def submit_answer(olympiad_id):
     elif question.question_type == 'matching':
         matches_data = json.loads(question.matches)
 
-        # Обновленная логика для новой структуры данных
+        # Проверяем новую структуру данных с поддержкой 3 колонок
         if 'correct_matches' in matches_data:
-            # Новый формат
             correct_matches = matches_data['correct_matches']
             left_items = matches_data['left_items']
+            columns = matches_data.get('columns', 2)
         else:
             # Старый формат (для обратной совместимости)
-            correct_matches = {match['left']: match['right'] for match in matches_data}
+            correct_matches = {match['left']: {'right': match['right']} for match in matches_data}
             left_items = [match['left'] for match in matches_data]
+            columns = 2
 
         user_correct_count = 0
-        user_matches = {pair['left']: pair['right'] for pair in answer_data}
 
+        # Преобразуем пользовательские ответы в удобный формат
+        user_matches = {}
+        for pair in answer_data:
+            left = pair['left']
+            user_matches[left] = {}
+            if 'middle' in pair:
+                user_matches[left]['middle'] = pair['middle']
+            if 'right' in pair:
+                user_matches[left]['right'] = pair['right']
+
+        # Проверяем правильность сопоставлений
         for left_item in left_items:
             if left_item in user_matches and left_item in correct_matches:
-                if user_matches[left_item] == correct_matches[left_item]:
-                    user_correct_count += 1
+                correct_match = correct_matches[left_item]
+                user_match = user_matches[left_item]
+
+                if columns == 3:
+                    # Трехколоночное сопоставление - должны совпадать обе колонки
+                    if (user_match.get('middle') == correct_match.get('middle') and
+                            user_match.get('right') == correct_match.get('right')):
+                        user_correct_count += 1
+                else:
+                    # Двухколоночное сопоставление
+                    if user_match.get('right') == correct_match.get('right'):
+                        user_correct_count += 1
 
         # Если все левые элементы правильно сопоставлены
         if user_correct_count == len(left_items):
@@ -2880,9 +3283,6 @@ def submit_answer(olympiad_id):
         existing_answer.is_correct = is_correct
         existing_answer.points_earned = points_earned
         existing_answer.answered_at = get_current_time()
-
-        # Обновляем общий балл пользователя
-        participation.total_points = participation.total_points - existing_answer.points_earned + points_earned
     else:
         # Создаем новый ответ
         answer = Answer(
@@ -2894,8 +3294,8 @@ def submit_answer(olympiad_id):
         )
         db.session.add(answer)
 
-        # Обновляем общий балл пользователя
-        participation.total_points += points_earned
+    # ВАЖНО: НЕ обновляем participation.total_points здесь!
+    # Баллы будут подсчитаны в submit_block
 
     db.session.commit()
 
@@ -2921,106 +3321,99 @@ def get_ranking(olympiad_id):
     if not current_block:
         return jsonify({'success': False, 'message': 'Ошибка: блок не найден'})
 
-    # Получаем предыдущий блок, который завершил пользователь
-    prev_block = None
-    if current_block.order > 1:
-        prev_block = Block.query.filter_by(
-            olympiad_id=olympiad_id,
-            order=current_block.order - 1
-        ).first()
-    else:
-        # Если это первый блок, то берем его же
-        prev_block = current_block
-
-    # Получаем результаты блока
-    block_result = BlockResult.query.filter_by(
-        participation_id=participation.id,
-        block_id=prev_block.id
-    ).first()
-
-    # Устанавливаем значения баллов
-    block_points = 0
-    block_max_points = prev_block.max_points
-
-    if block_result:
-        block_points = block_result.points_earned
-    else:
-        # Если нет результатов блока, подсчитываем из ответов
-        questions = Question.query.filter_by(block_id=prev_block.id).all()
+    # Для незавершенных участий показываем статистику по текущему блоку
+    if participation.status == 'in_progress':
+        # Получаем баллы за текущий блок
+        questions = Question.query.filter_by(block_id=current_block.id).all()
         answers = Answer.query.filter(
             Answer.participation_id == participation.id,
             Answer.question_id.in_([q.id for q in questions])
         ).all()
 
-        if answers:
-            block_points = sum(answer.points_earned for answer in answers)
+        block_points = sum(answer.points_earned for answer in answers)
+        block_max_points = current_block.max_points
 
-    # Рассчитываем место только на основе завершенных участий
+        # Для незавершенных участий не показываем место в общем рейтинге
+        # Показываем только прогресс по текущему блоку
+        response_data = {
+            'success': True,
+            'rank_position': 0,  # Не показываем место для незавершенных
+            'rank_percentage': 0,
+            'block_points': round(block_points, 1),
+            'block_max_points': round(block_max_points, 1),
+            'total_points': round(participation.total_points, 1),
+            'total_participants': 1,
+            'in_progress': True,
+            'block_name': current_block.title
+        }
+
+        return jsonify(response_data)
+
+    # Для завершенных участий показываем полную статистику
+    # Обновляем итоговые баллы перед показом рейтинга
+    update_all_final_scores(olympiad_id)
+
+    # Получаем все завершенные участия для расчета места
     completed_participations = Participation.query.filter(
         Participation.olympiad_id == olympiad_id,
         Participation.status == 'completed'
     ).order_by(Participation.final_score.desc()).all()
 
-    # Если участник еще не завершил олимпиаду, добавляем в список и для него
-    if participation.status != 'completed' and participation not in completed_participations:
-        completed_participations.append(participation)
-        # Пересортируем список - для незавершенных используем total_points
-        completed_participations.sort(key=lambda p: p.final_score if p.status == 'completed' else p.total_points,
-                                      reverse=True)
-
-    # Находим место текущего пользователя
+    # Находим место текущего пользователя среди завершенных
     user_rank = 0
-    prev_points = None
-    skip_ranks = 0
-
-    for i, p in enumerate(completed_participations):
-        # Получаем баллы для сравнения
-        current_points = p.final_score if p.status == 'completed' else p.total_points
-
-        # Если у участников одинаковое количество баллов, они делят место
-        if prev_points is not None and current_points == prev_points:
-            skip_ranks += 1
-        else:
-            skip_ranks = 0
-
-        prev_points = current_points
-
+    for i, p in enumerate(completed_participations, 1):
         if p.id == participation.id:
-            user_rank = i + 1 - skip_ranks
+            user_rank = i
             break
-
-    # Подсчитываем общее количество участников и участников с непустыми баллами
-    all_participations = Participation.query.filter_by(olympiad_id=olympiad_id).all()
-    participations_with_points = [p for p in all_participations if p.total_points > 0]
 
     # Вычисляем процент от максимально возможного места
     rank_percentage = 0
-    if len(participations_with_points) > 0:
-        rank_percentage = 100 - ((user_rank - 1) / len(participations_with_points) * 100)
+    if len(completed_participations) > 0 and user_rank > 0:
+        rank_percentage = 100 - ((user_rank - 1) / len(completed_participations) * 100)
 
-    # Для первого блока всегда возвращаем рейтинг 0, но сохраняем остальные данные
-    if prev_block.order == 1:
-        user_rank = 0
+    # Получаем статистику по последнему завершенному блоку
+    last_completed_block = None
+    max_order = 0
 
-    # Количество участников должно быть не менее 1 (сам пользователь)
-    total_participants = max(1, len(all_participations))
+    # Найдем блок с максимальным order, который пользователь завершил
+    for block in Block.query.filter_by(olympiad_id=olympiad_id).order_by(Block.order).all():
+        block_result = BlockResult.query.filter_by(
+            participation_id=participation.id,
+            block_id=block.id
+        ).first()
 
-    # Используем итоговый балл для завершенных участий, иначе обычный
-    display_points = participation.final_score if participation.status == 'completed' else participation.total_points
+        if block_result:
+            last_completed_block = block
+            max_order = block.order
+        else:
+            break
+
+    if not last_completed_block:
+        last_completed_block = Block.query.filter_by(olympiad_id=olympiad_id, order=1).first()
+
+    # Баллы за последний завершенный блок
+    block_result = BlockResult.query.filter_by(
+        participation_id=participation.id,
+        block_id=last_completed_block.id
+    ).first()
+
+    block_points = block_result.points_earned if block_result else 0
 
     response_data = {
         'success': True,
         'rank_position': user_rank,
         'rank_percentage': round(rank_percentage, 1),
         'block_points': round(block_points, 1),
-        'block_max_points': round(block_max_points, 1),
-        'total_points': round(display_points, 1),
-        'total_participants': total_participants
+        'block_max_points': round(last_completed_block.max_points, 1),
+        'total_points': round(participation.final_score, 1),
+        'total_participants': len(completed_participations),
+        'in_progress': False,
+        'block_name': last_completed_block.title
     }
 
     return jsonify(response_data)
 
-
+# Исправленная функция submit_block - считаем баллы только здесь
 @app.route('/olympiad/<int:olympiad_id>/submit_block', methods=['POST'])
 @login_required
 def submit_block(olympiad_id):
@@ -3051,24 +3444,29 @@ def submit_block(olympiad_id):
             'message': f'Вы ответили только на {answered_questions} из {len(questions)} вопросов'
         })
 
-    # Подсчитываем процент правильных ответов и баллы
-    total_points_possible = sum(q.points for q in questions)
-
-    # Получаем баллы за все ответы в текущем блоке
+    # Подсчитываем баллы за блок
     block_answers = Answer.query.filter(
         Answer.participation_id == participation.id,
         Answer.question_id.in_([q.id for q in questions])
     ).all()
 
     user_points = sum(answer.points_earned for answer in block_answers)
+    total_points_possible = sum(q.points for q in questions)
 
-    # Сохраняем баллы за блок
-    block_result = BlockResult.query.filter_by(
+    # ИСПРАВЛЕНО: правильно обновляем общий балл участника
+    # Получаем старый результат блока
+    old_block_result = BlockResult.query.filter_by(
         participation_id=participation.id,
         block_id=current_block.id
     ).first()
 
-    if not block_result:
+    if old_block_result:
+        # Если блок уже был завершен ранее, вычитаем старые баллы
+        participation.total_points -= old_block_result.points_earned
+        old_block_result.points_earned = user_points
+        old_block_result.completed_at = get_current_time()
+    else:
+        # Создаем новый результат блока
         block_result = BlockResult(
             participation_id=participation.id,
             block_id=current_block.id,
@@ -3076,10 +3474,11 @@ def submit_block(olympiad_id):
             completed_at=get_current_time()
         )
         db.session.add(block_result)
-    else:
-        block_result.points_earned = user_points
-        block_result.completed_at = get_current_time()
 
+    # Добавляем баллы за этот блок к общему счету
+    participation.total_points += user_points
+
+    # Проверяем процент правильных ответов
     percentage_correct = (user_points / total_points_possible) * 100 if total_points_possible > 0 else 0
 
     # Проверяем, достаточно ли баллов для перехода к следующему блоку
@@ -3100,8 +3499,10 @@ def submit_block(olympiad_id):
             'redirect': url_for('olympiad_results', olympiad_id=olympiad_id),
             'block_data': {
                 'block_id': current_block.id,
-                'points_earned': user_points,
-                'total_points_possible': total_points_possible
+                'block_name': current_block.title,
+                'points_earned': round(user_points, 1),
+                'total_points_possible': round(total_points_possible, 1),
+                'percentage': round(percentage_correct, 1)
             }
         })
 
@@ -3128,8 +3529,10 @@ def submit_block(olympiad_id):
             'redirect': url_for('olympiad_results', olympiad_id=olympiad_id),
             'block_data': {
                 'block_id': current_block.id,
-                'points_earned': user_points,
-                'total_points_possible': total_points_possible
+                'block_name': current_block.title,
+                'points_earned': round(user_points, 1),
+                'total_points_possible': round(total_points_possible, 1),
+                'percentage': round(percentage_correct, 1)
             }
         })
 
@@ -3142,14 +3545,17 @@ def submit_block(olympiad_id):
     return jsonify({
         'success': True,
         'completed': False,
-        'message': f'Вы успешно завершили блок и набрали {percentage_correct:.1f}%. Переходим к следующему блоку.',
+        'message': f'Вы успешно завершили блок "{current_block.title}" и набрали {percentage_correct:.1f}%. Переходим к следующему блоку.',
         'redirect': url_for('take_olympiad', olympiad_id=olympiad_id),
         'block_data': {
             'block_id': current_block.id,
-            'points_earned': user_points,
-            'total_points_possible': total_points_possible
+            'block_name': current_block.title,
+            'points_earned': round(user_points, 1),
+            'total_points_possible': round(total_points_possible, 1),
+            'percentage': round(percentage_correct, 1)
         }
     })
+
 
 
 @app.route('/olympiad/<int:olympiad_id>/results', methods=['GET'])
@@ -3357,6 +3763,18 @@ def recalculate_scores(olympiad_id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        try:
+            # Попробуем выполнить запрос к новому столбцу
+            db.session.execute('SELECT course FROM user LIMIT 1')
+        except:
+            # Если столбец не существует, добавляем его
+            try:
+                db.session.execute('ALTER TABLE user ADD COLUMN course INTEGER DEFAULT NULL')
+                db.session.commit()
+                print("Добавлен новый столбец 'course' в таблицу user")
+            except:
+                print("Столбец 'course' уже существует или произошла ошибка при добавлении")
         signatures_folder = 'static/signatures'
         if not os.path.exists(signatures_folder):
             os.makedirs(signatures_folder)
