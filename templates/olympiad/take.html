@@ -633,16 +633,7 @@
         </div>
 
         <!-- Прогресс -->
-        <div class="mt-4">
-            <div class="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Прогресс: <span id="answer-count">{{ user_answers|length }}</span> / {{ questions|length }}</span>
-                <span>Начало: {{ participation.start_time.strftime('%H:%M') if participation.start_time else 'Н/Д' }}</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill" style="width: {{ (user_answers|length / questions|length) * 100 }}%"></div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Карточка рейтинга -->
 
